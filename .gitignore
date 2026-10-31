@@ -10,3 +10,6 @@ nbproject/
 *.class
 .jdk/
 .run/
+
+# Local test launcher for this machine
+run-test.sh
