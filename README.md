@@ -62,7 +62,7 @@ Asset Manager makes no network requests unless you turn on **Live GE prices (OSR
 
 ## Data
 
-Shop prices, stock and restock times, and death fee rules come from the OSRS Wiki (shop data from October 2026). Shop data can be refreshed with `python3 tools/update_shop_data.py`.
+Shop prices, stock and restock times, and death fee rules come from the OSRS Wiki. They're bundled with the plugin and kept up to date with each release, so there's nothing to download or set up.
 
 ## Roadmap
 
@@ -75,8 +75,15 @@ Shop prices, stock and restock times, and death fee rules come from the OSRS Wik
 ./run-test.sh          # close any open test client, then start RuneLite with the plugin
 ./run-test.sh --stop   # just close the test client
 ./gradlew test         # unit tests
+python3 tools/update_shop_data.py   # refresh the bundled shop data from the OSRS Wiki
 ```
 
 To stop a session, close the RuneLite window or press Ctrl+C. Either way the script closes the window properly so RuneLite saves its settings (it only writes them every 5 minutes otherwise).
+
+### Releasing an update
+
+1. Refresh the shop data: `python3 tools/update_shop_data.py`.
+2. Run `./gradlew test` and try the plugin with `./run-test.sh`.
+3. Commit and push, then update `commit=` in `plugins/asset-manager` in the plugin-hub repository with the new commit hash and open a pull request.
 
 `run-test.sh` needs a JDK 11 to 17 (Gradle 8.10 doesn't run on newer ones). If `JAVA_HOME` doesn't point at one, it downloads Temurin 17 into `.jdk/` the first time. It also works from the VS Code Flatpak's terminal by re-running itself outside the sandbox.
