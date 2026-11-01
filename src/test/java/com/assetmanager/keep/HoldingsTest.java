@@ -16,15 +16,19 @@ public class HoldingsTest
 	}
 
 	@Test
-	public void keptOnesAreTheCarriedOnes()
+	public void carriedOnesAreSpareFirst()
 	{
 		KeepRules rules = new KeepRules();
 		rules.set(PLATEBODY, 1);
-		// Keeping 1: the one in the inventory is the kept one, so all 3 banked are spare
+		// Keeping 1: a banked one is kept, so the one carried (to a shop, say) is spare, with 2 banked
 		Holdings h = new Holdings().with(Holdings.Place.INVENTORY, of(PLATEBODY, 1)).with(Holdings.Place.BANK, of(PLATEBODY, 3));
-		assertEquals(0, h.spare(Holdings.Place.INVENTORY, PLATEBODY, rules));
-		assertEquals(3, h.spare(Holdings.Place.BANK, PLATEBODY, rules));
+		assertEquals(1, h.spare(Holdings.Place.INVENTORY, PLATEBODY, rules));
+		assertEquals(2, h.spare(Holdings.Place.BANK, PLATEBODY, rules));
 		assertEquals(3, (int) h.spare(rules).get(PLATEBODY));
+
+		// With none in the bank, the carried one is the kept one
+		h = new Holdings().with(Holdings.Place.INVENTORY, of(PLATEBODY, 1)).with(Holdings.Place.BANK, of(PLATEBODY, 0));
+		assertEquals(0, h.spare(Holdings.Place.INVENTORY, PLATEBODY, rules));
 
 		// Wearing one counts too, and worn items are never spare
 		h = new Holdings().with(Holdings.Place.WORN, of(PLATEBODY, 1)).with(Holdings.Place.INVENTORY, of(PLATEBODY, 2));

@@ -8,10 +8,8 @@ public class SellRules
 {
 	/** Each sale must beat the next best way to cash out (GE or alching) by this much. */
 	int minGainPerItem;
-	/** What a world hop is worth to the player, in coins: a shop trip's extra worlds cost this much each. */
-	long hopCost;
 	/** The most worlds to hop at one shop, or ShopCatalog.NO_WORLD_LIMIT. */
 	int maxWorlds;
-	/** A shop is only suggested if everything to sell there gains at least this much together, after hops. */
+	/** A shop is only suggested if everything to sell there gains at least this much together. */
 	int minGainPerTrip;
 }

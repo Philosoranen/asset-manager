@@ -224,6 +224,10 @@ def main():
             "delta": delta,
             "items": items,
         }
+        # What kind of shop it is ("General store", "Farming shop"), for grouping shops that pay the same
+        specialty = clean(info.get("specialty"))
+        if specialty and specialty.lower() not in ("none", "yes"):
+            s["type"] = specialty
         page = s["name"] if s["name"] in points or s["name"] in wild else base
         if page in wild and s["name"] not in SAFE_WILDERNESS_SHOPS:
             s["wilderness"] = True

@@ -28,7 +28,7 @@ public class Destination
 	long value;
 	/** How much more that is than the next best way, or 0. */
 	long gain;
-	/** The shop, for SHOP. */
+	/** The shop, for SHOP: for a group of shops paying the same, the closest one when it was planned. */
 	Shop shop;
 	/** For SHOP: other shops that pay about the same, this being the closest. */
 	int equalShops;

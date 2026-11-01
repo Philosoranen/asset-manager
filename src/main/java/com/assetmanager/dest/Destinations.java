@@ -98,13 +98,13 @@ public class Destinations
 		list.add(fromSales(Destination.Kind.ALCH, "High alch", byValue, SaleSuggestion.Type.ALCH, s.getAlch(), elsewhere));
 		list.add(fromSales(Destination.Kind.GE, "Grand Exchange", byValue, SaleSuggestion.Type.GE, s.getGe(), elsewhere));
 
-		// One destination per shop, the most gained first
+		// One destination per shop, or group of shops paying the same, the most gained first
 		Map<String, List<SaleSuggestion>> byShop = new LinkedHashMap<>();
 		for (SaleSuggestion x : byValue)
 		{
 			if (x.getType() == SaleSuggestion.Type.SHOP && s.getShop().contains(x.getValues().getItemId()))
 			{
-				byShop.computeIfAbsent(x.getShopOffer().getShop().getName(), k -> new ArrayList<>()).add(x);
+				byShop.computeIfAbsent(x.getShopOffer().getShop().getGroup(), k -> new ArrayList<>()).add(x);
 			}
 		}
 		List<Destination> shops = new ArrayList<>();
@@ -112,10 +112,9 @@ public class Destinations
 		{
 			Shop shop = group.get(0).getShopOffer().getShop();
 			List<Integer> shopIds = ids(group, SaleSuggestion.Type.SHOP);
-			ShopTrip trip = trips.get(shop.getName());
-			shops.add(new Destination(Destination.Kind.SHOP, shop.getName(), shopIds,
+			ShopTrip trip = trips.get(shop.getGroup());
+			shops.add(new Destination(Destination.Kind.SHOP, shop.getGroup(), shopIds,
 				group.stream().mapToLong(SaleSuggestion::getTotal).sum(),
-				// What the trip gains after the hops, not just the stacks
 				trip != null ? trip.getGain() : group.stream().mapToLong(SaleSuggestion::getGain).sum(),
 				shop,
 				group.stream().mapToInt(x -> x.getShopOffer().getEqualShops()).max().orElse(0),

@@ -12,8 +12,9 @@ import lombok.RequiredArgsConstructor;
 /**
  * Where the player's items are, by canonical item id, and which of them are spare after their keep rules.
  * <p>
- * Kept items are counted from what's worn first, then the inventory, the bank and the seed vault, so keeping
- * one rune platebody that's in the inventory leaves every banked one spare. Worn items are never spare. Variants
+ * Kept items are counted from what's worn first, then the bank and the seed vault, and the inventory last: what the
+ * player carries to a shop or the GE is what they mean to sell, so keeping 5 lobsters with 5 in the bank leaves all
+ * the carried ones spare. Worn items are never spare. Variants
  * with different doses or charges count together, the fullest kept first.
  */
 public class Holdings
@@ -31,6 +32,9 @@ public class Holdings
 	}
 
 	public static final Holdings NONE = new Holdings();
+
+	/** The order kept items are counted from: the carried ones are the first to be spare. */
+	private static final Place[] KEEP_ORDER = {Place.WORN, Place.BANK, Place.SEED_VAULT, Place.INVENTORY};
 
 	private final Map<Place, Map<Integer, Integer>> counts = new EnumMap<>(Place.class);
 
@@ -100,7 +104,7 @@ public class Holdings
 
 	/**
 	 * How many at a place are spare. Variants share their rule: the ones with the most doses or charges are kept first,
-	 * each from what's worn first, then the inventory, the bank and the seed vault.
+	 * each from what's worn first, then the bank, the seed vault and the inventory.
 	 */
 	public int spare(Place place, int itemId, KeepRules rules)
 	{
@@ -112,7 +116,7 @@ public class Holdings
 		int toKeep = keep;
 		for (int id : rules.members(itemId))
 		{
-			for (Place p : Place.values())
+			for (Place p : KEEP_ORDER)
 			{
 				int here = count(p, id);
 				int kept = Math.min(here, toKeep);

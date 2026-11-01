@@ -405,29 +405,13 @@ public interface AssetManagerConfig extends Config
 		return 1;
 	}
 
-	@Range(min = 0, max = 1_000)
-	@ConfigItem(
-		keyName = "hopWorthNatureRunes",
-		name = "World hop worth (nature runes)",
-		description = "What a world hop is worth to you, in nature runes. A shop trip only hops to another world when the"
-			+ " stacks you'd sell there together gain more than this, so one stack gaining a nature rune per world"
-			+ " isn't worth a hop but three are.",
-		section = bankSection,
-		position = 12
-	)
-	default int hopWorthNatureRunes()
-	{
-		return 2;
-	}
-
 	@Range(min = 0, max = 100_000_000)
 	@ConfigItem(
 		keyName = "minGainPerTrip",
 		name = "Min. gain per shop trip (gp)",
-		description = "Only suggest a shop when everything to sell there beats the GE or alching by this much together,"
-			+ " after the world hops",
+		description = "Only suggest a shop when everything to sell there beats the GE or alching by this much together",
 		section = bankSection,
-		position = 13
+		position = 12
 	)
 	default int minGainPerTrip()
 	{
@@ -439,11 +423,10 @@ public interface AssetManagerConfig extends Config
 		keyName = "shopMaxWorlds",
 		name = "Max worlds to hop",
 		description = "The most worlds you'd hop to sell one item. Each shop's own price drop sets how many to sell per"
-			+ " world; anything past this many worlds is left for the GE or alching, and shops you can sell everything"
-			+ " to without hopping are preferred unless hopping pays 10% more. 0 = no limit: hop as much as it takes,"
-			+ " over as many sessions as you like, and pick whichever shop pays most.",
+			+ " world; a stack needing more worlds than this is left for another shop, the GE or alching. 0 = no"
+			+ " limit: hop as much as it takes, over as many sessions as you like.",
 		section = bankSection,
-		position = 14
+		position = 13
 	)
 	default int shopMaxWorlds()
 	{

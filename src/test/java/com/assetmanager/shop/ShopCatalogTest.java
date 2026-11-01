@@ -2,6 +2,7 @@ package com.assetmanager.shop;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -114,23 +115,20 @@ public class ShopCatalogTest
 	}
 
 	@Test
-	public void hopCostsDecideBetweenShops()
+	public void maxWorldsDecidesBetweenShops()
 	{
 		// Ali's: 50% with no drop. Aubury's: 60% dropping 0.1% per rune, so 1000 runes need hopping.
 		Shop ali = shop("Ali's Discount Wares (Catalytic runes)", false, 500, 0, null, null, Collections.singletonMap("death rune", item(null)));
 		Shop aubury = shop("Aubury's Rune Shop", false, 600, 1, null, null, Collections.singletonMap("death rune", item(null)));
 		ShopCatalog c = new ShopCatalog(Arrays.asList(aubury, ali), "test");
-		// Against 80 each elsewhere, Aubury's sells 151 per world over 7 worlds for about 5,000 more than Ali's
-		ShopOffer free = c.bestOffer("Death rune", 180, 1000, true, ShopPerks.NONE, 80, new SellRules(1, 0, 10, 0), Collections.emptySet());
-		assertEquals("Aubury's Rune Shop", free.getShop().getName());
-		assertEquals(7, free.getWorlds());
-		// ...but when a hop is worth 2,000, its 6 hops cost more than that, so Ali's
-		ShopOffer o = c.bestOffer("Death rune", 180, 1000, true, ShopPerks.NONE, 80, new SellRules(1, 2_000, 10, 0), Collections.emptySet());
+		// Against 80 each elsewhere, Aubury's sells 151 per world over 7 worlds for more than Ali's; hops are free
+		ShopOffer o = c.bestOffer("Death rune", 180, 1000, true, ShopPerks.NONE, 80, new SellRules(1, 10, 0), Collections.emptySet());
+		assertEquals("Aubury's Rune Shop", o.getShop().getName());
+		assertEquals(7, o.getWorlds());
+		// ...but not when the player won't hop that many worlds
+		o = c.bestOffer("Death rune", 180, 1000, true, ShopPerks.NONE, 80, new SellRules(1, 5, 0), Collections.emptySet());
 		assertEquals("Ali's Discount Wares (Catalytic runes)", o.getShop().getName());
 		assertEquals(1, o.getWorlds());
-		// A handful sells on one world at Aubury's, so the higher price wins
-		assertEquals("Aubury's Rune Shop", c.bestOffer("Death rune", 180, 3, true, ShopPerks.NONE, 80,
-			new SellRules(1, 2_000, 10, 0), Collections.emptySet()).getShop().getName());
 	}
 
 	@Test
@@ -198,10 +196,10 @@ public class ShopCatalogTest
 	{
 		ShopCatalog c = ShopCatalog.load(new Gson());
 		assertNotNull(c.getGenerated());
-		// Aubury's pays more for the first few on each world, but not enough to be worth hopping 2 nature runes' worth
+		// Without hopping, Ali's (no price drop) beats shops that pay more for the first few on each world
 		for (String rune : new String[]{"Death rune", "Nature rune", "Fire rune"})
 		{
-			ShopOffer o = c.bestOffer(rune, 100, 1000, true, ShopPerks.NONE, 40, new SellRules(1, 400, 10, 0), Collections.emptySet());
+			ShopOffer o = c.bestOffer(rune, 100, 1000, true, ShopPerks.NONE, 40, new SellRules(1, 1, 0), Collections.emptySet());
 			assertTrue(rune + " -> " + o.getShop().getName(), o.getShop().getName().startsWith("Ali's Discount Wares"));
 		}
 	}
@@ -219,7 +217,58 @@ public class ShopCatalogTest
 	}
 
 	@Test
-	public void clearlyBetterShopWinsHoweverFar()
+	public void obliBeatsTheKaramjaGeneralStore()
+	{
+		ShopCatalog bundled = ShopCatalog.load(new Gson());
+		ShopCatalog c = new ShopCatalog(Arrays.asList(bundled.findByName("Karamja General Store"),
+			bundled.findByName("Obli's General Store")), "test");
+		// Standing at Musa Point, with gloves 3: both start at 60%, but Obli's drops 2% per item to Karamja's 3%
+		ShopPerks musaPoint = new ShopPerks(3, false, false, new WorldPoint(2905, 3150, 0));
+		assertEquals("Obli's General Store", c.bestOffer("Rune platebody", 65_000, 5, true, musaPoint, 0, 1, 10).getShop().getName());
+		// Without gloves, Obli's pays 50% to Karamja's 40%
+		ShopPerks noGloves = new ShopPerks(0, false, false, new WorldPoint(2905, 3150, 0));
+		assertEquals("Obli's General Store", c.bestOffer("Rune platebody", 65_000, 1, true, noGloves, 0, 1, 10).getShop().getName());
+	}
+
+	@Test
+	public void shopsPayingTheSameAreGrouped()
+	{
+		ShopCatalog c = ShopCatalog.load(new Gson());
+		// Most general stores pay 40% dropping 3%: any of them will do
+		assertEquals("General store", c.findByName("Rimmington General Store").getGroup());
+		assertEquals("General store", c.findByName("Warrens General Store").getGroup());
+		assertTrue(c.groupMembers("General store").size() > 30);
+		// The Void Knight store drops only 0.3%, so it's a group of its own kind
+		assertNotEquals("General store", c.findByName("Void Knight General Store").getGroup());
+		assertEquals(c.findByName("Sarah's Farming shop").getGroup(), c.findByName("Vanessa's Farming shop").getGroup());
+		// A shop like no other keeps its name
+		assertEquals("Bandit Duty Free", c.findByName("Bandit Duty Free").getGroup());
+		// The nearest of a group from Rimmington is Rimmington's
+		assertEquals("Rimmington General Store", c.nearestInGroup("General store", new WorldPoint(2950, 3215, 0)).getName());
+	}
+
+	@Test
+	public void sticksWithTheShopAlreadySuggested()
+	{
+		// Three shops paying the same: the player is near Near, but Far was suggested before they set off
+		Shop near = shop("Near", true, 400, 0, null, null, Collections.emptyMap());
+		near.setAt(new int[][]{{3200, 3200}});
+		Shop far = shop("Far", true, 400, 0, null, null, Collections.emptyMap());
+		far.setAt(new int[][]{{1600, 3600}});
+		Shop here = shop("Here", true, 400, 0, null, null, Collections.emptyMap());
+		here.setAt(new int[][]{{2000, 3000}});
+		ShopCatalog c = new ShopCatalog(Arrays.asList(near, far, here), "test");
+		WorldPoint walking = new WorldPoint(3100, 3200, 0);
+		assertEquals("Near", c.bestOffer("Thing", 1000, 1, true, new ShopPerks(0, false, false, walking), 0, 1, 10).getShop().getName());
+		ShopPerks onTheWay = new ShopPerks(0, false, false, walking, Collections.singleton("Far"));
+		assertEquals("Far", c.bestOffer("Thing", 1000, 1, true, onTheWay, 0, 1, 10).getShop().getName());
+		// ...unless they're standing at another that pays the same
+		ShopPerks atHere = new ShopPerks(0, false, false, new WorldPoint(2005, 3000, 0), Collections.singleton("Far"));
+		assertEquals("Here", c.bestOffer("Thing", 1000, 1, true, atHere, 0, 1, 10).getShop().getName());
+	}
+
+	@Test
+	public void betterShopWinsHoweverFar()
 	{
 		Shop near = shop("Near", true, 400, 0, null, null, Collections.emptyMap());
 		near.setAt(new int[][]{{3200, 3200}});
@@ -228,8 +277,11 @@ public class ShopCatalogTest
 		ShopCatalog c = new ShopCatalog(Arrays.asList(near, far), "test");
 		ShopPerks here = new ShopPerks(0, false, false, new WorldPoint(3200, 3201, 0));
 		assertEquals("Far", c.bestOffer("Thing", 1000, 1, true, here, 0, 1, 10).getShop().getName());
-		// ...but within 1% counts as the same, so the near one wins
+		// Even paying slightly less, the near one doesn't win
 		near.setBuyMultiplier(595);
+		assertEquals("Far", c.bestOffer("Thing", 1000, 1, true, here, 0, 1, 10).getShop().getName());
+		// ...only when they pay the same
+		near.setBuyMultiplier(600);
 		ShopOffer o = c.bestOffer("Thing", 1000, 1, true, here, 0, 1, 10);
 		assertEquals("Near", o.getShop().getName());
 		assertEquals(1, o.getEqualShops());

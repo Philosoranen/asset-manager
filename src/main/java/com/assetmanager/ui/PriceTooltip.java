@@ -209,7 +209,9 @@ public class PriceTooltip
 
 		if (shop != null && (shopWorthIt || shop.getFirstUnit() > 0))
 		{
-			String where = shop.getShop().getName() + (shop.isUsesKaramjaGloves() ? " (gloves)" : "")
+			String group = shop.getShop().getGroup();
+			String where = (group.equals(shop.getShop().getName()) ? group : group + ", nearest " + shop.getShop().getName())
+				+ (shop.isUsesKaramjaGloves() ? " (gloves)" : "")
 				+ (shop.isUsesCharos() ? " (Ring of Charos)" : "")
 				+ (shop.isFixedPrice() ? " (fixed price)" : "")
 				+ (shop.getEqualShops() > 0 ? " (closest of " + (shop.getEqualShops() + 1) + " paying the same)" : "");

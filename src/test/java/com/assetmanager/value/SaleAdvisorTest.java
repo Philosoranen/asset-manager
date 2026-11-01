@@ -48,35 +48,12 @@ public class SaleAdvisorTest
 	}
 
 	@Test
-	public void hopsAreWorthItForSeveralStacksNotOne()
-	{
-		// 60% dropping 3%: only the first sale on each world beats alching, by the 200 nature rune.
-		// A hop is worth 2 nature runes (400).
-		SellRules rules = new SellRules(1, 400, 10, 1);
-		add(1, "Rune platebody", 30_000, 38_400, 64_000, 3);
-		// One stack of 3 needs 3 worlds: gains 600 but the 2 hops cost 800, so alch it all
-		List<SaleSuggestion> s = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, droppingStore(600, 30), ShopPerks.NONE, rules).getSales();
-		assertEquals(1, s.size());
-		assertEquals(SaleSuggestion.Type.ALCH, s.get(0).getType());
-		assertEquals(3, s.get(0).getQuantity());
-
-		// Three stacks of 3 share the hops: 1,800 gained for 800 of hops, so all three go to the shop, whole
-		add(2, "Rune platelegs", 30_000, 38_400, 64_000, 3);
-		add(3, "Rune plateskirt", 30_000, 38_400, 64_000, 3);
-		SaleAdvisor.Result r = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, droppingStore(600, 30), ShopPerks.NONE, rules);
-		assertEquals(3, r.getSales().size());
-		assertEquals(3, r.getSales().stream().filter(x -> x.getType() == SaleSuggestion.Type.SHOP && x.getQuantity() == 3).count());
-		assertEquals(3, r.getTrips().get("Karamja General Store").getWorlds());
-		assertEquals(1_800 - 800, r.getTrips().get("Karamja General Store").getGain());
-	}
-
-	@Test
 	public void shopsNotWorthATripAreSkipped()
 	{
 		add(1, "Rune platebody", 30_000, 38_400, 64_000, 1);
 		// Gains 200 over alching, less than the 2,000 a trip needs
 		SaleAdvisor.Result r = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, droppingStore(600, 30),
-			ShopPerks.NONE, new SellRules(1, 400, 10, 2_000));
+			ShopPerks.NONE, new SellRules(1, 10, 2_000));
 		assertEquals(SaleSuggestion.Type.ALCH, r.getSales().get(0).getType());
 
 		// With 20 different items it's worth it
@@ -85,7 +62,7 @@ public class SaleAdvisorTest
 			add(id, "Rune thing " + id, 30_000, 38_400, 64_000, 1);
 		}
 		r = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, droppingStore(600, 30),
-			ShopPerks.NONE, new SellRules(1, 400, 10, 2_000));
+			ShopPerks.NONE, new SellRules(1, 10, 2_000));
 		assertEquals(20, r.getSales().stream().filter(x -> x.getType() == SaleSuggestion.Type.SHOP).count());
 	}
 
@@ -94,7 +71,7 @@ public class SaleAdvisorTest
 	{
 		// Alch 38,400 - 200 = 38,200 vs GE 37,000 - 740 tax = 36,260
 		add(1, "Rune platebody", 37_000, 38_400, 64_000, 3);
-		List<SaleSuggestion> s = SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, null, ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales();
+		List<SaleSuggestion> s = SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, null, ShopPerks.NONE, new SellRules(1, 10, 0)).getSales();
 		assertEquals(1, s.size());
 		assertEquals(SaleSuggestion.Type.ALCH, s.get(0).getType());
 		assertEquals(1_940 * 3, s.get(0).getGain());
@@ -105,7 +82,7 @@ public class SaleAdvisorTest
 	{
 		// Shop at 65% of 64,000 = 41,600 beats alch 38,200 and GE 36,260
 		add(1, "Rune platebody", 37_000, 38_400, 64_000, 2);
-		List<SaleSuggestion> s = SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, generalStore(650), ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales();
+		List<SaleSuggestion> s = SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, generalStore(650), ShopPerks.NONE, new SellRules(1, 10, 0)).getSales();
 		assertEquals(SaleSuggestion.Type.SHOP, s.get(0).getType());
 		assertEquals((41_600 - 38_200) * 2, s.get(0).getGain());
 		assertEquals("High alch", s.get(0).getAlternativeLabel());
@@ -116,9 +93,9 @@ public class SaleAdvisorTest
 	{
 		add(1, "Rune platebody", 37_000, 38_400, 64_000, 1);
 		// Alching is an ironman's default, so no alch suggestion
-		assertEquals(0, SaleAdvisor.suggest(bank, spare, false, 200, 100, Long.MAX_VALUE, null, ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales().size());
+		assertEquals(0, SaleAdvisor.suggest(bank, spare, false, 200, 100, Long.MAX_VALUE, null, ShopPerks.NONE, new SellRules(1, 10, 0)).getSales().size());
 		// ...but a shop paying more is suggested
-		assertEquals(SaleSuggestion.Type.SHOP, SaleAdvisor.suggest(bank, spare, false, 200, 100, Long.MAX_VALUE, generalStore(650), ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales().get(0).getType());
+		assertEquals(SaleSuggestion.Type.SHOP, SaleAdvisor.suggest(bank, spare, false, 200, 100, Long.MAX_VALUE, generalStore(650), ShopPerks.NONE, new SellRules(1, 10, 0)).getSales().get(0).getType());
 	}
 
 	@Test
@@ -126,18 +103,18 @@ public class SaleAdvisorTest
 	{
 		// A 60% shop pays exactly the alch value, so it beats alching by the nature rune (200 here)
 		add(1, "Rune platebody", 30_000, 38_400, 64_000, 1);
-		SaleSuggestion s = SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, generalStore(600), ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales().get(0);
+		SaleSuggestion s = SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, generalStore(600), ShopPerks.NONE, new SellRules(1, 10, 0)).getSales().get(0);
 		assertEquals(SaleSuggestion.Type.SHOP, s.getType());
 		assertEquals(200, s.getGain());
 		// ...unless the player asks for a bigger gain per item, then alching it is
-		assertEquals(SaleSuggestion.Type.ALCH, SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, generalStore(600), ShopPerks.NONE, new SellRules(500, 0, 10, 0)).getSales().get(0).getType());
+		assertEquals(SaleSuggestion.Type.ALCH, SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, generalStore(600), ShopPerks.NONE, new SellRules(500, 10, 0)).getSales().get(0).getType());
 	}
 
 	@Test
 	public void keptItemsAreSkipped()
 	{
 		add(1, "Rune platebody", 37_000, 38_400, 64_000, 0);
-		assertEquals(0, SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, null, ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales().size());
+		assertEquals(0, SaleAdvisor.suggest(bank, spare, true, 200, 100, Long.MAX_VALUE, null, ShopPerks.NONE, new SellRules(1, 10, 0)).getSales().size());
 	}
 
 	@Test
@@ -149,13 +126,13 @@ public class SaleAdvisorTest
 		add(2, "Bronze arrow", 5, 1, 1, 50);
 		// Worth more alched, so it's an alch suggestion instead
 		add(3, "Rune platebody", 37_000, 38_400, 64_000, 1);
-		List<SaleSuggestion> s = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, null, ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales();
+		List<SaleSuggestion> s = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, null, ShopPerks.NONE, new SellRules(1, 10, 0)).getSales();
 		assertEquals(2, s.size());
 		SaleSuggestion bones = s.stream().filter(x -> x.getType() == SaleSuggestion.Type.GE).findFirst().get();
 		assertEquals("Dragon bones", bones.getValues().getName());
 		assertEquals(2_450 * 100, bones.getTotal());
 		// Ironmen can't use the GE
-		assertEquals(0, SaleAdvisor.suggest(bank, spare, false, 200, 100, 10_000, null, ShopPerks.NONE, new SellRules(1, 0, 10, 0)).getSales().size());
+		assertEquals(0, SaleAdvisor.suggest(bank, spare, false, 200, 100, 10_000, null, ShopPerks.NONE, new SellRules(1, 10, 0)).getSales().size());
 	}
 
 	@Test
@@ -192,7 +169,7 @@ public class SaleAdvisorTest
 	public void hopsAreSharedByEveryStackOnTheTrip()
 	{
 		// 27 different items, 10 of each: one of each sells per world, so it's 10 worlds, not 27 or 270
-		SellRules rules = new SellRules(1, 400, ShopCatalog.NO_WORLD_LIMIT, 1);
+		SellRules rules = new SellRules(1, ShopCatalog.NO_WORLD_LIMIT, 1);
 		for (int id = 1; id <= 27; id++)
 		{
 			add(id, "Item " + id, 30_000, 38_400, 64_000, 10);
@@ -200,38 +177,7 @@ public class SaleAdvisorTest
 		SaleAdvisor.Result r = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, droppingStore(600, 30), ShopPerks.NONE, rules);
 		assertEquals(27, r.getSales().stream().filter(x -> x.getType() == SaleSuggestion.Type.SHOP).count());
 		assertEquals(10, r.getTrips().get("Karamja General Store").getWorlds());
-		// 270 sales each beating alching by 200, less 9 hops
-		assertEquals(270 * 200 - 9 * 400, r.getTrips().get("Karamja General Store").getGain());
-	}
-
-	@Test
-	public void sharedHopsCanMakeTheBetterShopWorthIt()
-	{
-		// Alching nets 38,200. The dropping store pays 38,400 for the first sale on each world (+200), so 10 of an item
-		// need 10 worlds; the flat store pays 38,336 (+136) for all of them on one world.
-		SellRules rules = new SellRules(1, 400, ShopCatalog.NO_WORLD_LIMIT, 1);
-		add(1, "Item 1", 30_000, 38_400, 64_000, 10);
-		Shop flat = new Shop();
-		flat.setName("Flat Store");
-		flat.setLocation("Somewhere");
-		flat.setGeneral(true);
-		flat.setBuyMultiplier(599);
-		flat.setDelta(0);
-		flat.setItems(Collections.emptyMap());
-		ShopCatalog both = new ShopCatalog(Arrays.asList(droppingStore(600, 30).findByName("Karamja General Store"), flat), "test");
-
-		// One stack alone: 2,000 more for 3,600 of hops, so the flat store
-		SaleAdvisor.Result r = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, both, ShopPerks.NONE, rules);
-		assertEquals(Collections.singleton("Flat Store"), r.getTrips().keySet());
-
-		// 27 stacks share the 9 hops: 54,000 - 3,600 beats 36,720
-		for (int id = 2; id <= 27; id++)
-		{
-			add(id, "Item " + id, 30_000, 38_400, 64_000, 10);
-		}
-		r = SaleAdvisor.suggest(bank, spare, true, 200, 100, 10_000, both, ShopPerks.NONE, rules);
-		assertEquals(Collections.singleton("Karamja General Store"), r.getTrips().keySet());
-		assertEquals(10, r.getTrips().get("Karamja General Store").getWorlds());
-		assertEquals(270 * 200 - 9 * 400, r.getTrips().get("Karamja General Store").getGain());
+		// 270 sales each beating alching by 200
+		assertEquals(270 * 200, r.getTrips().get("Karamja General Store").getGain());
 	}
 }

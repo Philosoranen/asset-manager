@@ -1,5 +1,7 @@
 package com.assetmanager.shop;
 
+import java.util.Collections;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import net.runelite.api.coords.WorldPoint;
@@ -19,6 +21,16 @@ public class ShopPerks
 	boolean avoidWilderness;
 	/** Where the player is, to pick the closest of shops paying the same; null if unknown. */
 	WorldPoint location;
+	/**
+	 * Shops already suggested (or being found). Of shops paying the same, these are kept, so the suggestion doesn't
+	 * switch to another as the player walks towards it.
+	 */
+	Set<String> preferredShops;
+
+	public ShopPerks(int glovesTier, boolean charos, boolean avoidWilderness, WorldPoint location)
+	{
+		this(glovesTier, charos, avoidWilderness, location, Collections.emptySet());
+	}
 
 	public ShopPerks(int glovesTier, boolean charos)
 	{

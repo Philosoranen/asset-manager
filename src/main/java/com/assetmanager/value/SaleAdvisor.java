@@ -20,9 +20,9 @@ import lombok.Value;
  * Works out the best way to cash out each spare stack: high alching, the GE, or a shop. Each stack goes one way.
  * <p>
  * Shops are planned as trips. On each world the player sells every stack for that shop while each sale beats the
- * GE and alching, then hops to a fresh world, and each hop costs what the player says a hop is worth. A trip hops
- * as many worlds as gains the most: a stack that needs more worlds than that goes another way (another shop, or
- * alching or the GE). A shop is only suggested if the trip gains enough to be worth it.
+ * GE and alching, then hops to a fresh world; hopping is quick, so a trip hops as many worlds as its stacks need. A
+ * shop is only suggested if the trip gains enough to be worth it; otherwise its stacks go another way (another shop,
+ * or alching or the GE).
  * <p>
  * Otherwise alching is suggested when it beats the GE by the minimum gain, and for mains the GE for stacks worth at
  * least the minimum sale. Ironmen alch by default, so for them only shops that beat alching are suggested.
@@ -77,19 +77,19 @@ public final class SaleAdvisor
 	{
 		Map<Integer, Set<String>> skip = new HashMap<>();
 		avoid.forEach((id, names) -> skip.put(id, new HashSet<>(names)));
-		// Every stack on a trip shares its hops, so at first each stack goes where it gains most as if hops were free;
-		// then trips are planned, and stacks that don't fit them move, paying only for the hops they'd add to a trip
-		Map<String, Integer> planned = null;
+		// Each stack goes where it gains most; stacks on trips not worth making then move elsewhere, which can make
+		// another trip worth it
 		for (int round = 0; ; round++)
 		{
 			List<SaleSuggestion> out = evaluate(values, spare, canUseGe, natureRuneCost, minAlchGain, minGeSale, shops, perks, rules,
-				skip, planned);
+				skip);
 			Map<String, List<SaleSuggestion>> byShop = new LinkedHashMap<>();
 			for (SaleSuggestion x : out)
 			{
 				if (x.getType() == SaleSuggestion.Type.SHOP)
 				{
-					byShop.computeIfAbsent(x.getShopOffer().getShop().getName(), k -> new ArrayList<>()).add(x);
+					// A group of shops paying the same is one trip: any of them will do
+					byShop.computeIfAbsent(x.getShopOffer().getShop().getGroup(), k -> new ArrayList<>()).add(x);
 				}
 			}
 
@@ -97,25 +97,16 @@ public final class SaleAdvisor
 			Map<String, ShopTrip> trips = new HashMap<>();
 			for (Map.Entry<String, List<SaleSuggestion>> e : byShop.entrySet())
 			{
-				ShopTrip trip = plan(e.getKey(), e.getValue(), rules.getHopCost());
-				// Stacks needing more worlds than the trip goes somewhere else; so does everything on a trip not worth it
-				for (SaleSuggestion x : e.getValue())
+				ShopTrip trip = plan(e.getKey(), e.getValue());
+				if (trip.getGain() < rules.getMinGainPerTrip())
 				{
-					if (x.getShopOffer().getWorlds() > trip.getWorlds() || trip.getGain() < rules.getMinGainPerTrip())
+					for (SaleSuggestion x : e.getValue())
 					{
 						skip.computeIfAbsent(x.getValues().getItemId(), k -> new HashSet<>()).add(e.getKey());
-						changed = true;
 					}
+					changed = true;
 				}
 				trips.put(e.getKey(), trip);
-			}
-			planned = new HashMap<>();
-			for (ShopTrip trip : trips.values())
-			{
-				if (trip.getGain() >= rules.getMinGainPerTrip())
-				{
-					planned.put(trip.getShop(), trip.getWorlds());
-				}
 			}
 			if (!changed || round >= MAX_ROUNDS)
 			{
@@ -125,41 +116,22 @@ public final class SaleAdvisor
 		}
 	}
 
-	/**
-	 * The number of worlds for a trip that gains the most: each stack needing no more than that many worlds sells
-	 * there, and each world after the first costs {@code hopCost}.
-	 */
-	static ShopTrip plan(String shop, List<SaleSuggestion> stacks, long hopCost)
+	/** A trip selling every stack: as many worlds as the stack needing the most, gaining what they all gain together. */
+	static ShopTrip plan(String shop, List<SaleSuggestion> stacks)
 	{
-		int bestWorlds = 1;
-		long bestGain = Long.MIN_VALUE;
-		Set<Integer> options = new HashSet<>();
+		int worlds = 1;
+		long gain = 0;
 		for (SaleSuggestion x : stacks)
 		{
-			options.add(x.getShopOffer().getWorlds());
+			worlds = Math.max(worlds, x.getShopOffer().getWorlds());
+			gain += x.getGain();
 		}
-		for (int worlds : options)
-		{
-			long gain = -(worlds - 1) * hopCost;
-			for (SaleSuggestion x : stacks)
-			{
-				if (x.getShopOffer().getWorlds() <= worlds)
-				{
-					gain += x.getGain();
-				}
-			}
-			if (gain > bestGain || gain == bestGain && worlds < bestWorlds)
-			{
-				bestGain = gain;
-				bestWorlds = worlds;
-			}
-		}
-		return new ShopTrip(shop, bestWorlds, (bestWorlds - 1) * hopCost, bestGain);
+		return new ShopTrip(shop, worlds, gain);
 	}
 
 	private static List<SaleSuggestion> evaluate(Map<Integer, ItemValues> values, Map<Integer, Integer> spare, boolean canUseGe,
 		int natureRuneCost, int minAlchGain, long minGeSale, ShopCatalog shops, ShopPerks perks, SellRules rules,
-		Map<Integer, Set<String>> skip, Map<String, Integer> planned)
+		Map<Integer, Set<String>> skip)
 	{
 		List<SaleSuggestion> out = new ArrayList<>();
 		for (Map.Entry<Integer, ItemValues> e : values.entrySet())
@@ -178,7 +150,7 @@ public final class SaleAdvisor
 			long ge = geUnit * qty;
 			long alch = alchUnit * qty;
 			ShopOffer offer = shops == null ? null : shops.bestOffer(v.getName(), v.getStorePrice(), qty, true, perks, altUnit, rules,
-				skip.getOrDefault(e.getKey(), Collections.emptySet()), planned);
+				skip.getOrDefault(e.getKey(), Collections.emptySet()));
 
 			// Often a shop only wins by the cost of a nature rune per item, which is why it's worth it
 			if (offer != null && offer.getQuantity() > 0)

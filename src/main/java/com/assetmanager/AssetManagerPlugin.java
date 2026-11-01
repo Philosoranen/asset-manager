@@ -4,8 +4,8 @@ import com.assetmanager.bank.BankViews;
 import com.assetmanager.coffer.CofferCandidate;
 import com.assetmanager.coffer.CofferPlan;
 import com.assetmanager.coffer.CofferPlanner;
-import com.assetmanager.coffer.GeCofferOverlay;
 import com.assetmanager.coffer.CofferTracker;
+import com.assetmanager.coffer.GeCofferOverlay;
 import com.assetmanager.death.DeathCostCalculator;
 import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.death.DeathLocations;
@@ -23,8 +23,10 @@ import com.assetmanager.keep.KeepRules;
 import com.assetmanager.keep.Variants;
 import com.assetmanager.shop.PerkGuard;
 import com.assetmanager.shop.SellRules;
-import com.assetmanager.shop.ShopMapMarkers;
+import com.assetmanager.shop.Shop;
 import com.assetmanager.shop.ShopCatalog;
+import com.assetmanager.shop.ShopFinder;
+import com.assetmanager.shop.ShopMapMarkers;
 import com.assetmanager.shop.ShopPerks;
 import com.assetmanager.shop.ShopSellOverlay;
 import com.assetmanager.shop.ShopStock;
@@ -49,6 +51,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -167,6 +170,8 @@ public class AssetManagerPlugin extends Plugin
 	@Inject
 	private ShopSellOverlay shopSellOverlay;
 	@Inject
+	private ShopFinder shopFinder;
+	@Inject
 	private ChatboxPanelManager chatboxPanelManager;
 	@Inject
 	private PriceTooltip priceTooltip;
@@ -205,6 +210,8 @@ public class AssetManagerPlugin extends Plugin
 	/** Plans spare items off the client thread, one recalculation at a time. */
 	private ExecutorService planner;
 	private final AtomicInteger calcVersion = new AtomicInteger();
+	/** The shops last suggested, kept over others paying the same. */
+	private Set<String> suggestedShops = Collections.emptySet();
 	private boolean lastSkulled;
 	private boolean lastProtectItem;
 	private int ticksSincePriceRefresh;
@@ -231,7 +238,8 @@ public class AssetManagerPlugin extends Plugin
 		panel = new AssetManagerPanel(
 			value -> clientThread.invokeLater(() -> cofferTracker.setBalance(value, "manual entry")),
 			(itemId, keep) -> clientThread.invokeLater(() -> setKeep(itemId, keep)),
-			destination -> clientThread.invokeLater(() -> showInBank(destination)));
+			destination -> clientThread.invokeLater(() -> showInBank(destination)),
+			destination -> clientThread.invokeLater(() -> findShop(destination)));
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
 			.tooltip("Asset Manager")
@@ -264,6 +272,12 @@ public class AssetManagerPlugin extends Plugin
 		eventBus.register(shopStockTracker);
 		shopSellOverlay.setOpenShop(shopFlipper::getOpenShop);
 		overlayManager.add(shopSellOverlay);
+		shopFinder.setOnArrived(shop ->
+		{
+			chat("Asset Manager: you're at " + shop + ".");
+			findingChanged(null);
+		});
+		eventBus.register(shopFinder);
 		overlayManager.add(shopFlipOverlay);
 		overlayManager.add(shopRatesOverlay);
 		livePrices.setOnUpdate(() -> clientThread.invokeLater(() ->
@@ -293,6 +307,8 @@ public class AssetManagerPlugin extends Plugin
 		eventBus.unregister(shopFlipper);
 		eventBus.unregister(shopStockTracker);
 		overlayManager.remove(shopSellOverlay);
+		eventBus.unregister(shopFinder);
+		clientThread.invoke(shopFinder::clear);
 		overlayManager.remove(shopFlipOverlay);
 		overlayManager.remove(shopRatesOverlay);
 		livePrices.stop();
@@ -554,6 +570,44 @@ public class AssetManagerPlugin extends Plugin
 		}
 	}
 
+	/** Points the way to a shop from the panel, or stops if it's already the one being found. Client thread. */
+	private void findShop(Destination d)
+	{
+		if (d.getName().equals(shopFinder.getShop()))
+		{
+			shopFinder.clear();
+			findingChanged(null);
+			return;
+		}
+		// For a group of shops paying the same, the one nearest the player now
+		WorldPoint here = playerLocation();
+		Shop shop = Optional.ofNullable(shopCatalog.nearestInGroup(d.getName(), here)).orElse(d.getShop());
+		WorldPoint at = shop.nearestPoint(here);
+		if (at == null)
+		{
+			chat("Asset Manager: the OSRS Wiki doesn't say where " + shop.getName() + " is.");
+			return;
+		}
+		shopFinder.find(d.getName(), at);
+		findingChanged(d.getName());
+		String where = shop.getLocation() == null || shop.getLocation().isEmpty() ? "" : " in " + shop.getLocation();
+		chat("Asset Manager: " + (shop.getName().equals(d.getName()) ? d.getName() + " is" + where
+			: "the nearest " + d.getName().toLowerCase() + " is " + shop.getName() + where)
+			+ ". Open your world map to see it; the hint arrow points the way.");
+	}
+
+	private void findingChanged(String shop)
+	{
+		shopMapMarkers.setFocused(shop);
+		SwingUtilities.invokeLater(() ->
+		{
+			if (panel != null)
+			{
+				panel.setFindingShop(shop);
+			}
+		});
+	}
+
 	private void setKeep(int itemId, int keep)
 	{
 		keepRules.set(itemId, keep);
@@ -607,7 +661,13 @@ public class AssetManagerPlugin extends Plugin
 		boolean charos = resolveCharos();
 		WorldPoint location = playerLocation();
 		lastCalcLocation = location;
-		ShopPerks perks = new ShopPerks(glovesTier, charos, config.avoidWilderness(), location);
+		// Keep suggesting the same shops as the player walks to them, rather than the closest of equally good ones
+		Set<String> preferred = new HashSet<>(suggestedShops);
+		if (shopFinder.getShop() != null)
+		{
+			preferred.add(shopFinder.getShop());
+		}
+		ShopPerks perks = new ShopPerks(glovesTier, charos, config.avoidWilderness(), location, preferred);
 		shopFlipper.setGlovesTier(glovesTier);
 		perkGuard.setGlovesTier(glovesTier);
 		perkGuard.setCharos(charos);
@@ -626,8 +686,7 @@ public class AssetManagerPlugin extends Plugin
 		{
 			configManager.setRSProfileConfiguration(AssetManagerConfig.GROUP, KEY_KEEP, keepRules.encode());
 		}
-		SellRules sellRules = new SellRules(config.minShopGain(), (long) config.hopWorthNatureRunes() * itemValuator.getNatureRuneCost(),
-			config.shopMaxWorlds(), config.minGainPerTrip());
+		SellRules sellRules = new SellRules(config.minShopGain(), config.shopMaxWorlds(), config.minGainPerTrip());
 		List<ShopStock.Busy> busy = shopStockTracker.get().busy(System.currentTimeMillis());
 		Inputs in = new Inputs(mode, perks, holdings, sellRules, location, balance, target, peakFee, skulled, protectItem, estimate);
 		// A newer recalculation makes this one's results stale
@@ -742,6 +801,10 @@ public class AssetManagerPlugin extends Plugin
 		}
 
 		suggestionOverlay.setSuggestions(destinations.getSuggestions());
+		if (bankItems != null)
+		{
+			suggestedShops = destinations.getShops().stream().map(Destination::getName).collect(Collectors.toSet());
+		}
 		lastCalcLocation = in.location;
 		suggestionOverlay.setKeepRules(keepRules);
 		suggestionOverlay.setHoldings(holdings);
@@ -785,8 +848,8 @@ public class AssetManagerPlugin extends Plugin
 		Map<String, Long> out = new HashMap<>();
 		for (Destination d : destinations.getShops())
 		{
-			stock.overstocked(d.getName(), now).stream().mapToLong(ShopStock.Seen::getNormalAt).max()
-				.ifPresent(t -> out.put(d.getName(), t));
+			String shop = d.getShop().getName();
+			stock.overstocked(shop, now).stream().mapToLong(ShopStock.Seen::getNormalAt).max().ifPresent(t -> out.put(shop, t));
 		}
 		return out;
 	}

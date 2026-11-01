@@ -64,10 +64,10 @@ public class VariantsTest
 		Map<Integer, Integer> inv = new HashMap<>();
 		inv.put(PRAYER_3, 1);
 		Holdings h = new Holdings().with(Holdings.Place.INVENTORY, inv).with(Holdings.Place.BANK, bank);
-		// Kept: both (4)s, then the (3) carried; the banked (3) and the (1)s are spare
+		// Kept: both (4)s, then the banked (3); the carried (3) and the (1)s are spare
 		assertEquals(0, h.spare(Holdings.Place.BANK, PRAYER_4, rules));
-		assertEquals(0, h.spare(Holdings.Place.INVENTORY, PRAYER_3, rules));
-		assertEquals(1, h.spare(Holdings.Place.BANK, PRAYER_3, rules));
+		assertEquals(1, h.spare(Holdings.Place.INVENTORY, PRAYER_3, rules));
+		assertEquals(0, h.spare(Holdings.Place.BANK, PRAYER_3, rules));
 		assertEquals(4, h.spare(Holdings.Place.BANK, PRAYER_1, rules));
 		assertEquals(8, h.total(PRAYER_1, rules));
 		assertEquals(5, rules.canPart(PRAYER_1, 8));

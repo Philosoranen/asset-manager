@@ -49,6 +49,13 @@ public class Shop
 
 	private String name;
 	private String location;
+	/** What kind of shop it is, from the wiki ("General store", "Farming shop"); null if unknown. */
+	private String type;
+	/**
+	 * The shops paying exactly the same as this one share a group, named for the kind of shop ("General store"): any
+	 * of them will do. Set by ShopCatalog; not part of the data file.
+	 */
+	private transient String group;
 	private boolean members;
 	/** In the Wilderness, where the player can be attacked by other players. */
 	private boolean wilderness;
@@ -114,6 +121,12 @@ public class Shop
 			}
 		}
 		return best;
+	}
+
+	/** The group this shop belongs to: its kind ("General store") if others pay the same, otherwise its own name. */
+	public String getGroup()
+	{
+		return group != null ? group : name;
 	}
 
 	private static int surfaceY(int y)

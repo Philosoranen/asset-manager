@@ -9,11 +9,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.ToLongFunction;
+import java.util.TreeMap;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -24,8 +26,7 @@ import net.runelite.api.coords.WorldPoint;
  * <p>
  * A shop pays {@code value * rate}, where the rate drops by {@code delta} for each item it holds above its
  * normal stock, down to a minimum of 10%. Prices assume the shop is at its normal stock and that the player
- * hops to a fresh world (where the price is back to normal) once selling another would no longer be worth it,
- * with each hop costing what the player says a hop is worth.
+ * hops to a fresh world (where the price is back to normal) once selling another would no longer be worth it.
  */
 @Slf4j
 public class ShopCatalog
@@ -34,8 +35,8 @@ public class ShopCatalog
 	static final int MIN_RATE = 100;
 	/** maxWorlds for a player happy to hop as many worlds as it takes, over as many sessions as it takes. */
 	public static final int NO_WORLD_LIMIT = 0;
-	/** Shops gaining within this much of the best, over the GE or alching, count as paying the same. */
-	static final int SAME_PRICE_PERCENT = 1;
+	/** Standing this close to a shop counts as being at it. */
+	static final int AT_SHOP_TILES = 20;
 
 	@Getter
 	private final String generated;
@@ -64,6 +65,122 @@ public class ShopCatalog
 				listing.computeIfAbsent(item, k -> new ArrayList<>()).add(shop);
 			}
 		}
+		groupShops(shops);
+	}
+
+	/**
+	 * Groups the shops that pay exactly the same: the same kind of shop with the same rates, buying the same items on
+	 * the same terms (general stores buy anything, so only items with terms of their own count). Each group is named
+	 * for its kind of shop, like "General store"; a shop like no other keeps its own name.
+	 */
+	private void groupShops(List<Shop> shops)
+	{
+		Map<String, List<Shop>> bySignature = new LinkedHashMap<>();
+		for (Shop shop : shops)
+		{
+			if (shop.getBuyMultiplier() > 0 && shop.getType() != null)
+			{
+				bySignature.computeIfAbsent(signature(shop), k -> new ArrayList<>()).add(shop);
+			}
+		}
+		// Kinds of shop with more than one group (general stores at 40% and at 55%, say), largest first
+		Map<String, List<List<Shop>>> byType = new HashMap<>();
+		for (List<Shop> group : bySignature.values())
+		{
+			if (group.size() > 1)
+			{
+				byType.computeIfAbsent(group.get(0).getType(), k -> new ArrayList<>()).add(group);
+			}
+		}
+		Set<String> taken = new HashSet<>();
+		for (List<List<Shop>> groups : byType.values())
+		{
+			groups.sort(Comparator.comparingInt((List<Shop> g) -> g.size()).reversed());
+			Shop main = groups.get(0).get(0);
+			for (int i = 0; i < groups.size(); i++)
+			{
+				List<Shop> group = groups.get(i);
+				Shop first = group.get(0);
+				String label = first.getType();
+				if (i > 0)
+				{
+					// Tell it apart from the main group by its rates, or else (or if another group has those rates too)
+					// by where its shops are
+					String byRates = label + " (" + percent(first.getBuyMultiplier()) + ", " + percent(first.getDelta()) + " less each)";
+					boolean sameRates = first.getBuyMultiplier() == main.getBuyMultiplier() && first.getDelta() == main.getDelta();
+					label = sameRates || taken.contains(byRates) ? label + " (" + places(group) + ")" : byRates;
+				}
+				String unique = label;
+				for (int n = 2; !taken.add(unique); n++)
+				{
+					unique = label + " " + n;
+				}
+				for (Shop shop : group)
+				{
+					shop.setGroup(unique);
+				}
+			}
+		}
+	}
+
+	private static String signature(Shop shop)
+	{
+		StringBuilder sb = new StringBuilder()
+			.append(shop.getType()).append('|').append(shop.getBuyMultiplier()).append('|').append(shop.getDelta())
+			.append('|').append(shop.getGlovesTier()).append('|').append(shop.getGlovesBuyMultiplier())
+			.append('|').append(shop.isWilderness()).append('|').append(shop.isGeneral());
+		new TreeMap<>(shop.getItems()).forEach((name, item) ->
+		{
+			String terms = item.getM() + "," + item.getD() + "," + item.isNb() + "," + item.getP() + "," + item.getG()
+				+ "," + item.getCm() + "," + item.getCp();
+			// General stores buy anything, so only items with terms of their own tell them apart
+			if (!shop.isGeneral() || !"null,null,false,null,null,null,null".equals(terms))
+			{
+				sb.append('|').append(name).append('=').append(terms);
+			}
+		});
+		return sb.toString();
+	}
+
+	/** "Kastori, Hosidius" or "Kastori, Hosidius, ..." */
+	private static String places(List<Shop> group)
+	{
+		List<String> names = new ArrayList<>();
+		for (Shop s : group)
+		{
+			String place = s.getLocation() == null || s.getLocation().isEmpty() ? s.getName() : s.getLocation();
+			if (!names.contains(place))
+			{
+				names.add(place);
+			}
+		}
+		return names.size() <= 2 ? String.join(", ", names) : names.get(0) + ", " + names.get(1) + ", ...";
+	}
+
+	/** 400 tenths of a percent -> "40%", 3 -> "0.3%". */
+	private static String percent(int tenths)
+	{
+		return tenths % 10 == 0 ? tenths / 10 + "%" : tenths / 10 + "." + Math.abs(tenths % 10) + "%";
+	}
+
+	/** The shops in a group (or just the one shop, by its name), in the catalog's order. */
+	public List<Shop> groupMembers(String group)
+	{
+		List<Shop> out = new ArrayList<>();
+		for (Shop shop : shops)
+		{
+			if (shop.getGroup().equals(group))
+			{
+				out.add(shop);
+			}
+		}
+		return out;
+	}
+
+	/** The shop in a group closest to {@code from}, or null if there's none. */
+	public Shop nearestInGroup(String group, WorldPoint from)
+	{
+		return groupMembers(group).stream().min(Comparator.comparingInt(s -> s.distanceTo(from))).orElse(null);
 	}
 
 	/** The shops that might buy an item, in the catalog's order: those listing it, and general stores. */
@@ -130,17 +247,14 @@ public class ShopCatalog
 	 * On each world the player sells while each sale pays at least {@code alternativeUnit + minGainPerItem}, then
 	 * hops to a fresh world where the price is back to normal. A stack goes to a shop whole or not at all: the offer's
 	 * quantity is 0 if even the first sale doesn't beat the alternative, or it needs more than {@code maxWorlds}
-	 * worlds. Shops are compared by what they gain over the alternative after the hops this stack adds to the trip;
-	 * whether a trip's hops are worth it is decided for the whole trip, since every stack on it shares them (see
-	 * SaleAdvisor).
+	 * worlds. Shops are compared by what they gain over the alternative. Hopping is quick, and every stack on a trip
+	 * sells on each world at once, so hops aren't counted against a shop.
 	 *
 	 * @param alternativeUnit coins for one from the next best way to cash out (GE or alching), or 0 for none
 	 * @param skipShops       names of shops not to consider
-	 * @param plannedWorlds   worlds each shop's trip already hops, so a stack is only charged for the hops it adds;
-	 *                        null to treat hops as free
 	 */
 	public ShopOffer bestOffer(String name, int storeValue, int quantity, boolean tradeable, ShopPerks perks,
-		long alternativeUnit, SellRules rules, Set<String> skipShops, Map<String, Integer> plannedWorlds)
+		long alternativeUnit, SellRules rules, Set<String> skipShops)
 	{
 		if (storeValue <= 0 || quantity <= 0)
 		{
@@ -153,7 +267,8 @@ public class ShopCatalog
 		Map<Long, ShopOffer> byRate = new HashMap<>();
 		for (Shop shop : candidates(key))
 		{
-			if (perks.isAvoidWilderness() && shop.isWilderness() || skipShops.contains(shop.getName()))
+			if (perks.isAvoidWilderness() && shop.isWilderness() || skipShops.contains(shop.getName())
+				|| skipShops.contains(shop.getGroup()))
 			{
 				continue;
 			}
@@ -181,39 +296,32 @@ public class ShopCatalog
 			}
 			offers.add(offer);
 		}
-		ToLongFunction<ShopOffer> hops = o -> plannedWorlds == null ? 0
-			: Math.max(0, o.getWorlds() - Math.max(1, plannedWorlds.getOrDefault(o.getShop().getName(), 1))) * rules.getHopCost();
-		return pick(offers, hops, alternativeUnit * quantity, perks.getLocation());
+		return pick(offers, alternativeUnit * quantity, perks.getLocation(), perks.getPreferredShops());
 	}
 
-	/** As above, for a stack on its own: no other stacks share its hops. */
-	public ShopOffer bestOffer(String name, int storeValue, int quantity, boolean tradeable, ShopPerks perks,
-		long alternativeUnit, SellRules rules, Set<String> skipShops)
-	{
-		return bestOffer(name, storeValue, quantity, tradeable, perks, alternativeUnit, rules, skipShops, Collections.emptyMap());
-	}
-
-	/** As above, with hops free and no shops skipped. */
+	/** As above, with no shops skipped. */
 	public ShopOffer bestOffer(String name, int storeValue, int quantity, boolean tradeable, ShopPerks perks,
 		long alternativeUnit, int minGainPerItem, int maxWorlds)
 	{
-		return bestOffer(name, storeValue, quantity, tradeable, perks, alternativeUnit, new SellRules(minGainPerItem, 0, maxWorlds, 0),
+		return bestOffer(name, storeValue, quantity, tradeable, perks, alternativeUnit, new SellRules(minGainPerItem, maxWorlds, 0),
 			Collections.emptySet());
 	}
 
 	/**
-	 * The best offer. Shops gaining within SAME_PRICE_PERCENT of the best count as paying the same, and the closest of
-	 * those wins: many shops share the same rates, like the farming shops. Gains are compared rather than what the
-	 * shops pay, as a shop often wins by only a nature rune on an item worth thousands.
+	 * The best offer. Shops gaining exactly as much count as paying the same; shops that always pay the same are grouped
+	 * (see groupShops), but others can tie for an item too. Gains are compared rather than what the shops pay. Of
+	 * those paying the same, the one the player is standing at wins; then one already suggested, so the suggestion
+	 * doesn't change on the way there; then the closest. A shop paying even a little less never wins by being closer.
 	 */
-	static ShopOffer pick(List<ShopOffer> offers, ToLongFunction<ShopOffer> hops, long alternativeTotal, WorldPoint from)
+	static ShopOffer pick(List<ShopOffer> offers, long alternativeTotal, WorldPoint from,
+		Set<String> preferred)
 	{
-		long top = offers.stream().mapToLong(o -> score(o, hops, alternativeTotal)).max().orElse(Long.MIN_VALUE);
+		long top = offers.stream().mapToLong(o -> score(o, alternativeTotal)).max().orElse(Long.MIN_VALUE);
 		List<ShopOffer> same = new ArrayList<>();
 		for (ShopOffer o : offers)
 		{
-			long s = score(o, hops, alternativeTotal);
-			if (s == top || s > 0 && (top - s) * 100 <= top * SAME_PRICE_PERCENT)
+			long s = score(o, alternativeTotal);
+			if (s == top)
 			{
 				same.add(o);
 			}
@@ -222,17 +330,22 @@ public class ShopCatalog
 		{
 			return null;
 		}
-		ShopOffer closest = same.stream().min(Comparator.comparingInt((ShopOffer o) -> o.getShop().distanceTo(from))).get();
+		Comparator<ShopOffer> byDistance = Comparator.comparingInt(o -> o.getShop().distanceTo(from));
+		ShopOffer closest = same.stream().min(byDistance).get();
+		if (closest.getShop().distanceTo(from) > AT_SHOP_TILES)
+		{
+			closest = same.stream().filter(o -> preferred.contains(o.getShop().getGroup())).min(byDistance).orElse(closest);
+		}
 		return closest.withEqualShops(same.size() - 1);
 	}
 
 	/**
-	 * How good an offer is: offers worth using by what they gain over the alternative after the hops they add; the
-	 * rest below them all, by their first price, for display.
+	 * How good an offer is: offers worth using by what they gain over the alternative; the rest below them all, by
+	 * their first price, for display.
 	 */
-	static long score(ShopOffer o, ToLongFunction<ShopOffer> hops, long alternativeTotal)
+	static long score(ShopOffer o, long alternativeTotal)
 	{
-		return o.getQuantity() == 0 ? -1 - Long.MAX_VALUE / 2 + o.getFirstUnit() : o.getTotal() - hops.applyAsLong(o) - alternativeTotal;
+		return o.getQuantity() == 0 ? -1 - Long.MAX_VALUE / 2 + o.getFirstUnit() : o.getTotal() - alternativeTotal;
 	}
 
 	/** What a shop pays for an item, at its normal stock. */

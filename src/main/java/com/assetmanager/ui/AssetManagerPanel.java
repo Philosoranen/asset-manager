@@ -76,16 +76,22 @@ public class AssetManagerPanel extends PluginPanel
 	/** (item id, keep amount); 0 removes the rule. */
 	private final BiConsumer<Integer, Integer> onKeepChange;
 	private final Consumer<Destination> onShowInBank;
+	/** Find a shop: centre the map on it and point the hint arrow at it; again to stop. */
+	private final Consumer<Destination> onFind;
+	/** The shop being found, or null. */
+	private String findingShop;
 	private final Set<String> collapsed = new HashSet<>();
 	private PanelState lastState;
 	private int warnDeaths = 2;
 
-	public AssetManagerPanel(LongConsumer onManualBalance, BiConsumer<Integer, Integer> onKeepChange, Consumer<Destination> onShowInBank)
+	public AssetManagerPanel(LongConsumer onManualBalance, BiConsumer<Integer, Integer> onKeepChange, Consumer<Destination> onShowInBank,
+		Consumer<Destination> onFind)
 	{
 		super(false);
 		this.onManualBalance = onManualBalance;
 		this.onKeepChange = onKeepChange;
 		this.onShowInBank = onShowInBank;
+		this.onFind = onFind;
 		collapsed.add(SECTION_KEPT);
 
 		setLayout(new BorderLayout());
@@ -103,6 +109,13 @@ public class AssetManagerPanel extends PluginPanel
 		add(scroll, BorderLayout.CENTER);
 
 		update(null, warnDeaths);
+	}
+
+	/** Which shop is being found, to show on its row. */
+	public void setFindingShop(String shop)
+	{
+		findingShop = shop;
+		update(lastState, warnDeaths);
 	}
 
 	public void update(PanelState state, int warnDeaths)
@@ -314,7 +327,23 @@ public class AssetManagerPanel extends PluginPanel
 			value.setFont(FontManager.getRunescapeSmallFont());
 			value.setForeground(Color.WHITE);
 			value.setVerticalAlignment(JLabel.TOP);
-			top.add(value, BorderLayout.EAST);
+			value.setAlignmentX(Component.RIGHT_ALIGNMENT);
+			JPanel east = new JPanel();
+			east.setLayout(new BoxLayout(east, BoxLayout.Y_AXIS));
+			east.setOpaque(false);
+			east.add(value);
+			if (d.getKind() == Destination.Kind.SHOP && d.getShop() != null)
+			{
+				boolean finding = d.getName().equals(findingShop);
+				JButton find = smallButton(finding ? "Stop" : "Find",
+					finding ? "Stop pointing the way to this shop"
+						: "Centre the world map on this shop and point the hint arrow at it");
+				find.setAlignmentX(Component.RIGHT_ALIGNMENT);
+				find.addActionListener(e -> onFind.accept(d));
+				east.add(Box.createVerticalStrut(2));
+				east.add(find);
+			}
+			top.add(east, BorderLayout.EAST);
 		}
 		row.add(top, BorderLayout.CENTER);
 		row.add(wrapped(empty ? emptyText(d) : detail(d, state), DETAIL_WIDTH, MUTED), BorderLayout.SOUTH);
@@ -351,7 +380,12 @@ public class AssetManagerPanel extends PluginPanel
 	private static String detail(Destination d, PanelState state)
 	{
 		List<String> parts = new ArrayList<>();
-		if (d.getKind() == Destination.Kind.SHOP && !d.getShop().getLocation().isEmpty())
+		boolean group = d.getKind() == Destination.Kind.SHOP && !d.getName().equals(d.getShop().getName());
+		if (group)
+		{
+			parts.add("nearest: " + d.getShop().getName());
+		}
+		else if (d.getKind() == Destination.Kind.SHOP && d.getShop().getLocation() != null && !d.getShop().getLocation().isEmpty())
 		{
 			parts.add(d.getShop().getLocation());
 		}
@@ -389,9 +423,9 @@ public class AssetManagerPanel extends PluginPanel
 				}
 				if (d.getEqualShops() > 0)
 				{
-					parts.add("closest of " + (d.getEqualShops() + 1) + " paying the same");
+					parts.add((group ? "any of " : "closest of ") + (d.getEqualShops() + 1) + " paying the same");
 				}
-				Long restocked = state.getRestockedBy().get(d.getName());
+				Long restocked = state.getRestockedBy().get(d.getShop().getName());
 				if (restocked != null)
 				{
 					parts.add("worlds you saw overstocked are back to normal by " + ShopTimes.clock(restocked));
