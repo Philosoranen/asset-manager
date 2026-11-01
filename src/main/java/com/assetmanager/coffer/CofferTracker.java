@@ -137,14 +137,31 @@ public class CofferTracker
 		}
 		// Logged so the exact wording can be confirmed and the parsing tightened up.
 		log.debug("Coffer chat message ({}): {}", event.getType(), message);
-		if (BALANCE_WORDS.matcher(message).find())
+		Long value = chatBalance(message);
+		if (value != null)
 		{
-			Long value = firstNumber(message);
-			if (value != null)
+			setBalance(value, "chat");
+		}
+	}
+
+	/**
+	 * Reads the balance from the sentence that states it. Messages can mention other amounts first, e.g.
+	 * "Death charges you 500,000 x Coins. You have 8,784,598 x Coins left in Death's Coffer."
+	 */
+	static Long chatBalance(String message)
+	{
+		for (String sentence : message.split("(?<=[.!?])\\s+"))
+		{
+			if (BALANCE_WORDS.matcher(sentence).find())
 			{
-				setBalance(value, "chat");
+				Long value = firstNumber(sentence);
+				if (value != null)
+				{
+					return value;
+				}
 			}
 		}
+		return null;
 	}
 
 	/** Reads the balance from the Death's coffer window if it's open. Call once per tick. */

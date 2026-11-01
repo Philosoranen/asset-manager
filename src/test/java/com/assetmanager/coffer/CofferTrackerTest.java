@@ -32,4 +32,11 @@ public class CofferTrackerTest
 	{
 		assertNull(CofferTracker.findBalance(Arrays.asList(TITLE, INFO, "Items must be worth at least 10,000 coins")));
 	}
+
+	@Test
+	public void chatReadsBalanceNotCharge()
+	{
+		assertEquals(Long.valueOf(8_784_598), CofferTracker.chatBalance(
+			"Death charges you 500,000 x Coins. You have 8,784,598 x Coins left in Death's Coffer."));
+	}
 }
