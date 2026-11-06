@@ -13,6 +13,7 @@ import com.assetmanager.death.DeathScenario;
 import com.assetmanager.death.RiskItem;
 import com.assetmanager.dest.Destination;
 import com.assetmanager.dest.Destinations;
+import com.assetmanager.flip.BestBuys;
 import com.assetmanager.flip.ShopFlipOverlay;
 import com.assetmanager.flip.ShopFlipper;
 import com.assetmanager.flip.ShopRatesOverlay;
@@ -31,6 +32,8 @@ import com.assetmanager.shop.ShopPerks;
 import com.assetmanager.shop.ShopSellOverlay;
 import com.assetmanager.shop.ShopStock;
 import com.assetmanager.shop.ShopStockTracker;
+import com.assetmanager.shop.UnlockReader;
+import com.assetmanager.shop.Unlocks;
 import com.assetmanager.ui.AssetManagerPanel;
 import com.assetmanager.ui.CofferInfoBox;
 import com.assetmanager.ui.PanelState;
@@ -81,6 +84,7 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOpened;
+import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
@@ -126,6 +130,8 @@ public class AssetManagerPlugin extends Plugin
 	private static final Duration PEAK_FEE_TTL = Duration.ofDays(14);
 	/** Refresh prices every 30 minutes (in game ticks). */
 	private static final int PRICE_REFRESH_TICKS = 3000;
+	/** Deals listed in each of the panel's best-buys lists. */
+	private static final int BEST_BUYS_SHOWN = 5;
 	/** Tiles moved before shop distances are worked out again. */
 	private static final int RECALC_DISTANCE = 64;
 
@@ -171,6 +177,8 @@ public class AssetManagerPlugin extends Plugin
 	private ShopSellOverlay shopSellOverlay;
 	@Inject
 	private ShopFinder shopFinder;
+	@Inject
+	private UnlockReader unlockReader;
 	@Inject
 	private ChatboxPanelManager chatboxPanelManager;
 	@Inject
@@ -218,6 +226,15 @@ public class AssetManagerPlugin extends Plugin
 	private WorldPoint lastCalcLocation;
 	/** Where death costs were last worked out for. */
 	private DeathScenario lastScenario;
+	/** What the player has unlocked, for shop requirements; read again when levels, quests or the account change. */
+	private Unlocks unlocks = Unlocks.EVERYTHING;
+	private boolean unlocksStale = true;
+	/** The best shop buys need working out again: prices, unlocks or settings changed. */
+	private boolean bestBuysStale = true;
+	private List<BestBuys.Deal> cofferBuys = Collections.emptyList();
+	private List<BestBuys.Deal> geBuys = Collections.emptyList();
+	/** Coins the best buys were worked out for. */
+	private long bestBuysBudget = -1;
 
 	@Provides
 	AssetManagerConfig provideConfig(ConfigManager configManager)
@@ -239,7 +256,8 @@ public class AssetManagerPlugin extends Plugin
 			value -> clientThread.invokeLater(() -> cofferTracker.setBalance(value, "manual entry")),
 			(itemId, keep) -> clientThread.invokeLater(() -> setKeep(itemId, keep)),
 			destination -> clientThread.invokeLater(() -> showInBank(destination)),
-			destination -> clientThread.invokeLater(() -> findShop(destination)));
+			destination -> clientThread.invokeLater(() -> findShop(destination.getName(), destination.getShop())),
+			shop -> clientThread.invokeLater(() -> findShop(shop.getName(), shop)));
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
 			.tooltip("Asset Manager")
@@ -283,6 +301,7 @@ public class AssetManagerPlugin extends Plugin
 		livePrices.setOnUpdate(() -> clientThread.invokeLater(() ->
 		{
 			itemValuator.clearCache();
+			bestBuysStale = true;
 			dirty = true;
 		}));
 		if (config.livePrices())
@@ -342,7 +361,26 @@ public class AssetManagerPlugin extends Plugin
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
+		if (event.getGameState() == GameState.LOGIN_SCREEN || event.getGameState() == GameState.HOPPING)
+		{
+			// Another account may log in next
+			unlocks = Unlocks.EVERYTHING;
+			unlocksStale = true;
+			bestBuysStale = true;
+		}
 		dirty = true;
+	}
+
+	@Subscribe
+	public void onStatChanged(StatChanged event)
+	{
+		Integer known = unlocks.getSkills() == null ? null : unlocks.getSkills().get(event.getSkill().name());
+		if (known != null && known != event.getLevel())
+		{
+			unlocksStale = true;
+			bestBuysStale = true;
+			dirty = true;
+		}
 	}
 
 	@Subscribe
@@ -370,6 +408,7 @@ public class AssetManagerPlugin extends Plugin
 		}
 		infoBox.setWarnDeaths(config.warnDeaths());
 		updateInfoBox();
+		bestBuysStale = true;
 		dirty = true;
 	}
 
@@ -396,6 +435,13 @@ public class AssetManagerPlugin extends Plugin
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
 	{
+		if (event.getVarpId() == VarPlayerID.QP_TOTAL && unlocks.getSkills() != null && event.getValue() != unlocks.getQuestPoints())
+		{
+			// A quest was finished
+			unlocksStale = true;
+			bestBuysStale = true;
+			dirty = true;
+		}
 		switch (event.getVarpId())
 		{
 			case VarPlayerID.POTIONSTORE_BASE_VAR_1:
@@ -451,6 +497,9 @@ public class AssetManagerPlugin extends Plugin
 		{
 			ticksSincePriceRefresh = 0;
 			itemValuator.clearCache();
+			// Diaries and other progress aren't watched, so they're read again now and then too
+			unlocksStale = true;
+			bestBuysStale = true;
 			dirty = true;
 		}
 
@@ -571,9 +620,10 @@ public class AssetManagerPlugin extends Plugin
 	}
 
 	/** Points the way to a shop from the panel, or stops if it's already the one being found. Client thread. */
-	private void findShop(Destination d)
+	/** Points the way to a shop, or the nearest of a group of shops paying the same ({@code name}); again to stop. */
+	private void findShop(String name, Shop fallback)
 	{
-		if (d.getName().equals(shopFinder.getShop()))
+		if (name.equals(shopFinder.getShop()))
 		{
 			shopFinder.clear();
 			findingChanged(null);
@@ -581,18 +631,18 @@ public class AssetManagerPlugin extends Plugin
 		}
 		// For a group of shops paying the same, the one nearest the player now
 		WorldPoint here = playerLocation();
-		Shop shop = Optional.ofNullable(shopCatalog.nearestInGroup(d.getName(), here)).orElse(d.getShop());
+		Shop shop = Optional.ofNullable(shopCatalog.nearestInGroup(name, here)).orElse(fallback);
 		WorldPoint at = shop.nearestPoint(here);
 		if (at == null)
 		{
 			chat("Asset Manager: the OSRS Wiki doesn't say where " + shop.getName() + " is.");
 			return;
 		}
-		shopFinder.find(d.getName(), at);
-		findingChanged(d.getName());
+		shopFinder.find(name, at);
+		findingChanged(name);
 		String where = shop.getLocation() == null || shop.getLocation().isEmpty() ? "" : " in " + shop.getLocation();
-		chat("Asset Manager: " + (shop.getName().equals(d.getName()) ? d.getName() + " is" + where
-			: "the nearest " + d.getName().toLowerCase() + " is " + shop.getName() + where)
+		chat("Asset Manager: " + (shop.getName().equals(name) ? name + " is" + where
+			: "the nearest " + name.toLowerCase() + " is " + shop.getName() + where)
 			+ ". Open your world map to see it; the hint arrow points the way.");
 	}
 
@@ -668,6 +718,14 @@ public class AssetManagerPlugin extends Plugin
 			preferred.add(shopFinder.getShop());
 		}
 		ShopPerks perks = new ShopPerks(glovesTier, charos, config.avoidWilderness(), location, preferred);
+		// Deals have to be affordable: coins in the bank and inventory, or no limit until the bank has been seen
+		long budget = bankItems == null ? Long.MAX_VALUE : bankCoins + inventoryCoins();
+		if (bestBuysStale || budget != bestBuysBudget)
+		{
+			bestBuysStale = false;
+			bestBuysBudget = budget;
+			updateBestBuys(mode, perks, budget);
+		}
 		shopFlipper.setGlovesTier(glovesTier);
 		perkGuard.setGlovesTier(glovesTier);
 		perkGuard.setCharos(charos);
@@ -822,7 +880,105 @@ public class AssetManagerPlugin extends Plugin
 		publish(new PanelState(mode, in.balance, cofferTracker.isKnown(), cofferTracker.getSource(), cofferTracker.getUpdatedAt(),
 			in.skulled, in.protectItem, in.estimate, plan, in.target, in.peakFee, config.minCofferTarget(), kept, perks,
 			bankCoins, config.targetDeaths(), bankItems == null ? null : destinations, restockedBy(shopStock, destinations, now),
-			shopStock.busy(now)));
+			shopStock.busy(now), cofferBuys, geBuys, bankItems != null));
+	}
+
+	private long inventoryCoins()
+	{
+		ItemContainer inv = client.getItemContainer(InventoryID.INV);
+		return inv == null ? 0 : inv.count(ItemID.COINS);
+	}
+
+	/**
+	 * Works out the best things to buy from shops for the coffer and the GE, off the client thread. Prices are gathered
+	 * here first; the player's unlocks are read only when they may have changed, as that runs a script per quest.
+	 */
+	private void updateBestBuys(AccountMode mode, ShopPerks perks, long coins)
+	{
+		if (!config.bestBuys())
+		{
+			cofferBuys = Collections.emptyList();
+			geBuys = Collections.emptyList();
+			return;
+		}
+		if (unlocksStale)
+		{
+			unlocksStale = false;
+			unlocks = unlockReader.read();
+		}
+		Map<Integer, ItemValues> values = new HashMap<>();
+		Map<Integer, Long> volumes = new HashMap<>();
+		Set<Integer> stackable = new HashSet<>();
+		for (Shop shop : shopCatalog.getShops())
+		{
+			for (Shop.Item item : shop.getItems().values())
+			{
+				Integer id = item.getId();
+				if (id == null || item.isNs() || values.containsKey(id))
+				{
+					continue;
+				}
+				values.put(id, itemValuator.get(id));
+				LivePrices.Volume hour = livePrices.volume(id);
+				volumes.put(id, hour == null ? Long.MAX_VALUE : (long) hour.getHigh() + hour.getLow());
+				if (itemManager.getItemComposition(id).isStackable())
+				{
+					stackable.add(id);
+				}
+			}
+		}
+		BestBuys.Prices prices = new BestBuys.Prices()
+		{
+			@Override
+			public long coffer(int itemId)
+			{
+				return values.get(itemId).getCofferValue();
+			}
+
+			@Override
+			public long ge(int itemId)
+			{
+				return values.get(itemId).getGeNetSell();
+			}
+
+			@Override
+			public long geVolume(int itemId)
+			{
+				return volumes.get(itemId);
+			}
+
+			@Override
+			public int storeValue(int itemId)
+			{
+				return values.get(itemId).getStorePrice();
+			}
+
+			@Override
+			public boolean stackable(int itemId)
+			{
+				return stackable.contains(itemId);
+			}
+		};
+		Unlocks have = unlocks;
+		List<Shop> shops = shopCatalog.getShops();
+		long minGain = config.minFlipProfit();
+		boolean coffer = mode.canUseCoffer();
+		boolean ge = mode.canUseGrandExchange();
+		planner.execute(() ->
+		{
+			List<BestBuys.Deal> c = coffer
+				? BestBuys.find(BestBuys.Kind.COFFER, shops, prices, have, perks, coins, minGain, BEST_BUYS_SHOWN)
+				: Collections.emptyList();
+			List<BestBuys.Deal> g = ge
+				? BestBuys.find(BestBuys.Kind.GE, shops, prices, have, perks, coins, minGain, BEST_BUYS_SHOWN)
+				: Collections.emptyList();
+			clientThread.invokeLater(() ->
+			{
+				cofferBuys = c;
+				geBuys = g;
+				dirty = true;
+			});
+		});
 	}
 
 	/** What a recalculation worked out on the client thread, for applying its results. */

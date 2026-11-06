@@ -1,6 +1,7 @@
 package com.assetmanager.shop;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import lombok.Data;
 import net.runelite.api.coords.WorldPoint;
@@ -13,6 +14,27 @@ import net.runelite.api.coords.WorldPoint;
 @Data
 public class Shop
 {
+	/**
+	 * What a player needs to buy from a shop (or a particular item in it), from tools/shop_requirements.json.
+	 * Skills, quests and diaries use RuneLite's enum names ("HUNTER", "THE_SLUG_MENACE", "KARAMJA_EASY").
+	 */
+	@Data
+	public static class Requirements
+	{
+		/** Minimum real level in each skill. */
+		private Map<String, Integer> skills = Collections.emptyMap();
+		/** Quests that must be finished. */
+		private List<String> quests = Collections.emptyList();
+		/** Quests that must at least be started. */
+		private List<String> started = Collections.emptyList();
+		/** Achievement diaries that must be finished, as AREA_TIER. */
+		private List<String> diaries = Collections.emptyList();
+		private int combat;
+		private int questPoints;
+		/** Requirements the plugin can't check, in plain English. */
+		private List<String> other = Collections.emptyList();
+	}
+
 	@Data
 	public static class Item
 	{
@@ -36,6 +58,14 @@ public class Shop
 		private Integer cm;
 		/** Ticks for the stock to move one back towards normal, if known. */
 		private Integer r;
+		/** The item's id, for tradeable items. */
+		private Integer id;
+		/** What the shop charges at normal stock, when it's a set price rather than the usual % of value. */
+		private Integer sp;
+		/** A deal for several at once, as [how many, coins], when it's cheaper than one at a time (Wyson's 2 woad leaves for 20). */
+		private int[] b;
+		/** Requirements for this item on top of the shop's. */
+		private Requirements req;
 		/** The shop sells this but won't buy it. */
 		private boolean nb;
 		/** The shop buys this but doesn't sell it. */
@@ -72,6 +102,13 @@ public class Shop
 	private Integer glovesBuyMultiplier;
 	/** Map coordinates [x, y] of each branch of the shop; empty if unknown. */
 	private int[][] at = new int[0][];
+	/**
+	 * The NPC to talk to for the shop's items, when there's no Trade option (a pub's bartender); null for a normal shop.
+	 * Some of these sell only one per conversation.
+	 */
+	private String talk;
+	/** What a player needs to use the shop, or null if nothing. */
+	private Requirements req;
 	/** Stocked items, by lower-case name. */
 	private Map<String, Item> items = Collections.emptyMap();
 

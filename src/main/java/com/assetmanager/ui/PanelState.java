@@ -4,6 +4,7 @@ import com.assetmanager.AccountMode;
 import com.assetmanager.coffer.CofferPlan;
 import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.dest.Destinations;
+import com.assetmanager.flip.BestBuys;
 import com.assetmanager.shop.ShopPerks;
 import com.assetmanager.shop.ShopStock;
 import java.time.Instant;
@@ -53,6 +54,12 @@ public class PanelState
 	Map<String, Long> restockedBy;
 	/** Shop items others have overstocked on several worlds, which aren't suggested until they restock. */
 	List<ShopStock.Busy> busyShops;
+	/** The best things to buy from shops for Death's coffer, of the shops the player can use; empty if none or not worked out. */
+	List<BestBuys.Deal> cofferBuys;
+	/** The best things to buy from shops to resell on the GE; empty for ironmen. */
+	List<BestBuys.Deal> geBuys;
+	/** Whether the best buys count banked coins too: the bank has been seen. */
+	boolean coinsKnown;
 
 	/** Deaths the coffer covers at the selected scenario; -1 if unknown, Long.MAX_VALUE if free. */
 	public long getDeathsCovered()

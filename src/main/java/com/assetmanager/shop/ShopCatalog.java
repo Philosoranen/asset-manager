@@ -163,6 +163,12 @@ public class ShopCatalog
 		return tenths % 10 == 0 ? tenths / 10 + "%" : tenths / 10 + "." + Math.abs(tenths % 10) + "%";
 	}
 
+	/** Every shop, in the catalog's order. */
+	public List<Shop> getShops()
+	{
+		return Collections.unmodifiableList(shops);
+	}
+
 	/** The shops in a group (or just the one shop, by its name), in the catalog's order. */
 	public List<Shop> groupMembers(String group)
 	{

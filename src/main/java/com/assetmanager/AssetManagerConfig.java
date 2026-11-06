@@ -153,6 +153,19 @@ public interface AssetManagerConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "bestBuys",
+		name = "Show best shop buys",
+		description = "List the most profitable things to buy from shops for Death's coffer (and to resell on the GE, "
+			+ "for accounts that can use it), out of the shops whose skill, quest and diary requirements you meet",
+		section = flipSection,
+		position = 1
+	)
+	default boolean bestBuys()
+	{
+		return true;
+	}
+
 	@Range(min = 1, max = 100_000_000)
 	@ConfigItem(
 		keyName = "minFlipProfit",

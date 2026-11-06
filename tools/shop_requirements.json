@@ -1,0 +1,3438 @@
+{
+ "Aaron's Archery Appendages": {
+  "skills": {
+   "RANGED": 40
+  },
+  "items": {
+   "ranging cape": {
+    "skills": {
+     "RANGED": 99
+    }
+   },
+   "ranging cape(t)": {
+    "skills": {
+     "RANGED": 99
+    }
+   }
+  },
+  "evidence": "His shop is located in the Ranging Guild, so it can only be accessed by players with at least level 40 Ranged."
+ },
+ "Aemad's Adventuring Supplies": {
+  "evidence": "'Aemad's Adventuring Supplies is a general store in East Ardougne.'"
+ },
+ "Agelus' Farm Shop": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Farming shop at Ortus Farm west of Civitas illa Fortis; 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Agmundi Quality Clothes": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Shop is in the Keldagrim marketplace. Keldagrim page: 'Travelling to Keldagrim requires starting The Giant Dwarf quest.'"
+ },
+ "Ajjat": {
+  "skills": {
+   "ATTACK": 99
+  },
+  "note": "Sells only the Attack cape; 99 Attack also satisfies the Warriors' Guild entry (130 combined Att+Str or 99 in either).",
+  "evidence": "sells the Attack cape to those who have reached 99 Attack. He can be found on the lowest floor of the Warriors' Guild."
+ },
+ "Ak-Haranu's Exotic Shop": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "started": [
+   "GHOSTS_AHOY"
+  ],
+  "note": "Needs Ghosts Ahoy progressed past giving the Old Crone the milky tea (started is the closest field). Port Phasmatys entry otherwise costs 2 ecto-tokens.",
+  "evidence": "Ak-Haranu will only be there after giving the Old Crone a milky cup of tea during the Ghosts Ahoy quest."
+ },
+ "Al Kharid General Store": {
+  "evidence": "The Al Kharid General Store is a general store located in the desert town of Al Kharid."
+ },
+ "Alain": {
+  "evidence": "Alain sells basic farming tools via the Farming Supplies shop; gardener at the Taverley tree patch."
+ },
+ "Alan (Farming Guild)": {
+  "skills": {
+   "FARMING": 45
+  },
+  "evidence": "Alan is a gardener in the Farming Guild, near the allotment patches. Farming Guild: 'To enter the guild, a minimum Farming level of 45 is required' (boosts allowed)."
+ },
+ "Aldarin General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "General store in north-eastern Aldarin (Varlamore); Varlamore requires Children of the Sun."
+ },
+ "Aleck's Hunter Emporium": {
+  "evidence": "Aleck's Hunter Emporium is a hunter shop in Yanille run by Aleck."
+ },
+ "Alexandra": {
+  "skills": {
+   "FARMING": 85
+  },
+  "evidence": "Alexandra is a gardener found in the north wing of the Farming Guild; 'The advanced tier comprises the guild's north wing, requiring 85 Farming to enter.'",
+  "note": "Boosts may be used to enter the guild tiers."
+ },
+ "Ali the Carter": {
+  "evidence": "Ali the Carter ... operates in the dried-up town of Nardah ... sells waterskins."
+ },
+ "Ali the Kebab seller": {
+  "evidence": "Ali the Kebab seller is a man who runs his kebab business in the town centre of Pollnivneach."
+ },
+ "Ali the Snake Charmer": {
+  "evidence": "If a player puts a coin into the Money Pot next to him, he will graciously give the player a snake charm and snake basket."
+ },
+ "Ali's Discount Wares (Catalytic runes)": {
+  "other": [
+   "Runes section of the Rogue Trader miniquest"
+  ],
+  "evidence": "Runes: Requires completion of runes section of Rogue Trader."
+ },
+ "Ali's Discount Wares (Elemental runes)": {
+  "other": [
+   "Runes section of the Rogue Trader miniquest"
+  ],
+  "evidence": "Runes: Requires completion of runes section of Rogue Trader."
+ },
+ "Ali's Discount Wares (general)": {
+  "evidence": "Basic stock: 'This store does not require completing or starting Rogue Trader.'"
+ },
+ "Alice's Farming shop": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "evidence": "Farming shop at Alice's farm west of Port Phasmatys (Morytania); 'Players must complete the Priest in Peril quest to enter' Morytania."
+ },
+ "Allanna's Farming Shop": {
+  "skills": {
+   "FARMING": 45
+  },
+  "evidence": "farming shop run by Allanna, located in the Farming Guild; guild entry needs 45 Farming."
+ },
+ "Alwyn": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "skills": {
+   "CONSTRUCTION": 99
+  },
+  "note": "Sells only the Construction cape; other estate agents also sell it without Song of the Elves.",
+  "evidence": "He also will sell the Construction cape for 99,000 coins to anyone with a level 99 in Construction. Prifddinas: 'All methods of entering the city require completion of Song of the Elves'."
+ },
+ "Amelia's Seed Shop": {
+  "skills": {
+   "FARMING": 45
+  },
+  "evidence": "seed shop run by Amelia, located in the Farming Guild; guild entry needs 45 Farming."
+ },
+ "Amlodd's Magical Supplies": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "rune shop run by Efa on the north-west side of Prifddinas; entering Prifddinas requires Song of the Elves."
+ },
+ "Aneirin's Armour": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "armour shop run by Aneirin on the south side of Prifddinas; entering Prifddinas requires Song of the Elves."
+ },
+ "Arcuani's Archery Supplies": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Wiki's normal stock is bows and arrows; the bronze/iron/steel knives are Demonic Pacts League-only stock, so check the bundled shop data.",
+  "evidence": "shop in Tal Teklan selling ranged gear; Tal Teklan is in Varlamore (requires Children of the Sun)."
+ },
+ "Ardougne Fur Stall": {
+  "evidence": "Fur stall in the south-eastern part of the East Ardougne marketplace."
+ },
+ "Ardougne Gem Stall": {
+  "evidence": "gem shop in East Ardougne market run by the gem merchant."
+ },
+ "Ardougne Silver Stall": {
+  "evidence": "silver stall located in the East Ardougne Marketplace."
+ },
+ "Ardougne Spice Stall": {
+  "evidence": "spice stall in East Ardougne that sells knives, spices, and garlic."
+ },
+ "Argo": {
+  "skills": {
+   "SAILING": 51
+  },
+  "note": "Anglers' Retreat can also be reached by a rowboat from Corsair Cove, but that must first be built on the island itself.",
+  "evidence": "Anglers' Retreat: 'Level 51 Sailing (unboostable) is required to moor at the island'."
+ },
+ "Arhein's General Goods": {
+  "evidence": "general store in Catherby run by Arhein."
+ },
+ "Armour Shop": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "note": "Jatizso can also be docked at with 68 Sailing (unclear if that bypasses the Trials).",
+  "evidence": "The Armour Shop is a store found on the Fremennik island of Jatizso (same access as Weapons galore)."
+ },
+ "Armour Shop (Jatizso)": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "Jatizso: 'Players must complete The Fremennik Trials to access the island.'"
+ },
+ "Armoury": {
+  "quests": [
+   "BIOHAZARD"
+  ],
+  "evidence": "Combat Training Camp: 'a combat training facility which players may access upon completion of the Biohazard quest.'"
+ },
+ "Arnold's Eclectic Supplies": {
+  "quests": [
+   "SWAN_SONG"
+  ],
+  "evidence": "Arnold Lydspor: 'The store and the bank are only available after finishing Swan Song.'"
+ },
+ "Artima's Crafting Supplies": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "crafting shop owned by Artima in Civitas illa Fortis; Varlamore requires Children of the Sun."
+ },
+ "Atlazora's Rest": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "bar found in Outer Fortis (Varlamore); Varlamore requires Children of the Sun."
+ },
+ "Aub": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "gardener at the Nemus Retreat tree patch (Auburn Valley, Varlamore); sells Farming Supplies."
+ },
+ "Auburn Pub": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "pub located in Auburnvale (Varlamore); Varlamore requires Children of the Sun."
+ },
+ "Auburnvale General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "general store run by a shopkeeper in Auburnvale (Varlamore)."
+ },
+ "Aubury's Rune Shop": {
+  "items": {
+   "runecraft cape": {
+    "skills": {
+     "RUNECRAFT": 99
+    }
+   },
+   "runecraft cape(t)": {
+    "skills": {
+     "RUNECRAFT": 99
+    }
+   }
+  },
+  "evidence": "Aubury's Rune Shop is a shop located in south-eastern Varrock; stock includes Runecraft cape."
+ },
+ "Aurel": {
+  "quests": [
+   "IN_AID_OF_THE_MYREQUE"
+  ],
+  "evidence": "Aurel's Supplies 'requires completion of In Aid of the Myreque, as during the quest the shop is repaired and stocked.'"
+ },
+ "Aurel's Supplies": {
+  "quests": [
+   "IN_AID_OF_THE_MYREQUE"
+  ],
+  "evidence": "It requires completion of In Aid of the Myreque, as during the quest the shop is repaired and stocked."
+ },
+ "Authentic Throwing Weapons": {
+  "skills": {
+   "RANGED": 40
+  },
+  "evidence": "located in the Ranging Guild, so it can only be accessed by players with a Ranged level of 40 or higher."
+ },
+ "Ava": {
+  "quests": [
+   "ANIMAL_MAGNETISM"
+  ],
+  "items": {
+   "locator orb": {
+    "started": [
+     "DRAGON_SLAYER_II"
+    ]
+   }
+  },
+  "evidence": "Ava also runs a small shop, Ava's Odds and Ends, once Animal Magnetism is completed. 'During and after Dragon Slayer II, players can talk to Ava to receive locator orbs.'"
+ },
+ "Ava's Odds and Ends": {
+  "quests": [
+   "ANIMAL_MAGNETISM"
+  ],
+  "evidence": "a store owned by Ava that can be accessed after completing Animal Magnetism."
+ },
+ "Ayesha": {
+  "evidence": "gardener in Al Kharid; sells basic farming tools via the Farming Supplies shop."
+ },
+ "Baba Yaga's Magic Shop": {
+  "started": [
+   "LUNAR_DIPLOMACY"
+  ],
+  "other": [
+   "Seal of Passage (or elite Fremennik Diary)"
+  ],
+  "items": {
+   "astral rune": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar signet": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   }
+  },
+  "note": "Lunar Isle becomes reachable part-way through Lunar Diplomacy; the Seal of Passage comes from the quest and is not needed after the elite Fremennik Diary.",
+  "evidence": "Prior to completing the elite Fremennik Diary, a Seal of Passage is required to speak with her. Prior to completion of the Lunar Diplomacy quest, the shop does not sell astral runes or lunar signets."
+ },
+ "Bandit Bargains": {
+  "evidence": "general store in the Bandit Camp (Kharidian Desert), owned by the Bandit shopkeeper."
+ },
+ "Bandit Duty Free": {
+  "evidence": "general store located in the Wilderness Bandit Camp."
+ },
+ "Barkers' Haberdashery": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "evidence": "Shop in Canifis: 'The town is only accessible to players who have completed the Priest in Peril quest.'"
+ },
+ "Barmaid": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Barmaid is in the Laughing Miner Pub in Keldagrim; 'Travelling to Keldagrim requires starting The Giant Dwarf quest.'"
+ },
+ "Barman (Blurberry Bar)": {
+  "evidence": "Two can be found in Blurberry's Bar in the Grand Tree, and one in the bar east of the Gnome Ball field."
+ },
+ "Bartender (The Warrens)": {
+  "evidence": "The Bartender runs the pub in The Warrens, the sewer beneath Port Piscarilius."
+ },
+ "Battle Runes": {
+  "items": {
+   "blood rune": {
+    "quests": [
+     "ENTER_THE_ABYSS"
+    ]
+   }
+  },
+  "note": "Body runes are only sold before Enter the Abyss is completed (replaced by blood runes afterwards).",
+  "evidence": "It can be accessed before completing the Enter the Abyss miniquest, but after completion the stock will increase and blood runes will be added."
+ },
+ "Bedabin Village Bartering": {
+  "evidence": "a shop in the Bedabin Camp, run by the Bedabin Nomads."
+ },
+ "Benny": {
+  "evidence": "the newspaper seller in Varrock Square ... sells newspapers for 50 coins each."
+ },
+ "Betty": {
+  "items": {
+   "pink dye": {
+    "quests": [
+     "THE_HAND_IN_THE_SAND"
+    ]
+   }
+  },
+  "evidence": "After the completion of The Hand in the Sand quest, players can buy more pink dye from Betty for 20 coins each."
+ },
+ "Betty's Magic Emporium": {
+  "evidence": "Betty's Magic Emporium is located in Port Sarim and owned by Betty."
+ },
+ "Blackjack seller": {
+  "quests": [
+   "THE_FEUD"
+  ],
+  "evidence": "The completion of The Feud is required to access the blackjack seller and his shop."
+ },
+ "Blades by Urbi": {
+  "quests": [
+   "CONTACT"
+  ],
+  "evidence": "It is only available to players who have completed the Contact! quest."
+ },
+ "Blair's Armour": {
+  "evidence": "shop located in the north-east corner of Shayzien (Kourend favour was removed in 2024)."
+ },
+ "Blandebir": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Blandebir can be found upstairs in The Laughing Miner Pub on the eastern side of Keldagrim; 'Travelling to Keldagrim requires starting The Giant Dwarf quest.'"
+ },
+ "Blue Moon Inn": {
+  "evidence": "The Blue Moon Inn is a tavern and inn in south-central Varrock."
+ },
+ "Blurberry Bar": {
+  "evidence": "Blurberry Bar is located inside the Grand Tree in the Gnome Stronghold."
+ },
+ "Bob's Brilliant Axes": {
+  "evidence": "Bob's Brilliant Axes is located in southern Lumbridge."
+ },
+ "Bolkoy's Village Shop": {
+  "evidence": "It can be accessed before completing the Tree Gnome Village quest."
+ },
+ "Bolongo": {
+  "evidence": "gnome gardener who looks after the fruit tree patch at the Gnome Stronghold; sells Farming Supplies."
+ },
+ "Branwen's Farming Shop": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "farming shop run by Branwen on the east side of Prifddinas; entering Prifddinas requires Song of the Elves."
+ },
+ "Brass Hand Harry": {
+  "skills": {
+   "SAILING": 99
+  },
+  "evidence": "If a player has achieved 99 Sailing, they can purchase a Sailing cape"
+ },
+ "Brian's Archery Supplies": {
+  "evidence": "Ranged supplies shop owned by Brian and located in Rimmington."
+ },
+ "Brian's Battleaxe Bazaar": {
+  "evidence": "axe shop located in Port Sarim and owned by Brian."
+ },
+ "Briget's Weapons": {
+  "evidence": "sword shop in the south-east corner of Shayzien run by Briget."
+ },
+ "Brother Jered": {
+  "skills": {
+   "PRAYER": 99
+  },
+  "note": "Sells only the Prayer cape; he is upstairs in Edgeville Monastery (31 Prayer), implied by 99.",
+  "evidence": "Since he is on the 1st floor, only those with a Prayer level of 31 can access him. Players who achieve level 99 Prayer may purchase the Prayer cape from him."
+ },
+ "Burthorpe Supplies": {
+  "evidence": "general store run by Wistan in Burthorpe."
+ },
+ "Cam Torum Blacksmith": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum opens after killing the sulphur nagua and talking to Attala in Perilous Moons; 'started' is the closest field.",
+  "evidence": "Cam Torum is ... accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest."
+ },
+ "Cam Torum General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum opens part-way through Perilous Moons.",
+  "evidence": "Cam Torum is ... accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest."
+ },
+ "Candle Shop": {
+  "evidence": "The Candle Shop ... located in Catherby."
+ },
+ "Candle seller": {
+  "evidence": "The Candle seller in the Lumbridge Swamp ... sells candles for 1,000 coins each."
+ },
+ "Cap'n Izzy No-Beard": {
+  "skills": {
+   "AGILITY": 99
+  },
+  "evidence": "players with level 99 Agility may purchase an Agility cape from him for 99,000 coins."
+ },
+ "Captain Harlan": {
+  "skills": {
+   "DEFENCE": 99
+  },
+  "evidence": "If a player has achieved level 99 in Defence, they can purchase a Defence cape"
+ },
+ "Carefree Crafting Stall": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Crafting stall on the eastern ground floor of Keldagrim Palace; 'Travelling to Keldagrim requires starting The Giant Dwarf quest.'"
+ },
+ "Cart conductor": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "note": "Sells tickets to Ice Mountain and White Wolf Mountain; the White Wolf Mountain route also needs Fishing Contest (unclear if the ticket purchase itself is gated).",
+  "evidence": "Keldagrim minecarts: 'Players must have started The Giant Dwarf quest to use this travel method.'"
+ },
+ "Cart conductor (Dwarven Mine)": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim minecarts: 'Players must have started The Giant Dwarf quest to use this travel method.' The F2P conductor 'will not sell you tickets'."
+ },
+ "Cart conductor (White Wolf Mountain)": {
+  "quests": [
+   "FISHING_CONTEST"
+  ],
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "note": "Uncertain: the minecart page says the White Wolf Mountain route 'requires Fishing Contest and The Giant Dwarf' and that it 'previously did not require completion of The Giant Dwarf', so full Giant Dwarf completion may be needed.",
+  "evidence": "White Wolf Mountain: 'Once a player has completed the Fishing Contest quest, a tunnel ... becomes accessible. This tunnel features a cart station that leads to Keldagrim.'"
+ },
+ "Cassie's Shield Shop": {
+  "evidence": "located in Falador, just west of the park."
+ },
+ "Chet": {
+  "started": [
+   "TROUBLED_TORTUGANS"
+  ],
+  "skills": {
+   "SAILING": 45
+  },
+  "note": "Coral Nurseries also need a diving apparatus + fishbowl helmet or medallion of the deep worn. Sailing 45 is for docking at the Great Conch; after completing Troubled Tortugans the fairy ring CJQ may avoid it.",
+  "evidence": "Coral Nurseries: 'accessible after starting Troubled Tortugans'. Great Conch: 'docking point requiring 45 Sailing and partial completion of Troubled Tortugans'."
+ },
+ "Cobado's Groceries": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "cooking shop run by Cobado in Civitas illa Fortis, Varlamore."
+ },
+ "Conara's Jewels": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum opens part-way through Perilous Moons.",
+  "evidence": "Cam Torum is ... accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest."
+ },
+ "Construction supplies": {
+  "note": "Branches: Lumberyard sawmill (no reqs), Woodcutting Guild (60 Woodcutting), Prifddinas (Song of the Elves), Auburnvale (Children of the Sun). Easiest is the Lumberyard.",
+  "evidence": "found at the sawmills at the Lumberyard, in the Woodcutting Guild, north-east Prifddinas, and in the centre of Auburnvale."
+ },
+ "Contraband yak produce": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "started": [
+   "THE_FREMENNIK_ISLES"
+  ],
+  "note": "Usable during The Fremennik Isles if you paid her taxes; otherwise after the quest by paying her back.",
+  "evidence": "If the player does pay her taxes, they may use her store during and after the quest... Jatizso: 'Players must complete The Fremennik Trials to access the island.'"
+ },
+ "Cook (Blue Moon Inn)": {
+  "evidence": "Players can speak to him to purchase a cabbage at a cost of one coin."
+ },
+ "Crossbow Shop (Dwarven Mine)": {
+  "evidence": "Hura's Crossbow Shop is a Crossbow stall run by Hura in the Dwarven Mine."
+ },
+ "Crossbow Shop (Keldagrim)": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: 'Travelling to Keldagrim requires starting The Giant Dwarf quest.'"
+ },
+ "Crossbow Shop (White Wolf Mountain)": {
+  "quests": [
+   "FISHING_CONTEST"
+  ],
+  "note": "The tunnel also has a Keldagrim minecart station usable after starting The Giant Dwarf; unverified whether arriving by cart bypasses the Fishing Contest gate.",
+  "evidence": "White Wolf Tunnel: 'only becomes accessible after the player helps ... win the local Fishing Contest ... The tunnel also has a small bar where Holoy runs a crossbow shop.'"
+ },
+ "Daga's Scimitar Smithy": {
+  "started": [
+   "MONKEY_MADNESS_I"
+  ],
+  "items": {
+   "dragon scimitar": {
+    "quests": [
+     "MONKEY_MADNESS_I"
+    ]
+   }
+  },
+  "note": "Must hold a greegree unless Monkey Madness II is complete.",
+  "evidence": "'players need to use a greegree to use this store'; Ape Atoll 'only accessible to players who have partially or fully completed Monkey Madness I'; 'If the player has not yet completed Monkey Madness I, there will be 0 stock of dragon scimitars.'"
+ },
+ "Dal's General Ogre Supplies": {
+  "started": [
+   "WATCHTOWER"
+  ],
+  "evidence": "'accessing the shop requires starting the Watchtower quest.'"
+ },
+ "Dancing Donkey Inn": {
+  "evidence": "'a small bar found in south-eastern Varrock.'"
+ },
+ "Dantaera": {
+  "evidence": "Dantaera (Catherby) 'also sells basic farming tools via the Farming Supplies shop'"
+ },
+ "Dargaud's Bow and Arrows": {
+  "skills": {
+   "RANGED": 40
+  },
+  "evidence": "'His shop is located in the Ranging Guild.' / Ranging Guild: 'Level 40 Ranged is required to enter, though this can be boosted.'"
+ },
+ "Darkmeyer General Store": {
+  "quests": [
+   "SINS_OF_THE_FATHER"
+  ],
+  "note": "Also must wear vyre noble clothing unless The Blood Moon Rises is complete (clothing is obtained in Sins of the Father).",
+  "evidence": "Darkmeyer General Store: 'Sins of the Father must be completed to access this store and you must be wearing the Vyre noble outfit. After The Blood Moon Rises, vyre noble clothing is no longer required.'"
+ },
+ "Darkmeyer Lantern Shop": {
+  "quests": [
+   "SINS_OF_THE_FATHER"
+  ],
+  "note": "Also must wear vyre noble clothing unless The Blood Moon Rises is complete (clothing is obtained in Sins of the Father).",
+  "evidence": "Darkmeyer Lantern Shop: 'Sins of the Father must be completed to access this store and you must be wearing the Vyre noble outfit. After The Blood Moon Rises, vyre noble clothing is no longer required.'"
+ },
+ "Darkmeyer Meat Shop": {
+  "quests": [
+   "SINS_OF_THE_FATHER"
+  ],
+  "note": "Also must wear vyre noble clothing unless The Blood Moon Rises is complete (clothing is obtained in Sins of the Father).",
+  "evidence": "Darkmeyer Meat Shop: 'Sins of the Father must be completed to access this store and you must be wearing the Vyre noble outfit. After The Blood Moon Rises, vyre noble clothing is no longer required.'"
+ },
+ "Darkmeyer Seamstress": {
+  "quests": [
+   "SINS_OF_THE_FATHER"
+  ],
+  "note": "Also must wear vyre noble clothing unless The Blood Moon Rises is complete (clothing is obtained in Sins of the Father).",
+  "evidence": "Darkmeyer Seamstress: 'Sins of the Father must be completed to access this store and you must be wearing the Vyre noble outfit. After The Blood Moon Rises, vyre noble clothing is no longer required.'"
+ },
+ "Darren's Wilderness Cape Shop": {
+  "evidence": "'located around East of the Wilderness Agility Course'"
+ },
+ "Daryl's Ranging Surplus": {
+  "evidence": "'an archery shop in Shayzien'"
+ },
+ "Dead Man's Chest": {
+  "evidence": "'a bar in Brimhaven'"
+ },
+ "Death (shop)": {
+  "evidence": "Death is a shop located in Death's Office. It ... sells escape crystals."
+ },
+ "Deepfin Inn": {
+  "skills": {
+   "SAILING": 67
+  },
+  "note": "Charter ship needs an initial visit by other means, so 67 Sailing is unavoidable.",
+  "evidence": "'a pub located in Deepfin Point' / Deepfin Point: 'Docking here requires level 67 Sailing.'"
+ },
+ "Deepfin Point Ore Exchange": {
+  "skills": {
+   "SAILING": 67
+  },
+  "note": "Charter ship needs an initial visit by other means, so 67 Sailing is unavoidable.",
+  "evidence": "'a mining shop in Deepfin Point' / Deepfin Point: 'Docking here requires level 67 Sailing.'"
+ },
+ "Diango": {
+  "evidence": "Diango in Draynor Village sells toys; no access requirements stated."
+ },
+ "Diango's Toy Store": {
+  "evidence": "'located in Draynor Village market, run by Diango'"
+ },
+ "Dodgy Mike's Second Hand Clothing": {
+  "quests": [
+   "CABIN_FEVER"
+  ],
+  "note": "Must carry the Book o' Piracy (received from Cabin Fever; replacement from POH bookshelf).",
+  "evidence": "Mos Le'Harmless: 'You must complete Cabin Fever to access the island.'; 'Players need to have a Book o' Piracy when trying to trade with him'"
+ },
+ "Dommik's Crafting Store": {
+  "evidence": "'Crafting supplies store owned by Dommik located in north-eastern Al Kharid'"
+ },
+ "Dorgesh-Kaan General Supplies": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "Dorgesh-Kaan: 'It can only be accessed after completion of the Death to the Dorgeshuun quest.'"
+ },
+ "Dragon Inn": {
+  "evidence": "'the only bar in Yanille'"
+ },
+ "Draynor Seed Market": {
+  "note": "Olivia refuses trade for 30 minutes after stealing from her stall.",
+  "evidence": "'a shop in Draynor Village owned by Olivia'"
+ },
+ "Dreven": {
+  "evidence": "Dreven (outside Champions' Guild) 'also sells basic farming tools via the Farming Supplies shop'"
+ },
+ "Drogo's Mining Emporium": {
+  "evidence": "'located in the Dwarven Mines, run by Drogo'"
+ },
+ "Dunstan": {
+  "quests": [
+   "TROLL_STRONGHOLD"
+  ],
+  "note": "Limited to 5 law talismans + tiaras owned in total.",
+  "evidence": "'He will sell spare law talismans upon completion of the Troll Stronghold quest for 1,000 coins each. Players are limited to 5 total law talismans and law tiaras.'"
+ },
+ "Duradel": {
+  "quests": [
+   "SHILO_VILLAGE"
+  ],
+  "skills": {
+   "SLAYER": 99
+  },
+  "note": "This shop entry is Duradel's Slayer cape stock; skillcape needs 99 Slayer.",
+  "evidence": "Duradel 'located in Shilo Village, which requires the completion of the Shilo Village quest'; his shop sells the Slayer cape (99 Slayer)."
+ },
+ "Durgok": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "Durgok sells frogburgers in the Dorgesh-Kaan Marketplace / Dorgesh-Kaan: 'It can only be accessed after completion of the Death to the Dorgeshuun quest.'"
+ },
+ "Durrik's Goods": {
+  "skills": {
+   "SAILING": 67
+  },
+  "note": "Charter ship needs an initial visit by other means, so 67 Sailing is unavoidable.",
+  "evidence": "'a general store in the Deepfin Mine on Deepfin Point' / Deepfin Point: 'Docking here requires level 67 Sailing.'"
+ },
+ "Dwarven shopping store": {
+  "evidence": "'a general store run by a dwarf in the Dwarven Mine'"
+ },
+ "Dyes to Die For": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'located in Tal Teklan' (Varlamore) / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Eblis": {
+  "quests": [
+   "DESERT_TREASURE_I"
+  ],
+  "note": "Ancient staff can only be bought once.",
+  "evidence": "'He will sell a player one Ancient staff upon completion of the Desert Treasure I quest for 80,000 coins.'"
+ },
+ "Edgeville General Store": {
+  "evidence": "'a general store located in Edgeville'"
+ },
+ "Edmond's Wilderness Cape Shop": {
+  "evidence": "'located between the bandit camp mining site and lava maze in the Wilderness'"
+ },
+ "Edward's Wilderness Cape Shop": {
+  "evidence": "'located in north-eastern Wilderness, near the Rogues' Castle'"
+ },
+ "Efaritay's Supplies": {
+  "quests": [
+   "THE_BLOOD_MOON_RISES"
+  ],
+  "evidence": "'run by Efaritay Hallow in Castle Drakan after the completion of The Blood Moon Rises.'"
+ },
+ "Ehecatl": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Ehecatl is a gardener in Kastori (Varlamore) who sells Farming Supplies / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Elder Blunn's Spear and Shield Stall": {
+  "started": [
+   "TROUBLED_TORTUGANS"
+  ],
+  "note": "Summer Shore/Great Conch need Troubled Tortugans started (bandage given to Floopa); wiki says some dock utilities are unusable until the quest is complete, unclear whether this stall opens mid-quest. Alternative: 45 Sailing dock after quest completion.",
+  "evidence": "'a weapon shop run by Elder Blunn in the Summer Shore' / Summer Shore: 'can be reached in several ways, all of which require partial completion of Troubled Tortugans.'"
+ },
+ "Elder Coco's Crafting Stall": {
+  "quests": [
+   "TROUBLED_TORTUGANS"
+  ],
+  "evidence": "'It is repaired from its broken state during the Troubled Tortugans quest.' / Broken crafting stall: 'After the quest, the stall becomes Elder Coco's Crafting Stall.'"
+ },
+ "Elder Krill's Fishing Stall": {
+  "started": [
+   "TROUBLED_TORTUGANS"
+  ],
+  "note": "Summer Shore/Great Conch need Troubled Tortugans started (bandage given to Floopa); wiki says some dock utilities are unusable until the quest is complete, unclear whether this stall opens mid-quest. Alternative: 45 Sailing dock after quest completion.",
+  "evidence": "'a fishing shop run by Elder Krill in the Summer Shore' / Summer Shore: 'all of which require partial completion of Troubled Tortugans.'"
+ },
+ "Elder Raley's Herblore Stall": {
+  "started": [
+   "TROUBLED_TORTUGANS"
+  ],
+  "note": "Summer Shore/Great Conch need Troubled Tortugans started (bandage given to Floopa); wiki says some dock utilities are unusable until the quest is complete, unclear whether this stall opens mid-quest. Alternative: 45 Sailing dock after quest completion.",
+  "evidence": "'a herblore shop in the Summer Shore' / Summer Shore: 'all of which require partial completion of Troubled Tortugans.'"
+ },
+ "Elder Reggle's Farming Shop": {
+  "started": [
+   "TROUBLED_TORTUGANS"
+  ],
+  "note": "Summer Shore/Great Conch need Troubled Tortugans started (bandage given to Floopa); wiki says some dock utilities are unusable until the quest is complete, unclear whether this stall opens mid-quest. Alternative: 45 Sailing dock after quest completion.",
+  "evidence": "'run by Elder Reggle on the east coast of The Great Conch' / Great Conch: 'Starting Troubled Tortugans, the first quest in the series, is required to access the Great Conch.'"
+ },
+ "Elder Strom's Hunting Stall": {
+  "started": [
+   "TROUBLED_TORTUGANS"
+  ],
+  "note": "Summer Shore/Great Conch need Troubled Tortugans started (bandage given to Floopa); wiki says some dock utilities are unusable until the quest is complete, unclear whether this stall opens mid-quest. Alternative: 45 Sailing dock after quest completion.",
+  "evidence": "'a Hunter shop run by Elder Strom in the Summer Shore' / Summer Shore: 'all of which require partial completion of Troubled Tortugans.'"
+ },
+ "Elgan's Exceptional Staffs!": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "'run by Elgan on the west side of Prifddinas' / Prifddinas: 'In order to enter the city, the quest Song of the Elves must be completed.'"
+ },
+ "Ellena": {
+  "evidence": "Ellena (Catherby) 'also sells basic farming tools via the Farming Supplies shop'"
+ },
+ "Elnock Inquisitor": {
+  "skills": {
+   "HUNTER": 17
+  },
+  "note": "Alternative branch: Lost City completion (Zanaris wheat field portal) with no Hunter requirement. Sells 10 impling jars per day.",
+  "evidence": "Elnock is in Puro-Puro; Puro-Puro: 'Player can reach Puro-Puro by stepping through the centre of a crop circle, provided they have at least level 17 Hunter (not boostable). For those who have completed the Lost City quest, a permanent portal ... in Zanaris.'"
+ },
+ "Elstan": {
+  "evidence": "Elstan (south of Falador) 'also sells basic farming tools via the Farming Supplies shop'"
+ },
+ "Emelio's Kebab Shop": {
+  "quests": [
+   "MEAT_AND_GREET",
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'This shop is unlocked after completing the Meat and Greet quest' / Varlamore: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Ercos": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Ercos 'is the gardener who looks after the hops patch in Aldarin' / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Estate agent": {
+  "skills": {
+   "CONSTRUCTION": 99
+  },
+  "note": "Shop entry is the Construction skillcape stock; agents in Varrock, Falador, Seers', Ardougne, Hosidius, Civitas illa Fortis (the last also needs Children of the Sun).",
+  "evidence": "Estate agent stock: Construct. cape / Construct. cape(t) for 99,000 (Skillcape of Construction)."
+ },
+ "Etceteria Fish": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "'The Fremennik Trials must be completed to access the island.'"
+ },
+ "Fairy Fixit's Fairy Enchantment": {
+  "quests": [
+   "FAIRYTALE_II__CURE_A_QUEEN"
+  ],
+  "evidence": "'Accessing this shop requires completion of Fairytale II - Cure a Queen.'"
+ },
+ "Falador General Store": {
+  "evidence": "'It is the first building on the west side when entering through the north gate.'"
+ },
+ "Falador Party Room": {
+  "evidence": "'a building in north-east Falador'"
+ },
+ "Fancy Clothes Store": {
+  "evidence": "'a shop in south-eastern Varrock'"
+ },
+ "Faustus' Fruit and Veg": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'a food shop in Aldarin run by Faustus' / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fayeth": {
+  "evidence": "Fayeth (Lumbridge) 'also sells basic farming tools via the Farming Supplies shop'"
+ },
+ "Fernahei's Fishing Hut": {
+  "quests": [
+   "SHILO_VILLAGE"
+  ],
+  "note": "Karamja gloves only change the shop's buy price.",
+  "evidence": "'a fishing shop in Shilo Village' / Duradel: 'Shilo Village, which requires the completion of the Shilo Village quest to be accessed.'"
+ },
+ "Fight Arena Bar": {
+  "note": "Fight Arena (location) says 'the area ... cannot be accessed again after completing the quest' (doorman refuses entry); the bar is outside the arena building and believed freely accessible, but not confirmed.",
+  "evidence": "'a single-floored pub located in the south-western corner of the Fight Arena'"
+ },
+ "Filamina's Wares": {
+  "evidence": "'As Kourend Favour has been removed, accessing Filamina's Wares no longer requires it.'"
+ },
+ "Fine Fashions": {
+  "evidence": "'a store in the Grand Tree that is owned by Rometti'"
+ },
+ "Fishing Guild Shop": {
+  "skills": {
+   "FISHING": 68
+  },
+  "note": "Boostable (wiki: lowest 62 with super fishing potion).",
+  "evidence": "'The guild requires 68 Fishing to enter.'"
+ },
+ "Floria's Fashion": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Floria's Fashion' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Flosi's Fishmongers": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "started": [
+   "THE_FREMENNIK_ISLES"
+  ],
+  "note": "Alternative: dock at Jatizso with 68 Sailing (or enchanted lyre with elite Fremennik diary).",
+  "evidence": "Jatizso: 'Players must complete The Fremennik Trials to access the island.' / Mord Gunnars: 'He offers a free ferry ... during and after the quest, The Fremennik Isles.'"
+ },
+ "Flower Girl": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "note": "Alternative: 65 Sailing dock at Etceteria with Royal Trouble.",
+  "evidence": "Flower Girl is in Miscellania; Miscellania boat: 'Using this boat requires the completion of the quest The Fremennik Trials.'"
+ },
+ "Flying Horse Inn": {
+  "evidence": "'a bar found north of Ardougne Castle'"
+ },
+ "Flynn's Mace Market": {
+  "evidence": "'a mace shop owned by Flynn in Falador'"
+ },
+ "Food Store": {
+  "evidence": "'Starting the quest is not required to access the store.'"
+ },
+ "Forester's Arms": {
+  "evidence": "'the tavern in Seers' Village'"
+ },
+ "Fortis Baker's Stall": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Fortis Baker's Stall' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fortis Blacksmith": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Fortis Blacksmith' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fortis Fur Stall": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Fortis Fur Stall' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fortis Gem Stall": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Fortis Gem Stall' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fortis General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Fortis General Store' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fortis Silk Stall": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Fortis Silk Stall' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fortis Spice Stall": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "'Fortis Spice Stall' is in Civitas illa Fortis / Varlamore page: 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Fossil Island General Store": {
+  "quests": [
+   "BONE_VOYAGE"
+  ],
+  "evidence": "Fossil Island: 'In order to reach the island, players must have completed the Bone Voyage quest.'"
+ },
+ "Francis": {
+  "evidence": "Francis (Entrana) 'also sells basic farming tools via the Farming Supplies shop'"
+ },
+ "Frankie's Fishing Emporium": {
+  "evidence": "'As Kourend Favour has been removed, accessing Frankie's store no longer requires it'"
+ },
+ "Fremennik Fish Monger": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "'The Fremennik Trials must be completed to access the store.'"
+ },
+ "Fremennik Fur Trader": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "'The Fremennik Trials must be completed to access the store.'"
+ },
+ "Frenita's Cookery Shop": {
+  "evidence": "'a Cooking shop in Yanille run by Frenita'"
+ },
+ "Frincos' Fabulous Herb Store": {
+  "note": "Entrana bans weapons/armour; not a requirement.",
+  "evidence": "'a Herblore shop on Entrana'"
+ },
+ "Frizzy Skernip": {
+  "evidence": "Frizzy Skernip (Port Sarim) 'also sells basic farming tools via the Farming Supplies shop'"
+ },
+ "Funch's Fine Groceries": {
+  "evidence": "'a shop owned by Heckel Funch in the Grand Tree'"
+ },
+ "Gadrin": {
+  "skills": {
+   "MINING": 99
+  },
+  "evidence": "'He also sells the Mining cape and hood to those who have achieved 99 Mining.'"
+ },
+ "Gaius' Two Handed Shop": {
+  "evidence": "'a shop in Taverley owned by Gaius'"
+ },
+ "Garden Centre": {
+  "note": "Falador Park branch has no requirements; Farming Guild branch needs 45 Farming (stocks not shared).",
+  "evidence": "\"store located in Falador Park and the Farming Guild\""
+ },
+ "Gardener Gunnhild": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "note": "Sells rake/iron sickle via dialogue on Miscellania; island access needs The Fremennik Trials.",
+  "evidence": "Miscellania boat \"requires the completion of the quest The Fremennik Trials\""
+ },
+ "Garlic Cocktail Supply": {
+  "quests": [
+   "THE_BLOOD_MOON_RISES"
+  ],
+  "evidence": "\"store run by the werewolf in what was once Lord Mischa Myrmel's home, after completion of The Blood Moon Rises\""
+ },
+ "Garth": {
+  "evidence": "Garth also sells basic farming tools via the Farming Supplies shop (Brimhaven)"
+ },
+ "Gem Trader": {
+  "evidence": "Gem Trader is a gem shop run by the Gem trader in northern Al Kharid"
+ },
+ "General Store (Canifis)": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "note": "Canifis/Morytania entry requires Priest in Peril (not stated on shop page; standard Morytania access).",
+  "evidence": "Shop located in Canifis; General Store released with 'Priest In Peril Quest' update"
+ },
+ "Gerrant's Fishy Business": {
+  "evidence": "Gerrant's Fishy Business is located in Port Sarim"
+ },
+ "Gianne's Restaurant": {
+  "evidence": "food store located on the west side of the 1st floor of the Grand Tree"
+ },
+ "Gileth": {
+  "evidence": "Gileth also sells basic farming tools (Tree Gnome Village)"
+ },
+ "Gnome Waiter": {
+  "evidence": "Gnome Waiters run the shop Gianne's Restaurant ... on the 1st floor of the Grand Tree"
+ },
+ "Grand Tree Groceries": {
+  "evidence": "shop run by Hudo in the Grand Tree"
+ },
+ "Grandpa Jack": {
+  "note": "Sells a fishing rod for 5gp via dialogue; no quest requirement found.",
+  "evidence": "\"He will also sell you his 'competition winning' fishing rod for 5 coins\""
+ },
+ "Green Gemstone Gems": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: \"Travelling to Keldagrim requires starting The Giant Dwarf quest.\""
+ },
+ "Greengrocer of Miscellania": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "\"The Fremennik Trials must be completed to gain access to the island.\""
+ },
+ "Grud's Herblore Stall": {
+  "started": [
+   "WATCHTOWER"
+  ],
+  "note": "Gu'Tanoth entry needs progressing 'far enough' into Watchtower, not just starting it.",
+  "evidence": "Gu'Tanoth: \"Players need to progress far enough into the Watchtower quest in order to enter.\""
+ },
+ "Guinevere's Dyes": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas: \"All methods of entering the city require completion of Song of the Elves\""
+ },
+ "Gulluck and Sons": {
+  "evidence": "weapons shop ... on the 2nd floor of the Grand Tree"
+ },
+ "Gundik": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "Dorgesh-Kaan \"can only be accessed after completion of the Death to the Dorgeshuun quest\""
+ },
+ "Gunslik's Assorted Items": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: \"Travelling to Keldagrim requires starting The Giant Dwarf quest.\""
+ },
+ "Gwyn's Mining Emporium": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas: \"All methods of entering the city require completion of Song of the Elves\""
+ },
+ "Hair of the Dog": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "note": "Canifis/Morytania entry requires Priest in Peril (not stated on shop page; standard Morytania access).",
+  "evidence": "Shop located in Canifis; General Store released with 'Priest In Peril Quest' update"
+ },
+ "Hamab's Crafting Emporium": {
+  "started": [
+   "MONKEY_MADNESS_I"
+  ],
+  "note": "Needs MM1 progressed to chapter 2; monkey greegree needed on Ape Atoll unless Monkey Madness II is complete.",
+  "evidence": "Hamab: \"players must have started the Monkey Madness I quest and completed up to the second chapter\""
+ },
+ "Happy Heroes' H'emporium": {
+  "quests": [
+   "HEROES_QUEST"
+  ],
+  "evidence": "\"the shop can only be accessed after completion of the Heroes' Quest\""
+ },
+ "Harminia": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Varlamore: \"can only be accessed upon completion of Children of the Sun\""
+ },
+ "Harpoon Joe's House of 'Rum'": {
+  "quests": [
+   "CABIN_FEVER"
+  ],
+  "note": "Must carry the Book o' Piracy to trade.",
+  "evidence": "Mos Le'Harmless: \"You must complete Cabin Fever to access the island.\""
+ },
+ "Harry's Fishing Shop": {
+  "evidence": "Harry's Fishing Shop is located in eastern Catherby"
+ },
+ "Head chef": {
+  "skills": {
+   "COOKING": 99
+  },
+  "items": {
+   "cooking cape(t)": {
+    "other": [
+     "99 in at least one other skill (trimmed cape)"
+    ]
+   }
+  },
+  "note": "Only sells the Cooking cape; Cooks' Guild entry (32 Cooking + chef's hat) is implied.",
+  "evidence": "\"he sells the Cooking cape ... to players who have achieved 99 Cooking\""
+ },
+ "Hefin Inn": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas: \"All methods of entering the city require completion of Song of the Elves\""
+ },
+ "Helmet Shop": {
+  "evidence": "shop run by Peksa located in central Barbarian Village"
+ },
+ "Henderson's Catch of the Day": {
+  "started": [
+   "PANDEMONIUM"
+  ],
+  "note": "Must progress Pandemonium to the point of visiting the island.",
+  "evidence": "The Pandemonium: \"All methods of travelling to the Pandemonium require progressing the Pandemonium quest to the point where you visit the island.\""
+ },
+ "Herquin's Gems": {
+  "evidence": "Herquin's Gems is located on the west side of Falador"
+ },
+ "Heskel": {
+  "evidence": "Heskel also sells basic farming tools (Falador Park)"
+ },
+ "Hickton's Archery Emporium": {
+  "items": {
+   "fletching cape": {
+    "skills": {
+     "FLETCHING": 99
+    }
+   },
+   "fletching cape(t)": {
+    "skills": {
+     "FLETCHING": 99
+    },
+    "other": [
+     "99 in at least one other skill"
+    ]
+   }
+  },
+  "evidence": "\"Players with 99 Fletching may visit the store to buy the Fletching Cape of Accomplishment\""
+ },
+ "Hirko": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: \"Travelling to Keldagrim requires starting The Giant Dwarf quest.\""
+ },
+ "Horvik's Armour Shop": {
+  "evidence": "Horvik's Armour Shop is located near central Varrock"
+ },
+ "Huito's Herbal Supplies": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum opens partway through Perilous Moons (after killing the sulphur nagua).",
+  "evidence": "Cam Torum \"accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest\""
+ },
+ "Hunting expert": {
+  "skills": {
+   "HUNTER": 99
+  },
+  "items": {
+   "hunter cape(t)": {
+    "other": [
+     "99 in at least one other skill (trimmed cape)"
+    ]
+   }
+  },
+  "evidence": "\"She will sell the Hunter cape for 99,000 coins to players who have 99 Hunter.\""
+ },
+ "Ian's Wilderness Cape Shop": {
+  "evidence": "shop located near the Forgotten Cemetery and owned by Ian"
+ },
+ "Ifaba's General Store": {
+  "started": [
+   "MONKEY_MADNESS_I"
+  ],
+  "note": "Monkey greegree needed (monkey archers nearby) unless Monkey Madness II done.",
+  "evidence": "\"Players need to have started Monkey Madness I to access this store.\""
+ },
+ "Ignatius Vulcan": {
+  "skills": {
+   "FIREMAKING": 99
+  },
+  "items": {
+   "firemaking cape(t)": {
+    "other": [
+     "99 in at least one other skill (trimmed cape)"
+    ]
+   }
+  },
+  "evidence": "\"If a player has achieved 99 Firemaking, they can purchase a Firemaking cape\""
+ },
+ "Imia's Supplies": {
+  "skills": {
+   "HUNTER": 46
+  },
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Hunter Guild is in Varlamore (needs Children of the Sun).",
+  "evidence": "\"level 46 Hunter is required to access her wares\""
+ },
+ "Imiago": {
+  "evidence": "Imiago also sells basic farming tools (Tai Bwo Wannai)"
+ },
+ "Initiate Temple Knight Armoury": {
+  "quests": [
+   "RECRUITMENT_DRIVE"
+  ],
+  "evidence": "\"Initiate armour set can be purchased from Sir Tiffy upon completion of the Recruitment Drive quest\""
+ },
+ "Iorwerth's Arms": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas: \"All methods of entering the city require completion of Song of the Elves\""
+ },
+ "Irksol (shop)": {
+  "note": "LOST_CITY is not in quests.txt, so recorded under other. Zanaris requires Lost City.",
+  "evidence": "\"store run by Irksol in the Zanaris marketplace\"",
+  "quests": [
+   "LOST_CITY"
+  ]
+ },
+ "Ishmael's Fish He Sells": {
+  "evidence": "Fishing shop run by Ishmael in the Ruins of Unkah"
+ },
+ "Island Fishmonger": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "\"The Fremennik Trials must be completed to gain access to the island.\""
+ },
+ "Island Greengrocer": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "\"The Fremennik Trials must be completed to gain access to the island.\""
+ },
+ "Ivan's Supplies": {
+  "quests": [
+   "SINS_OF_THE_FATHER"
+  ],
+  "note": "Shop disappears once Ivan leaves during The Blood Moon Rises (replaced by Old Man Ral's Supplies, same stock).",
+  "evidence": "\"store run by Ivan Strom in Meiyerditch ... after the completion of Sins of the Father\""
+ },
+ "Iwan's Maces": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas: \"All methods of entering the city require completion of Song of the Elves\""
+ },
+ "Jamila's Craft Stall": {
+  "quests": [
+   "ICTHLARINS_LITTLE_HELPER"
+  ],
+  "evidence": "\"To access Sophanem, the quest Icthlarin's Little Helper must be completed.\""
+ },
+ "Jatix's Herblore Shop": {
+  "evidence": "shop in Taverley owned by Jatix"
+ },
+ "Jennifer's General Supplies": {
+  "evidence": "located east of bank in Shayzien"
+ },
+ "Jiminua's Jungle Store": {
+  "note": "Karamja gloves 3+ gives an alternate stock/pricing tab; base shop has no requirements.",
+  "evidence": "general store ... for those adventuring in the Karamjan jungle"
+ },
+ "Jolly Boar Inn": {
+  "evidence": "bar and inn located north-east of Varrock"
+ },
+ "Jukat (shop)": {
+  "note": "LOST_CITY is not in quests.txt. Also need a cut diamond each time to pass the magic door.",
+  "evidence": "\"The shop can only be accessed after completion of the Lost City quest\"",
+  "quests": [
+   "LOST_CITY"
+  ]
+ },
+ "Kaqemeex": {
+  "skills": {
+   "HERBLORE": 99
+  },
+  "items": {
+   "herblore cape(t)": {
+    "other": [
+     "99 in at least one other skill (trimmed cape)"
+    ]
+   }
+  },
+  "evidence": "\"Players with level 99 in Herblore may buy the Herblore cape from him\""
+ },
+ "Karamja General Store": {
+  "note": "Karamja gloves 3 only changes sell prices.",
+  "evidence": "general store located on Karamja (Musa Point)"
+ },
+ "Karamja Wines, Spirits, and Beers": {
+  "evidence": "shop run by Zembo that sells beer, Karamjan rum, and jugs of wine"
+ },
+ "Karim": {
+  "evidence": "Karim is the kebab salesman in Al Kharid"
+ },
+ "Kastori Farming Supplies": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Varlamore: \"can only be accessed upon completion of Children of the Sun\""
+ },
+ "Kastori General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Varlamore: \"can only be accessed upon completion of Children of the Sun\""
+ },
+ "Keepa Kettilon's store": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "Jatizso: \"Players must complete The Fremennik Trials to access the island.\""
+ },
+ "Keldagrim Stonemason": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: \"Travelling to Keldagrim requires starting The Giant Dwarf quest.\""
+ },
+ "Keldagrim's Best Bread": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: \"Travelling to Keldagrim requires starting The Giant Dwarf quest.\""
+ },
+ "Kenelme's Wares": {
+  "evidence": "food shop run by Kenelme located in Port Piscarilius"
+ },
+ "Khazard General Store": {
+  "evidence": "general store with two locations ... in Port Khazard"
+ },
+ "King Narnode's Royal Seed Pods": {
+  "quests": [
+   "MONKEY_MADNESS_II"
+  ],
+  "evidence": "\"It can only be accessed after completion of Monkey Madness II.\""
+ },
+ "King's Axe Inn": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: \"Travelling to Keldagrim requires starting The Giant Dwarf quest.\""
+ },
+ "Kjut's Kebabs": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Keldagrim: \"Travelling to Keldagrim requires starting The Giant Dwarf quest.\""
+ },
+ "Klank": {
+  "quests": [
+   "UNDERGROUND_PASS"
+  ],
+  "evidence": "Klank transcript: replacement gauntlets offered 'After completing Underground Pass' for 5,000 coins"
+ },
+ "Kourend Castle Baker's Stall": {
+  "evidence": "Bakery stall run by a baker located in Kourend Castle"
+ },
+ "Kourend Castle Gem Stall": {
+  "evidence": "Gem stall in Kourend Castle run by a Gem merchant"
+ },
+ "Kragen": {
+  "evidence": "Kragen also sells basic farming tools (Ardougne farm)"
+ },
+ "Kuradal": {
+  "skills": {
+   "SLAYER": 99
+  },
+  "quests": [
+   "WHILE_GUTHIX_SLEEPS",
+   "SHILO_VILLAGE"
+  ],
+  "items": {
+   "slayer cape(t)": {
+    "other": [
+     "99 in at least one other skill (trimmed cape)"
+    ]
+   }
+  },
+  "note": "Shop is the Slayer cape; before While Guthix Sleeps Duradel sells it instead.",
+  "evidence": "Kuradal \"daughter of Duradel, whom she replaces after While Guthix Sleeps\"; Shilo Village \"accessible after completing the Shilo Village quest\""
+ },
+ "Lalli": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "\"After the quest, the golden fleece can be bought for 1000 coins each from him.\""
+ },
+ "Lammy Langle": {
+  "evidence": "Lammy Langle also sells basic farming tools (Hosidius)"
+ },
+ "Larry's Wilderness Cape Shop": {
+  "evidence": "shop located near the Graveyard of Shadows and Bone Yard"
+ },
+ "Latlink Fastbell": {
+  "skills": {
+   "FARMING": 85
+  },
+  "note": "Advanced tier of the Farming Guild; entry can be boosted.",
+  "evidence": "\"The advanced tier comprises the guild's north wing, requiring 85 Farming to enter.\" ... \"Spirit tree patch: Latlink Fastbell\""
+ },
+ "Leela": {
+  "started": [
+   "PRINCE_ALI_RESCUE"
+  ],
+  "note": "Only sells a replacement bronze key during Prince Ali Rescue; not available after completion.",
+  "evidence": "\"If the player loses the bronze key during Prince Ali Rescue, they can buy another from Leela for 15 coins.\""
+ },
+ "Leenz's General Supplies": {
+  "evidence": "located in Port Piscarilius. It is run by Leenz"
+ },
+ "Legends Guild General Store": {
+  "quests": [
+   "LEGENDS_QUEST"
+  ],
+  "evidence": "general store located on the 1st floor of Legends' Guild"
+ },
+ "Legends Guild Shop of Useful Items": {
+  "quests": [
+   "LEGENDS_QUEST"
+  ],
+  "evidence": "store located on the 2nd floor of Legends' Guild"
+ },
+ "Leon's Prototype Crossbow": {
+  "evidence": "shop in Yanille ... sells the Hunters' crossbow"
+ },
+ "Leprechaun Larry's Farming Supplies": {
+  "started": [
+   "TROLL_STRONGHOLD"
+  ],
+  "note": "Unsure: on the Troll Stronghold roof; Trollheim routes need partial Troll Stronghold (or Ghommal's hilt). Wiki doesn't say whether the roof needs My Arm's Big Adventure started (herb patch needs MABA complete).",
+  "evidence": "\"shop run by Leprechaun Larry on the roof of Troll Stronghold near My Arm\""
+ },
+ "Liliwen": {
+  "started": [
+   "MOURNINGS_END_PART_I"
+  ],
+  "evidence": "Lletya \"can be accessed after starting Mourning's End Part I.\""
+ },
+ "Little Munty's Little Shop": {
+  "evidence": "General store located in Lovakengj"
+ },
+ "Little Shop of Horace": {
+  "evidence": "general store run by Horace in Hosidius"
+ },
+ "Lletya Archery Shop": {
+  "started": [
+   "MOURNINGS_END_PART_I"
+  ],
+  "evidence": "Lletya \"can be accessed after starting Mourning's End Part I.\""
+ },
+ "Lletya Food Store": {
+  "started": [
+   "MOURNINGS_END_PART_I"
+  ],
+  "evidence": "Lletya \"can be accessed after starting Mourning's End Part I.\""
+ },
+ "Lletya General Store": {
+  "started": [
+   "MOURNINGS_END_PART_I"
+  ],
+  "evidence": "\"The Mourning's End Part I quest needs to be started to in order to access Lletya.\""
+ },
+ "Lletya Seamstress": {
+  "started": [
+   "MOURNINGS_END_PART_I"
+  ],
+  "note": "Lletya opens after starting Mourning's End Part I (which itself needs Regicide etc.).",
+  "evidence": "Partial completion of Mourning's End Part I is required to access Lletya."
+ },
+ "Lliann's Wares": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "clothing shop run by Lliann ... Prifddinas; Prifddinas: All methods of entering the city require completion of Song of the Elves"
+ },
+ "Logava Gricoller's Cooking Supplies": {
+  "evidence": "Logava Gricoller's Cooking Supplies is a Fruit Stall located in Hosidius."
+ },
+ "Lost Property shop": {
+  "items": {
+   "ectophial": {
+    "quests": [
+     "GHOSTS_AHOY"
+    ]
+   },
+   "keris": {
+    "quests": [
+     "CONTACT"
+    ]
+   },
+   "helm of neitiznot": {
+    "quests": [
+     "THE_FREMENNIK_ISLES"
+    ]
+   },
+   "dwarven helmet": {
+    "quests": [
+     "GRIM_TALES"
+    ]
+   },
+   "barrelchest anchor": {
+    "quests": [
+     "THE_GREAT_BRAIN_ROBBERY"
+    ]
+   },
+   "ava's attractor": {
+    "quests": [
+     "ANIMAL_MAGNETISM"
+    ]
+   },
+   "ava's accumulator": {
+    "quests": [
+     "ANIMAL_MAGNETISM"
+    ]
+   },
+   "cape of legends": {
+    "quests": [
+     "LEGENDS_QUEST"
+    ]
+   },
+   "bearhead": {
+    "quests": [
+     "MOUNTAIN_DAUGHTER"
+    ]
+   },
+   "ivandis flail": {
+    "quests": [
+     "SINS_OF_THE_FATHER"
+    ]
+   },
+   "drakan's medallion": {
+    "quests": [
+     "A_TASTE_OF_HOPE"
+    ]
+   },
+   "guthix cape": {
+    "quests": [
+     "MAGE_ARENA_I"
+    ]
+   },
+   "zamorak cape": {
+    "quests": [
+     "MAGE_ARENA_I"
+    ]
+   },
+   "saradomin cape": {
+    "quests": [
+     "MAGE_ARENA_I"
+    ]
+   },
+   "imbued guthix cape": {
+    "quests": [
+     "MAGE_ARENA_II"
+    ]
+   },
+   "imbued zamorak cape": {
+    "quests": [
+     "MAGE_ARENA_II"
+    ]
+   },
+   "imbued saradomin cape": {
+    "quests": [
+     "MAGE_ARENA_II"
+    ]
+   },
+   "lunar staff": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar helm": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar torso": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar legs": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar gloves": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar boots": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar cape": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar amulet": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "lunar ring": {
+    "quests": [
+     "LUNAR_DIPLOMACY"
+    ]
+   },
+   "ava's assembler": {
+    "quests": [
+     "DRAGON_SLAYER_II"
+    ],
+    "other": [
+     "Bring Vorkath's head"
+    ]
+   },
+   "karamja gloves": {
+    "diaries": [
+     "KARAMJA_EASY"
+    ]
+   },
+   "ardougne cloak": {
+    "diaries": [
+     "ARDOUGNE_EASY"
+    ]
+   },
+   "falador shield": {
+    "diaries": [
+     "FALADOR_EASY"
+    ]
+   },
+   "fremennik sea boots": {
+    "diaries": [
+     "FREMENNIK_EASY"
+    ]
+   },
+   "kandarin headgear": {
+    "diaries": [
+     "KANDARIN_EASY"
+    ]
+   },
+   "desert amulet": {
+    "diaries": [
+     "DESERT_EASY"
+    ]
+   },
+   "explorer's ring": {
+    "diaries": [
+     "LUMBRIDGE_EASY"
+    ]
+   },
+   "morytania legs": {
+    "diaries": [
+     "MORYTANIA_EASY"
+    ]
+   },
+   "varrock armour": {
+    "diaries": [
+     "VARROCK_EASY"
+    ]
+   },
+   "wilderness sword": {
+    "diaries": [
+     "WILDERNESS_EASY"
+    ]
+   },
+   "western banner": {
+    "diaries": [
+     "WESTERN_EASY"
+    ]
+   },
+   "rada's blessing": {
+    "diaries": [
+     "KOUREND_EASY"
+    ]
+   }
+  },
+  "note": "Item retrieval service (Lumbridge/Catherby/Edgeville/Falador/Ferox/Emir's Arena/Daimon's Crater); no shop-level requirement. Each item only appears if you originally unlocked it and no longer own one. Item reqs listed are the usual unlocks (from general knowledge of each item, not this page); diary items need at least the easy tier (higher tiers for higher variants). Unlisted items (god books, chronicle, ghostly robes, boots of lightness, beacon ring, colossal blade, thread of Elidinis, Arkan blade, book of the dead) have unlock requirements not checked here.",
+  "evidence": "Players are able to retrieve certain items that might have been lost for a fee."
+ },
+ "Louie's Armoured Legs Bazaar": {
+  "evidence": "a shop in Al Kharid which sells various platelegs. It is run by Louie Legs."
+ },
+ "Lovecraft's Tackle": {
+  "evidence": "a fishing shop in Witchaven, owned by Ezekial Lovecraft."
+ },
+ "Lowe's Archery Emporium": {
+  "evidence": "located near central Varrock just east of the main square."
+ },
+ "Lucrezia": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Lucrezia can be found [at] Moonrise Brewery and Winery in south-western Aldarin ... sells ale yeast; Varlamore can only be accessed upon completion of Children of the Sun",
+  "note": "Aldarin is part of Varlamore."
+ },
+ "Lumbridge General Store": {
+  "evidence": "the general store located north of the Lumbridge Castle"
+ },
+ "Lunami's Axe Shop": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Lunami's Axe Shop is located in Auburnvale; Varlamore can only be accessed upon completion of Children of the Sun",
+  "note": "Auburnvale is in Varlamore."
+ },
+ "Lundail's Arena-side Rune Shop": {
+  "evidence": "one of the few Magic shops that sells law runes and cosmic runes, and the only one accessible with no requirements."
+ },
+ "Lyra": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "note": "Farmer on the Morytania north coast near Port Phasmatys; Priest in Peril needed to enter Morytania. Garden of Tranquillity not needed to trade as far as the page says.",
+  "evidence": "Lyra also sells basic farming tools via the Farming Supplies shop ... right-click Trade option. (Location: North-west of Port Phasmatys)"
+ },
+ "Mac": {
+  "skills": {
+   "AGILITY": 99,
+   "ATTACK": 99,
+   "CONSTRUCTION": 99,
+   "COOKING": 99,
+   "CRAFTING": 99,
+   "DEFENCE": 99,
+   "FARMING": 99,
+   "FIREMAKING": 99,
+   "FISHING": 99,
+   "FLETCHING": 99,
+   "HERBLORE": 99,
+   "HITPOINTS": 99,
+   "HUNTER": 99,
+   "MAGIC": 99,
+   "MINING": 99,
+   "PRAYER": 99,
+   "RANGED": 99,
+   "RUNECRAFT": 99,
+   "SAILING": 99,
+   "SLAYER": 99,
+   "SMITHING": 99,
+   "STRENGTH": 99,
+   "THIEVING": 99,
+   "WOODCUTTING": 99
+  },
+  "other": [
+   "Total level 2376 (99 in every skill)"
+  ],
+  "note": "Max cape. Reaching Mac's island also needs Warriors' Guild entry (covered by 99s).",
+  "evidence": "Upon achieving level 99 in all skills and reaching a total level of 2376, players can purchase Mac's cape"
+ },
+ "Mage Arena Staffs": {
+  "quests": [
+   "MAGE_ARENA_I"
+  ],
+  "evidence": "It can only be accessed after completion of the Mage Arena I miniquest by entering the Sparkling pool"
+ },
+ "Magic Guild Store (Mystic Robes)": {
+  "skills": {
+   "MAGIC": 66
+  },
+  "items": {
+   "magic cape": {
+    "skills": {
+     "MAGIC": 99
+    }
+   },
+   "magic cape(t)": {
+    "skills": {
+     "MAGIC": 99
+    },
+    "other": [
+     "99 in at least one other skill"
+    ]
+   }
+  },
+  "note": "Wizards' Guild entry level is boostable.",
+  "evidence": "One must have a Magic level of 66 to enter the guild (the level can be boosted)."
+ },
+ "Magic Guild Store (Runes and Staves)": {
+  "skills": {
+   "MAGIC": 66
+  },
+  "quests": [
+   "THE_HAND_IN_THE_SAND"
+  ],
+  "note": "Magic 66 boostable.",
+  "evidence": "One must have a Magic level of 66 to enter the guild ... Completion of The Hand in the Sand quest is required to access this store."
+ },
+ "Makeover Mage": {
+  "evidence": "The Makeover Mage also sells yin yang amulets. They are non-tradeable ... can be bought for 100 coins."
+ },
+ "Malignius Mortifer": {
+  "quests": [
+   "FAIRYTALE_I__GROWING_PAINS"
+  ],
+  "items": {
+   "brown apron": {
+    "quests": [
+     "SWAN_SONG"
+    ]
+   },
+   "bone seeds": {
+    "quests": [
+     "SWAN_SONG"
+    ]
+   }
+  },
+  "note": "Sells magic secateurs after Fairytale I; brown apron and bone seeds (free) after Swan Song .",
+  "evidence": "===After completing Fairytale I - Growing Pains=== Magic secateurs ... ===After completing Swan Song=== Brown apron, Bone seeds"
+ },
+ "Marcellus": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN",
+   "THE_RIBBITING_TALE_OF_A_LILY_PAD_LABOUR_DISPUTE"
+  ],
+  "note": "Locus Oasis in Varlamore.",
+  "evidence": "23 July 2025: The 'Trade' option was removed from the pre-quest version of Marcellus. (options before quest: Talk-to; after: Talk-to, Pay, Trade)"
+ },
+ "Marisi": {
+  "evidence": "Marisi is a farmer near the centre of Hosidius ... sells basic farming tools via the Farming Supplies shop"
+ },
+ "Markog": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "operates a market stall in the central plaza of Dorgesh-Kaan; Dorgesh-Kaan can only be accessed after completion of the Death to the Dorgeshuun quest."
+ },
+ "Martin Thwait's Lost and Found": {
+  "skills": {
+   "THIEVING": 50,
+   "AGILITY": 50
+  },
+  "items": {
+   "thieving cape": {
+    "skills": {
+     "THIEVING": 99
+    }
+   },
+   "thieving cape(t)": {
+    "skills": {
+     "THIEVING": 99
+    },
+    "other": [
+     "99 in at least one other skill"
+    ]
+   }
+  },
+  "note": "Alternative: 99 Thieving alone (no Agility) also grants access. Boosts do not work.",
+  "evidence": "The requirements to access the store are level 50 Thieving and 50 Agility, or level 99 Thieving (boosts do not work)."
+ },
+ "Martin the Master Gardener": {
+  "skills": {
+   "FARMING": 99
+  },
+  "evidence": "Martin sells the Farming skill cape to players who have reached level 99 in Farming for a price of 99,000 coins."
+ },
+ "Master Crafter": {
+  "skills": {
+   "CRAFTING": 99
+  },
+  "items": {
+   "crafting cape(t)": {
+    "other": [
+     "99 in at least one other skill"
+    ]
+   }
+  },
+  "note": "In the Crafting Guild (40 Crafting + brown apron/cape worn to enter, covered by 99).",
+  "evidence": "Master Crafter ... shop: Crafting cape (99,000)"
+ },
+ "Master fisher": {
+  "skills": {
+   "FISHING": 99
+  },
+  "note": "Trimmed cape given instead if the player has multiple 99s.",
+  "evidence": "sells this cape to players with level 99 in Fishing for 99,000 coins."
+ },
+ "Mawnis Burowgar": {
+  "quests": [
+   "THE_FREMENNIK_ISLES"
+  ],
+  "evidence": "After completing The Fremennik Isles quest ... Additional helms can be obtained by paying Mawnis 50,000 coins."
+ },
+ "Melee combat tutor": {
+  "skills": {
+   "DEFENCE": 99
+  },
+  "note": "Now Captain Harlan; sells Defence cape and hood.",
+  "evidence": "If a player has achieved level 99 in Defence, they can purchase a Defence cape and its respective Defence hood from him for 99,000 coins."
+ },
+ "Mernia": {
+  "quests": [
+   "BONE_VOYAGE"
+  ],
+  "note": "Underwater area off Fossil Island; diving gear suggested but not required.",
+  "evidence": "Mernia is a mermaid located in the underwater section of Fossil Island; Fossil Island: In order to reach the island, players must have completed the Bone Voyage quest."
+ },
+ "Miltog's Lamps": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "located in the central part of the Dorgesh-Kaan marketplace; Dorgesh-Kaan can only be accessed after completion of the Death to the Dorgeshuun quest."
+ },
+ "Miscellanian Clothes Shop": {
+  "started": [
+   "ROYAL_TROUBLE"
+  ],
+  "evidence": "Miscellania Expansion ... cannot be accessed until the player is given permission during the quest Royal Trouble."
+ },
+ "Miscellanian Food Shop": {
+  "started": [
+   "ROYAL_TROUBLE"
+  ],
+  "evidence": "The player cannot access the shop until permitted to enter the dungeon during the quest Royal Trouble."
+ },
+ "Miscellanian General Store": {
+  "started": [
+   "ROYAL_TROUBLE"
+  ],
+  "evidence": "The player cannot access the shop until permitted to enter the dungeon during the quest Royal Trouble."
+ },
+ "Mistrock Mining Supplies": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "a Mining shop in Mistrock run by Necto; Varlamore can only be accessed upon completion of Children of the Sun",
+  "note": "Mistrock is south of Aldarin in Varlamore."
+ },
+ "Mixology Rewards": {
+  "skills": {
+   "HERBLORE": 60
+  },
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Shop uses resin earned in the minigame. Herblore 60 not boostable.",
+  "evidence": "Participating in mixology requires level 60 Herblore (not boostable) and completion of Children of the Sun"
+ },
+ "Moon Clan Fine Clothes": {
+  "started": [
+   "LUNAR_DIPLOMACY"
+  ],
+  "note": "Lunar Isle opens partway through Lunar Diplomacy; a Seal of Passage (given at the start of the quest) must be carried to talk to NPCs unless the elite Fremennik diary is done.",
+  "evidence": "Lunar Isle ... becomes accessible to members who have progressed far enough into the Lunar Diplomacy quest. A Seal of Passage is required to interact with all NPCs on the island"
+ },
+ "Moon Clan General Store": {
+  "started": [
+   "LUNAR_DIPLOMACY"
+  ],
+  "note": "Lunar Isle opens partway through Lunar Diplomacy; Seal of Passage needed unless elite Fremennik diary done.",
+  "evidence": "Lunar Isle ... becomes accessible to members who have progressed far enough into the Lunar Diplomacy quest. A Seal of Passage is required to interact with all NPCs"
+ },
+ "Moonrise Wines": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "a wine trader found in the Moonrise Brewery and Winery in the island of Aldarin; Varlamore can only be accessed upon completion of Children of the Sun"
+ },
+ "Mount Karuulm Weapon Shop": {
+  "evidence": "located on top of Mount Karuulm. Owned by Leke quo Keran"
+ },
+ "Multicannon parts for sale": {
+  "quests": [
+   "DWARF_CANNON"
+  ],
+  "evidence": "The Dwarf Cannon quest must be completed to access the store."
+ },
+ "Myreque's Rest": {
+  "quests": [
+   "THE_BLOOD_MOON_RISES"
+  ],
+  "note": "Before The Blood Moon Rises the building is just the Burgh de Rott inn (no shop).",
+  "evidence": "The Burgh de Rott inn, renamed Myreque's Rest after completing The Blood Moon Rises ... Veliaf Hurtz repairs the inn and takes ownership of it."
+ },
+ "Mysterious Stranger (shop)": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "evidence": "located at the entrance of the Theatre of Blood ... sells escape crystals; ToB: The only hard requirement ... is the completion of the Priest in Peril quest to be able to access Morytania."
+ },
+ "Mythical Cape Store": {
+  "quests": [
+   "DRAGON_SLAYER_II"
+  ],
+  "evidence": "located on the 2nd floor of Myths' Guild; Myths' Guild requirement = Quest Dragon Slayer II"
+ },
+ "Myths' Guild Armoury": {
+  "quests": [
+   "DRAGON_SLAYER_II"
+  ],
+  "evidence": "located on the 2nd floor of the Myths' Guild; guild access by completing the Dragon Slayer II quest"
+ },
+ "Myths' Guild Herbalist": {
+  "quests": [
+   "DRAGON_SLAYER_II"
+  ],
+  "evidence": "located on the 1st floor of the Myths' Guild; guild access by completing the Dragon Slayer II quest"
+ },
+ "Myths' Guild Weaponry": {
+  "quests": [
+   "DRAGON_SLAYER_II"
+  ],
+  "evidence": "located on the 2nd floor of Myths' Guild ... sells dragon weaponry; guild access by completing Dragon Slayer II"
+ },
+ "Nardah General Store": {
+  "evidence": "a general store located in Nardah, owned by Kazemde."
+ },
+ "Nardah Hunter Shop": {
+  "evidence": "a hunter shop in Nardah owned by Artimeus."
+ },
+ "Nardok's Bone Weapons": {
+  "quests": [
+   "THE_LOST_TRIBE"
+  ],
+  "evidence": "only accessible after completing The Lost Tribe quest."
+ },
+ "Nathifa's Bake Stall": {
+  "quests": [
+   "CONTACT"
+  ],
+  "evidence": "Access to this stall requires the completion of Contact!."
+ },
+ "Ned's Handmade Rope (100% Wool)": {
+  "note": "10% discount after The Fremennik Isles.",
+  "evidence": "a rope shop owned by Ned in Draynor Village."
+ },
+ "Neil's Wilderness Cape Shop": {
+  "evidence": "a team cape shop owned by Neil ... in the Wilderness Bandit Camp."
+ },
+ "Neitiznot supplies": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "started": [
+   "THE_FREMENNIK_ISLES"
+  ],
+  "evidence": "Neitiznot ... accessed by talking to Maria Gunnars ... This requires the completion of The Fremennik Trials as well as starting The Fremennik Isles."
+ },
+ "Nemus Retreat (pub)": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "a pub located in the eponymous camp (Auburn Valley); Varlamore can only be accessed upon completion of Children of the Sun",
+  "note": "Nemus Retreat is in Varlamore's Auburn Valley; no other access requirement found."
+ },
+ "Nikkie": {
+  "skills": {
+   "FARMING": 85
+  },
+  "note": "Fruit tree patch is in the Farming Guild's advanced tier (north wing); 85 Farming, boostable.",
+  "evidence": "Nikkie is a gardener found in the north wing of the Farming Guild; The advanced tier comprises the guild's north wing, requiring 85 Farming to enter."
+ },
+ "Nulodion": {
+  "quests": [
+   "DWARF_CANNON"
+  ],
+  "evidence": "Nulodion's Multicannon parts for sale is the only place that sells the parts ... (once the player has completed the Dwarf Cannon quest)."
+ },
+ "Nurmof's Pickaxe Shop": {
+  "evidence": "located in the north-west cul-de-sac of the Dwarven Mine"
+ },
+ "Obli's General Store": {
+  "quests": [
+   "SHILO_VILLAGE"
+  ],
+  "evidence": "Obli in Shilo Village; Shilo Village is ... accessible after completing the Shilo Village quest."
+ },
+ "Olaf the Bard": {
+  "other": [
+   "All non-holiday music tracks unlocked"
+  ],
+  "note": "Music cape; trimmed version needs all tracks incl. holiday, all diaries and all quests.",
+  "evidence": "Players who have unlocked all non-holiday music tracks can buy a Music cape from Olaf the Bard at the cost of 99,000 coins."
+ },
+ "Old Man Ral's Supplies": {
+  "started": [
+   "THE_BLOOD_MOON_RISES"
+  ],
+  "note": "Unsure: opens when Ivan leaves the hideout partway through The Blood Moon Rises (the page doesn't say at which step). Meiyerditch access implies earlier Myreque quests (Sins of the Father etc.).",
+  "evidence": "a store run by Old Man Ral in Meiyerditch after Ivan leaves the Myreque hideout during The Blood Moon Rises quest."
+ },
+ "Oneiromancer": {
+  "quests": [
+   "LUNAR_DIPLOMACY"
+  ],
+  "note": "Lunar equipment shop; Seal of Passage needed unless elite Fremennik diary done.",
+  "evidence": "After completion of the quest, the pieces of Lunar equipment may be bought from the Oneiromancer on Lunar Isle"
+ },
+ "Oobapohk's Javelin Store": {
+  "quests": [
+   "MONKEY_MADNESS_II"
+  ],
+  "evidence": "This store will only become accessible once Monkey Madness II is completed."
+ },
+ "Ore seller": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "note": "Blast Furnace in Keldagrim (Minigame Teleport to Blast Furnace also reaches it).",
+  "evidence": "Travelling to Keldagrim requires starting The Giant Dwarf quest."
+ },
+ "Ore store": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "Jatizso: Players must complete The Fremennik Trials to access the island."
+ },
+ "Osman": {
+  "quests": [
+   "CONTACT"
+  ],
+  "evidence": "Replacement Keris daggers can be bought from him for 20,000 coins after finishing Contact!"
+ },
+ "Oswallt": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Oswallt is a gardener in Prifddinas; All methods of entering the city require completion of Song of the Elves"
+ },
+ "Outer Fortis General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "a general store run by a shopkeeper in southern Outer Fortis; Varlamore can only be accessed upon completion of Children of the Sun"
+ },
+ "Oziach (shop)": {
+  "quests": [
+   "DRAGON_SLAYER_I"
+  ],
+  "evidence": "The completion of the Dragon Slayer I quest is required to access the shop."
+ },
+ "Paramaya Inn": {
+  "quests": [
+   "SHILO_VILLAGE"
+  ],
+  "evidence": "situated in Shilo Village; Shilo Village is ... accessible after completing the Shilo Village quest."
+ },
+ "Pellem's Fur Store": {
+  "skills": {
+   "HUNTER": 46
+  },
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Hunter Guild is in Varlamore; Hunter 46.",
+  "evidence": "Like all amenities in the guild, level 46 Hunter is required to access his wares."
+ },
+ "Pelters' Veg Stall": {
+  "note": "Branches in Varrock, Seers' Village, Yanille, Hosidius, Emir's Arena; none gated.",
+  "evidence": "Pelters' Veg Stall ... Varrock / Seers' Village / Yanille / Hosidius / Emir's Arena; sells rotten tomatoes"
+ },
+ "Perry's Chop-chop Shop": {
+  "skills": {
+   "WOODCUTTING": 60
+  },
+  "note": "Boostable.",
+  "evidence": "Accessing it requires a player to have level 60 in Woodcutting (boostable)."
+ },
+ "Picaria's Fishing Shop": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "located east of the Sunset Coast; Varlamore can only be accessed upon completion of Children of the Sun"
+ },
+ "Pickaxe-Is-Mine": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "a store that sells pickaxes in Keldagrim-East; Travelling to Keldagrim requires starting The Giant Dwarf quest."
+ },
+ "Pie Shop": {
+  "skills": {
+   "COOKING": 32
+  },
+  "note": "Must also wear a chef's hat (or golden chef's hat, cooking cape/hood, max cape, Varrock armour 3/4) to enter the Cooks' Guild.",
+  "evidence": "Entering the guild requires 32 Cooking and having any of the following equipped: chef's hat ..."
+ },
+ "Pollnivneach general store": {
+  "evidence": "a general store run by the market seller in Pollnivneach"
+ },
+ "Port Phasmatys General Store": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "started": [
+   "THE_RESTLESS_GHOST"
+  ],
+  "note": "Ghostspeak amulet must be worn (from The Restless Ghost). Town entry costs 2 ecto-tokens unless Ghosts Ahoy done or arriving by charter; Priest in Peril needed for Morytania.",
+  "evidence": "A ghostspeak amulet must be worn to access this store."
+ },
+ "Port Roberts Cannonball Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Cannonball Stall)"
+ },
+ "Port Roberts Fish Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Fish Stall)"
+ },
+ "Port Roberts Fur Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Fur Stall)"
+ },
+ "Port Roberts Gem Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Gem Stall)"
+ },
+ "Port Roberts General Store": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts General Store)"
+ },
+ "Port Roberts Ore Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Ore Stall)"
+ },
+ "Port Roberts Silk Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Silk Stall)"
+ },
+ "Port Roberts Silver Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Silver Stall)"
+ },
+ "Port Roberts Spice Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Spice Stall)"
+ },
+ "Port Roberts Veg Stall": {
+  "skills": {
+   "SAILING": 50
+  },
+  "note": "Port Roberts is a floating platform reached only by boat/charter; 50 Sailing needed to dock or charter there.",
+  "evidence": "Level 50 Sailing is required to dock at and Charter to Port Roberts. (Port Roberts Veg Stall)"
+ },
+ "Praistan Ebola": {
+  "evidence": "Praistan Ebola also sells basic farming tools via the Farming Supplies shop (Brimhaven)"
+ },
+ "Prifddinas Foodstuffs": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "In order to enter the city, the quest Song of the Elves must be completed."
+ },
+ "Prifddinas Gem Stall": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas page: In order to enter the city, the quest Song of the Elves must be completed."
+ },
+ "Prifddinas General Store": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas page: In order to enter the city, the quest Song of the Elves must be completed."
+ },
+ "Prifddinas Herbal Supplies": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas page: In order to enter the city, the quest Song of the Elves must be completed."
+ },
+ "Prifddinas Silver Stall": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas page: In order to enter the city, the quest Song of the Elves must be completed."
+ },
+ "Prifddinas Spice Stall": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "Prifddinas page: In order to enter the city, the quest Song of the Elves must be completed."
+ },
+ "Prifddinas' Seamstress": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "crafting shop run by Nia on the west side of Prifddinas; city requires Song of the Elves"
+ },
+ "Prissy Scilla": {
+  "evidence": "Prissy Scilla also sells basic farming tools via the Farming Supplies shop (Tree Gnome Stronghold)"
+ },
+ "Proselyte Temple Knight Armoury": {
+  "quests": [
+   "THE_SLUG_MENACE"
+  ],
+  "evidence": "Pieces of the Proselyte armour set can be purchased from Sir Tiffy upon completion of The Slug Menace quest"
+ },
+ "Quality Armour Shop": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "shop run by Saro ... in the south-west corner of Keldagrim; 'Travelling to Keldagrim requires starting The Giant Dwarf quest.'",
+  "note": "Keldagrim needs The Giant Dwarf started."
+ },
+ "Quality Weapons Shop": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "located in north-western Keldagrim; 'Travelling to Keldagrim requires starting The Giant Dwarf quest.'",
+  "note": "Keldagrim needs The Giant Dwarf started."
+ },
+ "Quartermaster's Stores": {
+  "quests": [
+   "UNDERGROUND_PASS"
+  ],
+  "started": [
+   "REGICIDE"
+  ],
+  "items": {
+   "dragon halberd": {
+    "quests": [
+     "REGICIDE"
+    ]
+   }
+  },
+  "note": "Tyras Camp needs Regicide started (which itself needs Underground Pass done).",
+  "evidence": "Isafdar and the camp can only be accessed after starting the Regicide quest. ... dragon halberds only become available after completing Regicide."
+ },
+ "Quetzacalli Gorge General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Varlamore requires completing Children of the Sun.",
+  "evidence": "general store in Quetzacalli Gorge; 'Varlamore can only be accessed upon completion of Children of the Sun'"
+ },
+ "Raetul and Co's Cloth Store": {
+  "started": [
+   "ICTHLARINS_LITTLE_HELPER"
+  ],
+  "note": "Shop page says ILH 'must be completed to access Sophanem', but the Sophanem page says partial progress is enough, and linen is bought from Raetul during the quest. Desert boots only stocked after Contact! (not a buy gate on other items).",
+  "items": {
+   "desert boots": {
+    "quests": [
+     "CONTACT"
+    ]
+   }
+  },
+  "evidence": "Sophanem: 'In order to gain access, players need to partially progress through Icthlarin's Little Helper.' Shop: 'After the completion of Contact! the shop stocks Desert boots'"
+ },
+ "Ranael's Super Skirt Store": {
+  "evidence": "located in south-eastern Al Kharid. It sells plateskirts up to adamant."
+ },
+ "Raqueel": {
+  "other": [
+   "Must be in a clan (or allowed in as a guest) to enter the Clan Hall"
+  ],
+  "evidence": "barmaid serving the bar in the Clan Hall; 'The clan hall is a special instanced area accessible by members of a clan, or by guests if allowed'"
+ },
+ "Rasolo": {
+  "items": {
+   "ring of visibility": {
+    "started": [
+     "DESERT_TREASURE_I"
+    ],
+    "other": [
+     "Only to replace a lost ring received during Desert Treasure I"
+    ]
+   }
+  },
+  "evidence": "wandering merchant found west of the Fishing Guild and south of the Baxtorian Falls"
+ },
+ "Rasolo the Wandering Merchant": {
+  "evidence": "store run by Rasolo ... west of the Fishing Guild and south of the Baxtorian Falls"
+ },
+ "Rat & Bat": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "note": "Slepe reachable via Andras' boat from the Ectofuntus (10k coins) with no quest beyond Morytania access; SotF only adds a shortcut boat.",
+  "evidence": "bar located in south-east Slepe ... sells bloody bracers for the price of 99 coins"
+ },
+ "Ratpit bar (Keldagrim)": {
+  "started": [
+   "THE_GIANT_DWARF",
+   "RATCATCHERS"
+  ],
+  "note": "Need Ratcatchers progressed past Smokin' Joe's part.",
+  "evidence": "you must have reached a certain stage during the quest Ratcatchers, more specifically in the part after you help Smokin' Joe"
+ },
+ "Ratpit bar (Port Sarim)": {
+  "quests": [
+   "RATCATCHERS"
+  ],
+  "evidence": "Entry requires the completion of Ratcatchers."
+ },
+ "Ratpit bar (Varrock)": {
+  "started": [
+   "RATCATCHERS"
+  ],
+  "note": "Need Ratcatchers progressed past Hooknosed Jack's part.",
+  "evidence": "Players must have completed Ratcatchers up to Hooknosed Jack's part in order to access the bar."
+ },
+ "Razmire Builders Merchants": {
+  "quests": [
+   "SHADES_OF_MORTTON"
+  ],
+  "evidence": "The Shades of Mort'ton quest must be completed in order to access this store."
+ },
+ "Razmire General Store": {
+  "started": [
+   "SHADES_OF_MORTTON"
+  ],
+  "note": "Exact quest step not stated.",
+  "evidence": "Access to this general store is unlocked during the Shades of Mort'ton quest."
+ },
+ "Regath's Wares": {
+  "evidence": "general store run by Regath located in Arceuus"
+ },
+ "Reldak's Leather Armour": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "shop in the Dorgesh-Kaan marketplace; Dorgesh-Kaan 'can only be accessed after completion of the Death to the Dorgeshuun quest'"
+ },
+ "Rellekka Longhall Bar": {
+  "evidence": "bar found in the Rellekka longhall run by Thora the Barkeep"
+ },
+ "Rhazien": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "note": "Etceteria reached via the Rellekka boat or CIP fairy ring (both need The Fremennik Trials); alternative: 65 Sailing + Royal Trouble docking.",
+  "evidence": "A boat ... in northern Rellekka sails to and from the dock on Miscellania (requires the completion of the quest The Fremennik Trials)"
+ },
+ "Rhonen": {
+  "evidence": "Rhonen also sells basic farming tools via the Farming Supplies shop (hops patch north-west of Seers')"
+ },
+ "Richard's Farming shop": {
+  "evidence": "farming shop at Richard's farm by the Ardougne north entrance"
+ },
+ "Richard's Wilderness Cape Shop": {
+  "evidence": "shop located in Edgeville ... sells the 6 variety of team capes"
+ },
+ "Rick (Wizards' Tower)": {
+  "evidence": "wizard who resides on the 1st floor of the Wizards' Tower. He specialises in selling escape crystals."
+ },
+ "Rimmington General Store": {
+  "evidence": "general store in Rimmington"
+ },
+ "Rising Sun Inn": {
+  "evidence": "All three barmaids will sell any player a wizard's mind bomb, dwarven stout, or Asgarnian ale."
+ },
+ "Rohak": {
+  "quests": [
+   "RECIPE_FOR_DISASTER__MOUNTAIN_DWARF"
+  ],
+  "evidence": "He sells dwarven rock cakes for 100 coins each after the subquest is complete."
+ },
+ "Rok's Chocs Box": {
+  "evidence": "Choc-Ice Stall located in Nardah"
+ },
+ "Rommik's Crafty Supplies": {
+  "evidence": "located in Rimmington and owned by Rommik"
+ },
+ "Rosie": {
+  "skills": {
+   "FARMING": 65
+  },
+  "evidence": "Farming Guild: 'the intermediate and advanced tier requires level 65 and 85 Farming'; intermediate tier: 'Rosie looks after the tree patch'",
+  "note": "Boosts allowed."
+ },
+ "Rufus' Meat Emporium": {
+  "quests": [
+   "PRIEST_IN_PERIL"
+  ],
+  "note": "Canifis/Morytania access needs Priest in Peril.",
+  "evidence": "food shop located in Canifis, run by Rufus"
+ },
+ "Rupert the Beard": {
+  "quests": [
+   "GRIM_TALES"
+  ],
+  "evidence": "After freeing him, Rupert gives the player his helmet as a reward. Additional helmets can be obtained by paying Rupert 60,000 coins."
+ },
+ "Rusty Anchor Inn": {
+  "evidence": "bar in Port Sarim, located just north of the docks"
+ },
+ "Salius' Armour Shop": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Varlamore requires completing Children of the Sun.",
+  "evidence": "platebody shop in the Salvager Overlook (Varlamore, walk from Quetzacalli Gorge)"
+ },
+ "Salvager Overlook General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Varlamore requires completing Children of the Sun.",
+  "evidence": "general store located in Salvager Overlook (Varlamore)"
+ },
+ "Sam's Wilderness Cape Shop": {
+  "evidence": "team cape shop ... east of the Dark Warriors' Fortress in the Wilderness"
+ },
+ "Sarah's Farming shop": {
+  "evidence": "Farming shop at Sarah's farm south of Falador ... only available to members"
+ },
+ "Scavvo's Rune Store": {
+  "questPoints": 32,
+  "evidence": "located on the 1st floor of the Champions' Guild ... players will need to acquire 32 quest points before they can access his shop"
+ },
+ "Seb's Shipyard Supplies": {
+  "started": [
+   "PANDEMONIUM"
+  ],
+  "note": "Exact quest step not stated.",
+  "evidence": "It is not accessible until after partial completion of Pandemonium."
+ },
+ "Sebamo's Sublime Staffs": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Varlamore requires completing Children of the Sun.",
+  "evidence": "staff shop in Auburnvale; walking from Civitas requires 'Completed Children of the Sun'"
+ },
+ "Seddu's Adventurer's Store": {
+  "evidence": "shop in Nardah, run by Seddu"
+ },
+ "Selena": {
+  "evidence": "Selena also sells basic farming tools via the Farming Supplies shop (Yanille)"
+ },
+ "Selim": {
+  "quests": [
+   "BENEATH_CURSED_SANDS"
+  ],
+  "evidence": "He replaces Osman, who disappears after the events of Beneath Cursed Sands. Selim can sell players a replacement keris ... and keris partisan"
+ },
+ "Seravel": {
+  "quests": [
+   "SHILO_VILLAGE"
+  ],
+  "evidence": "found upstairs of Fernahei's Fishing Hut in Shilo Village; village 'accessible after completing the Shilo Village quest'"
+ },
+ "Sergeant Hudson": {
+  "other": [
+   "The Writing's on the Wall completed"
+  ],
+  "note": "Quest is newer than RuneLite's Quest enum (1.13.4); move to quests when it's added.",
+  "evidence": "After the quest, Sergeant Hudson ... will sell the amulet of sight for 1,500 coins."
+ },
+ "Shantay Pass Shop": {
+  "evidence": "shop owned by Shantay in the Shantay Pass"
+ },
+ "Shayzien Styles": {
+  "evidence": "clothing shop in Shayzien found east of the bank"
+ },
+ "Shield master": {
+  "skills": {
+   "RANGED": 40
+  },
+  "note": "Boostable.",
+  "evidence": "found in the western corner of the Ranging Guild; 'Level 40 Ranged is required to enter, though this can be boosted.'"
+ },
+ "Shields of Mistrock": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Mistrock is reached via Aldarin; Varlamore requires Children of the Sun.",
+  "evidence": "shield shop run by Ichta in Mistrock (south of Aldarin, Varlamore)"
+ },
+ "Shop of Distaste": {
+  "evidence": "shop in the Emir's Arena, right next to the bank. All they sell is rotten tomatoes"
+ },
+ "Sian's Ranged Weaponry": {
+  "quests": [
+   "SONG_OF_THE_ELVES"
+  ],
+  "evidence": "archery shop run by Sian on the east side of Prifddinas; city requires Song of the Elves"
+ },
+ "Sigmund the Merchant (shop)": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "Players must be Fremenniks (completed The Fremennik Trials) in order to trade with him."
+ },
+ "Silk trader": {
+  "evidence": "can be found north of the Al Kharid palace ... they can buy some silk for just 3 coins"
+ },
+ "Silver Cog Silver Stall": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "silver stall run by Gulldamar ... Keldagrim; Keldagrim needs The Giant Dwarf started",
+  "note": "Keldagrim needs The Giant Dwarf started."
+ },
+ "Simon's Wilderness Cape Shop": {
+  "evidence": "shop located at the Chaos Temple and owned by Simon"
+ },
+ "Sir Renitee": {
+  "items": {
+   "small map": {
+    "questPoints": 51
+   },
+   "medium map": {
+    "questPoints": 101
+   },
+   "large map": {
+    "questPoints": 151
+   },
+   "elena portrait": {
+    "quests": [
+     "PLAGUE_CITY"
+    ]
+   },
+   "arthur portrait": {
+    "quests": [
+     "MERLINS_CRYSTAL",
+     "HOLY_GRAIL"
+    ]
+   },
+   "misc. portrait": {
+    "quests": [
+     "THRONE_OF_MISCELLANIA"
+    ]
+   },
+   "keldagrim portrait": {
+    "quests": [
+     "THE_GIANT_DWARF"
+    ]
+   },
+   "lumbridge painting": {
+    "quests": [
+     "COOKS_ASSISTANT",
+     "RUNE_MYSTERIES",
+     "SHEEP_SHEARER",
+     "THE_RESTLESS_GHOST"
+    ]
+   },
+   "desert painting": {
+    "quests": [
+     "PRINCE_ALI_RESCUE",
+     "THE_TOURIST_TRAP",
+     "THE_FEUD",
+     "THE_GOLEM"
+    ]
+   },
+   "morytania painting": {
+    "quests": [
+     "GHOSTS_AHOY",
+     "SHADES_OF_MORTTON",
+     "CREATURE_OF_FENKENSTRAIN",
+     "HAUNTED_MINE"
+    ]
+   },
+   "karamja painting": {
+    "quests": [
+     "PIRATES_TREASURE",
+     "SHILO_VILLAGE",
+     "TAI_BWO_WANNAI_TRIO"
+    ]
+   },
+   "isafdar painting": {
+    "quests": [
+     "ROVING_ELVES"
+    ]
+   }
+  },
+  "evidence": "Each map size requires a number of Quest points ... Each portrait requires relevant quest completions. (per-item Requirements column)"
+ },
+ "Skulgrimen's Battle Gear": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "Completion of The Fremennik Trials is required in order to access this shop."
+ },
+ "Slayer Equipment (shop)": {
+  "items": {
+   "reinforced goggles": {
+    "quests": [
+     "A_PORCINE_OF_INTEREST"
+    ]
+   }
+  },
+  "note": "Run by all Slayer Masters, shared stock; Turael/Spria (Burthorpe/Draynor) need nothing. Other masters have their own combat/Slayer/quest gates.",
+  "evidence": "There are no level requirements to receive Slayer tasks from him [Turael]; 'Upon completion of the A Porcine of Interest quest, the shop will begin to carry reinforced goggles.'"
+ },
+ "Sloane": {
+  "skills": {
+   "STRENGTH": 99
+  },
+  "note": "Only sells the Strength cape/hood; 99 Strength also satisfies the Warriors' Guild entry.",
+  "evidence": "If a player has achieved 99 Strength, they can purchase a Strength cape ... To enter the Warriors' Guild, one must have a total Strength and Attack level of 130 or higher, or a 99 in one of the two skills."
+ },
+ "Smith": {
+  "quests": [
+   "CABIN_FEVER"
+  ],
+  "note": "Must carry a Book o' Piracy to talk to him.",
+  "evidence": "Players need to have a Book o' Piracy when trying to trade with him; Mos Le'Harmless 'can be visited after completion of the Cabin Fever quest'"
+ },
+ "Smithing Smith's Shop": {
+  "quests": [
+   "CABIN_FEVER"
+  ],
+  "note": "Must carry a Book o' Piracy to talk to Smith.",
+  "evidence": "Cabin Fever must be completed to access the store. A Book o' Piracy is required to talk to Smith."
+ },
+ "Solihib's Food Stall": {
+  "quests": [
+   "MONKEY_MADNESS_I"
+  ],
+  "note": "Before Monkey Madness II the player must be in monkey (greegree) form to trade.",
+  "evidence": "Monkey Madness I is required to access him. Prior to the completion of Monkey Madness II, the player must be in the form of a monkey"
+ },
+ "Sophanem Guard": {
+  "started": [
+   "ICTHLARINS_LITTLE_HELPER"
+  ],
+  "note": "Sophanem access needs partial ILH progress; some pages say completion. Exact step not stated.",
+  "evidence": "Sophanem: 'In order to gain access, players need to partially progress through Icthlarin's Little Helper.'"
+ },
+ "Spike's Spikes": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Varlamore requires completing Children of the Sun.",
+  "evidence": "shop run by Spike, located on the east side of Outer Fortis (Varlamore)"
+ },
+ "Spirit of Scorpius": {
+  "quests": [
+   "OBSERVATORY_QUEST"
+  ],
+  "evidence": "After completion of Observatory Quest, he will give the player an unholy mould"
+ },
+ "Squirrel (Fossil Island)": {
+  "quests": [
+   "BONE_VOYAGE"
+  ],
+  "evidence": "In order to reach the island, players must have completed the Bone Voyage quest."
+ },
+ "Stankers": {
+  "evidence": "Players may also obtain a poison chalice from him for free (Coal Trucks)."
+ },
+ "Stick Your Ore Inn": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Aldarin/Mistrock is in Varlamore; requires Children of the Sun.",
+  "evidence": "bar found in Mistrock, on the southern side of the island of Aldarin"
+ },
+ "Stonecutter Supplies": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Varlamore requires completing Children of the Sun.",
+  "evidence": "store is located in the Stonecutter Outpost in the south eastern part of the Avium Savannah (Varlamore)"
+ },
+ "Sulisal's Superb Fishing Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Kastori reachable by walking Civitas -> Auburnvale -> Gloomthorn Trail and Achilka's free boat; Varlamore requires Children of the Sun.",
+  "evidence": "shop run by Sulisal, located in Kastori"
+ },
+ "Sunlight's Sanctum": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Aldarin is in Varlamore; requires Children of the Sun.",
+  "evidence": "pub located in Aldarin"
+ },
+ "Sunset Coast General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Varlamore requires completing Children of the Sun.",
+  "evidence": "general store run by a Shopkeeper in the centre of the Sunset Coast (Varlamore)"
+ },
+ "Supplies's Supplies": {
+  "skills": {
+   "SAILING": 62
+  },
+  "evidence": "Wyrmscraig is an island ... that requires 62 Sailing to access."
+ },
+ "Surgeon General Tafani": {
+  "skills": {
+   "HITPOINTS": 99
+  },
+  "evidence": "sells the Hitpoints cape to players with level 99 in Hitpoints for 99,000"
+ },
+ "Tal Teklan General Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Reachable by walking to Gloomthorn Trail and Achilka's free boat, or quetzal; Varlamore requires Children of the Sun.",
+  "evidence": "located in Tal Teklan (Varlamore)"
+ },
+ "Tal Teklan Rune Shop": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "note": "Reachable by walking to Gloomthorn Trail and Achilka's free boat, or quetzal; Varlamore requires Children of the Sun.",
+  "evidence": "shop in Tal Teklan that sells runes ... without needing extensive questing"
+ },
+ "Tamayu's Spear Stall": {
+  "quests": [
+   "TAI_BWO_WANNAI_TRIO"
+  ],
+  "note": "Karamja gloves only change prices.",
+  "evidence": "It requires completion of Tai Bwo Wannai Trio to access"
+ },
+ "Taria": {
+  "evidence": "Taria is a gardener who looks after the bush farming patch in Rimmington. ... also sells basic farming tools via the Farming Supplies shop"
+ },
+ "Taylor": {
+  "skills": {
+   "FARMING": 85
+  },
+  "note": "Taylor stands by the celastrus patch in the Farming Guild's northern (advanced) wing, which needs 85 Farming (boostable). Other Farming Supplies gardeners have no requirements.",
+  "evidence": "Taylor is a gardener found in the northern wing of the Farming Guild, near the celastrus patch. / Farming Guild: 45 (beginner), 65 (intermediate), 85 (advanced)"
+ },
+ "Tenzing": {
+  "started": [
+   "DEATH_PLATEAU"
+  ],
+  "note": "Must have reached the point in Death Plateau where you learn of the secret path; before that he refuses to open the door. Recorded as started.",
+  "evidence": "If you try to open the door before learning of the secret path, he will shoo the player away saying \"No milk today! Thank you!\""
+ },
+ "The Asp & Snake Bar": {
+  "evidence": "The Asp & Snake Bar is located on the south side of Pollnivneach."
+ },
+ "The Big Heist Lodge": {
+  "started": [
+   "DESERT_TREASURE_I"
+  ],
+  "note": "Only stock is bandit's brew, sold only after reaching the appropriate step of Desert Treasure I (shop page says 'after completion'; item page says partial). Recorded as started.",
+  "evidence": "It can be purchased at The Big Heist Lodge ... for 650 coins only after reaching the appropriate step of the quest Desert Treasure I. (Bandit's brew page)"
+ },
+ "The Burrow": {
+  "skills": {
+   "HUNTER": 46
+  },
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "The Burrow is an underground cavern accessed from the centre of the Hunter Guild ... A Hunter level of 46 is required to enter."
+ },
+ "The Cloak and Stagger": {
+  "evidence": "The Cloak and Stagger is a bar and an inn found in Shayzien."
+ },
+ "The Crypt": {
+  "quests": [
+   "SINS_OF_THE_FATHER"
+  ],
+  "note": "Player must also be wearing vyre noble clothing (obtained via the quest) to buy.",
+  "evidence": "Players will have to complete the Sins of the Father quest and be wearing a set of vyre noble clothing in order to purchase blood pints in the bar."
+ },
+ "The Deeper Lode": {
+  "evidence": "The Deeper Lode is a tavern owned by Fuggy, located in Lovakengj."
+ },
+ "The Esoterican Arms": {
+  "started": [
+   "ROYAL_TROUBLE"
+  ],
+  "quests": [
+   "THRONE_OF_MISCELLANIA",
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "note": "Throne of Miscellania (and Fremennik Trials) are prerequisites to start Royal Trouble / reach Miscellania.",
+  "evidence": "The player cannot access the bar until permitted to enter the dungeon during the quest Royal Trouble."
+ },
+ "The Flaming Arrow": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "The Flaming Arrow is a bar found in Civitas illa Fortis. / Varlamore can only be accessed upon completion of Children of the Sun"
+ },
+ "The Golden Field": {
+  "evidence": "The Golden Field is a tavern owned by Richard and Golova, located in Hosidius."
+ },
+ "The King's Inn": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "The King's Inn is a pub located in Tal Teklan. / Varlamore can only be accessed upon completion of Children of the Sun",
+  "note": "Tal Teklan is in the Tlati Rainforest; no further quest gate found for walking there (quetzal landing needs partial Twilight's Promise)."
+ },
+ "The Legless Faun": {
+  "evidence": "The Legless Faun is a small bar right off the docks in Great Kourend that sells beer."
+ },
+ "The Lighthouse Store": {
+  "quests": [
+   "HORROR_FROM_THE_DEEP"
+  ],
+  "evidence": "Completion of Horror from the Deep is required in order to access the shop."
+ },
+ "The Lost Pickaxe": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum needs Perilous Moons progressed to killing the sulphur nagua and talking to Attala (partial progress, recorded as started).",
+  "evidence": "Cam Torum is an underground city beneath Ralos' Rise, accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest. (Cam Torum page)"
+ },
+ "The Old Nite": {
+  "evidence": "The Old Nite is the pub in Ferox Enclave in the Wilderness."
+ },
+ "The Other Inn": {
+  "quests": [
+   "CABIN_FEVER"
+  ],
+  "note": "Must carry the Book o' Piracy (from Cabin Fever) to trade.",
+  "evidence": "Mos Le'Harmless ... You must complete Cabin Fever to access the island. / Players need to have a book o' Piracy when trying to trade with Mama"
+ },
+ "The Pandemonium (pub)": {
+  "started": [
+   "PANDEMONIUM"
+  ],
+  "items": {
+   "whirlpool surprise": {
+    "other": [
+     "Shark rank in The Tempor Tantrum, then claim from Rum-dashed Ralph"
+    ]
+   }
+  },
+  "note": "Island needs Pandemonium progressed to the point you visit it (recorded as started).",
+  "evidence": "All methods of travelling to the Pandemonium require progressing the Pandemonium quest to the point where you visit the island. / Whirlpool surprise: only after having claimed them from Rum-dashed Ralph after achieving Shark rank in The Tempor Tantrum"
+ },
+ "The Rolling Tide": {
+  "skills": {
+   "SAILING": 50
+  },
+  "evidence": "The Rolling Tide is a pub run by the bartender at Port Roberts. / Level 50 Sailing is required to dock at and Charter to Port Roberts."
+ },
+ "The Runic Emporium": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum needs Perilous Moons progressed to killing the sulphur nagua and talking to Attala (partial progress, recorded as started).",
+  "evidence": "Cam Torum is an underground city beneath Ralos' Rise, accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest. (Cam Torum page)"
+ },
+ "The Sheared Ram": {
+  "evidence": "The Sheared Ram is a small bar in Lumbridge that sells beer."
+ },
+ "The Shrimp and Parrot": {
+  "evidence": "The Shrimp and Parrot is a restaurant in Brimhaven."
+ },
+ "The Spice Is Right": {
+  "quests": [
+   "CONTACT"
+  ],
+  "evidence": "Access to this shop requires completion of the Contact! quest."
+ },
+ "The Toad and Chicken": {
+  "note": "Two branches (Burthorpe and Burthorpe Games Room); neither gated.",
+  "evidence": "The Toad and Chicken is a bar and an inn found in Burthorpe, north of Taverley."
+ },
+ "The Windbreaker": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "The Windbreaker is a bar in Quetzacalli Gorge. / The player must have travelled to Civitas illa Fortis via Regulus Cento after completion of Children of the Sun"
+ },
+ "Thessalia's Fine Clothes": {
+  "evidence": "Thessalia's Fine Clothes is located in central Varrock square."
+ },
+ "Thirus Urkar's Fine Dynamite Store": {
+  "evidence": "As Kourend Favour has been removed, accessing Thirus' store no longer requires it."
+ },
+ "Thurgo": {
+  "skills": {
+   "SMITHING": 99
+  },
+  "evidence": "players who have achieved level 99 in Smithing can purchase the Smithing cape from him for 99,000 coins."
+ },
+ "Thurid's Brain Buckets": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Thurid's Brain Buckets is a shop run by Thurid located in the Sunset Coast. / Varlamore can only be accessed upon completion of Children of the Sun"
+ },
+ "Thyria's Wares": {
+  "evidence": "As Kourend Favour has been removed, accessing Thyria's Wares no longer requires it."
+ },
+ "Tiadeche's Karambwan Stall": {
+  "quests": [
+   "TAI_BWO_WANNAI_TRIO"
+  ],
+  "evidence": "can only be accessed after completion of Tai Bwo Wannai Trio"
+ },
+ "Tindar": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "operates a market stall in the central plaza of Dorgesh-Kaan. / Dorgesh-Kaan: It can only be accessed after completion of the Death to the Dorgeshuun quest."
+ },
+ "Tizoro's Pickaxes": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum needs Perilous Moons progressed to killing the sulphur nagua and talking to Attala (partial progress, recorded as started).",
+  "evidence": "Cam Torum is an underground city beneath Ralos' Rise, accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest. (Cam Torum page)"
+ },
+ "Toci's Gem Store": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Toci's Gem Store is a gem shop in Aldarin run by Toci. / Varlamore can only be accessed upon completion of Children of the Sun"
+ },
+ "Tony's Pizza Bases": {
+  "evidence": "The shop is located in the Wilderness Bandit Camp."
+ },
+ "Toothy's Pickaxes": {
+  "evidence": "Toothy's Pickaxes is a store located in Lovakengj, near the sulphur mine"
+ },
+ "Torrell": {
+  "evidence": "Torrell is a gardener who looks after the bush farming patch north of the Ardougne Monastery. Gardener selling the standard Farming Supplies stock; no access requirement found."
+ },
+ "Trader Stan's Trading Post": {
+  "note": "21 branches (Port Sarim, Port Phasmatys, Prifddinas, Mos Le'Harmless, Sailing ports etc.); the Port Sarim branch has no requirements.",
+  "evidence": "Trader Stan himself can be found along with his trader crewmembers at the southern most dock of Port Sarim"
+ },
+ "Trader Sven's Black-market Goods": {
+  "started": [
+   "DARKNESS_OF_HALLOWVALE"
+  ],
+  "evidence": "Darkness of Hallowvale must be started to access Meiyerditch and his store."
+ },
+ "Treznor": {
+  "evidence": "Treznor is a gardener who looks after the tree patch outside of Varrock Castle. Gardener selling the standard Farming Supplies stock; no access requirement found."
+ },
+ "Turgok": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "operates a market stall in the central plaza of Dorgesh-Kaan. / Dorgesh-Kaan: It can only be accessed after completion of the Death to the Dorgeshuun quest."
+ },
+ "Tutab's Magical Market": {
+  "started": [
+   "MONKEY_MADNESS_I"
+  ],
+  "note": "Ape Atoll is reachable with partial or full Monkey Madness I. Without Monkey Madness II the player must be in monkey form (holding a monkey greegree) to use the stall.",
+  "evidence": "Players who haven't completed Monkey Madness II who wish to access Tutab's stall must be in monkey form / Ape Atoll: only accessible to players who have partially or fully completed the Monkey Madness I quest."
+ },
+ "Twiggy O'Korn": {
+  "diaries": [
+   "ARDOUGNE_EASY",
+   "ARDOUGNE_MEDIUM",
+   "ARDOUGNE_HARD",
+   "ARDOUGNE_ELITE",
+   "DESERT_EASY",
+   "DESERT_MEDIUM",
+   "DESERT_HARD",
+   "DESERT_ELITE",
+   "FALADOR_EASY",
+   "FALADOR_MEDIUM",
+   "FALADOR_HARD",
+   "FALADOR_ELITE",
+   "FREMENNIK_EASY",
+   "FREMENNIK_MEDIUM",
+   "FREMENNIK_HARD",
+   "FREMENNIK_ELITE",
+   "KANDARIN_EASY",
+   "KANDARIN_MEDIUM",
+   "KANDARIN_HARD",
+   "KANDARIN_ELITE",
+   "KARAMJA_EASY",
+   "KARAMJA_MEDIUM",
+   "KARAMJA_HARD",
+   "KARAMJA_ELITE",
+   "KOUREND_EASY",
+   "KOUREND_MEDIUM",
+   "KOUREND_HARD",
+   "KOUREND_ELITE",
+   "LUMBRIDGE_EASY",
+   "LUMBRIDGE_MEDIUM",
+   "LUMBRIDGE_HARD",
+   "LUMBRIDGE_ELITE",
+   "MORYTANIA_EASY",
+   "MORYTANIA_MEDIUM",
+   "MORYTANIA_HARD",
+   "MORYTANIA_ELITE",
+   "VARROCK_EASY",
+   "VARROCK_MEDIUM",
+   "VARROCK_HARD",
+   "VARROCK_ELITE",
+   "WESTERN_EASY",
+   "WESTERN_MEDIUM",
+   "WESTERN_HARD",
+   "WESTERN_ELITE",
+   "WILDERNESS_EASY",
+   "WILDERNESS_MEDIUM",
+   "WILDERNESS_HARD",
+   "WILDERNESS_ELITE"
+  ],
+  "other": [
+   "All quests completed (at some point)"
+  ],
+  "note": "Sells only the achievement diary cape: needs every achievement diary (all tiers). The elite Lumbridge diary already requires the quest cape, so all quests are implied.",
+  "evidence": "If a player has completed all of the Achievement Diaries, they can purchase an Achievement diary cape ... The diary cape requires completion of all achievement diaries, as well as completion of all quests in the game at some point in time."
+ },
+ "Two Feet Charley's Fish Shop": {
+  "quests": [
+   "CABIN_FEVER"
+  ],
+  "note": "Must carry the Book o' Piracy (from Cabin Fever) to trade.",
+  "evidence": "Mos Le'Harmless ... You must complete Cabin Fever to access the island. / A Book o' Piracy is required to trade with him"
+ },
+ "Tynan's Fishing Supplies": {
+  "evidence": "Tynan's Fishing Supplies is located in Port Piscarilius, directly east of the bank."
+ },
+ "Tyss": {
+  "evidence": "As Kourend Favour has been removed, accessing the Arceuus spellbook now requires simply speaking to Tyss. (Stock: Arceuus signet, free)"
+ },
+ "Tziuhtla": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "evidence": "Tziuhtla is the gardener who looks after the calquat farming patch in Kastori. / Varlamore can only be accessed upon completion of Children of the Sun",
+  "note": "Kastori is in the Tlati Rainforest; no further quest gate found for walking there."
+ },
+ "Valaine's Shop of Champions": {
+  "questPoints": 32,
+  "evidence": "Valaine's Shop of Champions is a shop located on the first floor of the Champions' Guild. / accessible to players with at least 32 quest points."
+ },
+ "Vanessa's Farming shop": {
+  "evidence": "Vanessa's Farming shop is a Farming shop in Catherby"
+ },
+ "Vannah's Farming Stall": {
+  "evidence": "Vannah's Farming Stall is a farming shop located in Hosidius in the farmer's market."
+ },
+ "Varrock General Store": {
+  "evidence": "Located in the centre of Varrock, it is a general store"
+ },
+ "Varrock Swordshop": {
+  "evidence": "The Varrock Swordshop is a shop in southern Varrock"
+ },
+ "Vasile": {
+  "quests": [
+   "THE_BLOOD_MOON_RISES"
+  ],
+  "note": "Only stock is ale yeast; he provides it from the Burgh de Rott inn basement after The Blood Moon Rises (which itself requires In Aid of the Myreque).",
+  "evidence": "After completion of The Blood Moon Rises, he moves to the basement of the Burgh de Rott inn where a fermenting vat has now been set up, and can help provide information and ale yeast for brewing."
+ },
+ "Vasquen": {
+  "evidence": "Vasquen is the farmer who looks after the hops patch north of Lumbridge. Gardener selling the standard Farming Supplies stock; no access requirement found."
+ },
+ "Velrak the explorer": {
+  "note": "Gives the dusty key free; must kill the Jailer for the jail key to open his cell, but no level/quest gate.",
+  "evidence": "He provides the player with the dusty key if talked to. To obtain the dusty key, the Jailer outside of the cell must be killed."
+ },
+ "Vermundi's Clothes Stall": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "Vermundi's Clothes Stall is a clothes stall found on the eastern side of Keldagrim Palace. / Travelling to Keldagrim requires starting The Giant Dwarf quest."
+ },
+ "Vertida Sefalatis": {
+  "quests": [
+   "A_TASTE_OF_HOPE"
+  ],
+  "items": {
+   "blisterwood flail": {
+    "started": [
+     "SINS_OF_THE_FATHER"
+    ]
+   }
+  },
+  "note": "Sells Ivandis flails after A Taste of Hope; blisterwood flails after crafting one during Sins of the Father. He dies near the end of Sins of the Father, after which Ivan Strom sells the flails instead, so this shop is unavailable once SotF is complete (not expressible).",
+  "evidence": "After completing A Taste of Hope ... he can sell you Ivandis flails ... after crafting the blisterwood flail during Sins of the Father, you can buy additional flails from him ... Vertida's former role of selling the player weapons is passed to Ivan Strom."
+ },
+ "Vigr's Warhammers": {
+  "started": [
+   "THE_GIANT_DWARF"
+  ],
+  "evidence": "located in Keldagrim, in the west side of Keldagrim Palace / Travelling to Keldagrim requires starting The Giant Dwarf quest."
+ },
+ "Void Knight Archery Store": {
+  "evidence": "found at the Void Knights' Outpost / reachable by talking to a Squire on the Port Sarim docks (free boat)"
+ },
+ "Void Knight General Store": {
+  "evidence": "located on the western side of the Void Knights' Outpost / reachable by talking to a Squire on the Port Sarim docks (free boat)"
+ },
+ "Void Knight Magic Store": {
+  "evidence": "located on the Void Knights' Outpost / reachable by talking to a Squire on the Port Sarim docks (free boat)"
+ },
+ "Warrens Fish Monger": {
+  "evidence": "Warrens Fish Monger is a Fish stall located in The Warrens."
+ },
+ "Warrens General Store": {
+  "evidence": "A manhole in the centre of Port Piscarilius ... must be climbed down to enter The Warrens."
+ },
+ "Warrior Guild Armoury": {
+  "other": [
+   "Combined Attack + Strength of 130, or 99 in either (Warriors' Guild entry)"
+  ],
+  "evidence": "Only players with a combined Attack and Strength level of at least 130 (or level 99 in either skill), are allowed entry by the guild's guard (Warriors' Guild page)"
+ },
+ "Warrior Guild Food Shop": {
+  "other": [
+   "Combined Attack + Strength of 130, or 99 in either (Warriors' Guild entry)"
+  ],
+  "evidence": "Only players with a combined Attack and Strength level of at least 130 (or level 99 in either skill), are allowed entry by the guild's guard (Warriors' Guild page)"
+ },
+ "Warrior Guild Potion Shop": {
+  "other": [
+   "Combined Attack + Strength of 130, or 99 in either (Warriors' Guild entry)"
+  ],
+  "evidence": "Only players with a combined Attack and Strength level of at least 130 (or level 99 in either skill), are allowed entry by the guild's guard (Warriors' Guild page)"
+ },
+ "Watson": {
+  "evidence": "For a fee of 500 coins, one can buy a blueprint so they can build a STASH unit tracker (Watson, Hosidius; no requirement mentioned)"
+ },
+ "Wayne's Chains! - Chainmail specialist": {
+  "evidence": "Wayne's Chains is a shop owned by Wayne located in southern Falador."
+ },
+ "Weapons galore": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "note": "Jatizso can also be docked at with 68 Sailing (unclear if that bypasses the Trials).",
+  "evidence": "Weapons galore is a weapons store located in south-west Jatizso. / Players must complete The Fremennik Trials to access the island."
+ },
+ "West Ardougne General Store": {
+  "started": [
+   "PLAGUE_CITY"
+  ],
+  "note": "West Ardougne is first reachable partway through Plague City (via the dug tunnel); main gate after completion. Recorded as started.",
+  "evidence": "West Ardougne: It is first accessible to players during the Plague City quest."
+ },
+ "Where Wyrmscraig's Wear Wares Were": {
+  "quests": [
+   "FALLEN_FROM_GRACE"
+  ],
+  "skills": {
+   "SAILING": 62
+  },
+  "evidence": "It can only be accessed after completion of Fallen From Grace. / Wyrmscraig ... requires 62 Sailing to access."
+ },
+ "Wilfred": {
+  "skills": {
+   "WOODCUTTING": 99
+  },
+  "evidence": "Members who have achieved 99 Woodcutting can purchase a Woodcutting cape"
+ },
+ "William's Wilderness Cape Shop": {
+  "evidence": "William's Wilderness Cape Shop is a shop located near the Red Dragon Isle"
+ },
+ "Wine Shop": {
+  "items": {
+   "jug of vinegar": {
+    "started": [
+     "RAG_AND_BONE_MAN_I"
+    ]
+   }
+  },
+  "evidence": "The jug of vinegar can only be bought after starting the Rag and Bone Man I quest."
+ },
+ "Wise Old Man": {
+  "other": [
+   "All quests completed (quest point cape)"
+  ],
+  "evidence": "Stock: Quest point cape, Quest point cape (t). The quest point cape ... can be obtained by players who have completed all quests (excluding miniquests)."
+ },
+ "Woodsman tutor": {
+  "skills": {
+   "WOODCUTTING": 99
+  },
+  "evidence": "Members who have achieved 99 Woodcutting can purchase a Woodcutting cape and its respective hood from him for 99,000 coins."
+ },
+ "Wyson the gardener": {
+  "evidence": "Wyson the gardener is a gardener in the Falador Park. You can buy woad leaves from him"
+ },
+ "Yadech Strongarm": {
+  "skills": {
+   "STRENGTH": 99
+  },
+  "evidence": "he will sell the Strength cape to those who have reached 99 Strength. (Inside the Warriors' Guild; 99 Strength also satisfies its entry requirement.)"
+ },
+ "Yanni Salika": {
+  "quests": [
+   "SHILO_VILLAGE"
+  ],
+  "items": {
+   "steel key ring": {
+    "started": [
+     "ONE_SMALL_FAVOUR"
+    ]
+   }
+  },
+  "note": "Shilo Village is accessible after completing the Shilo Village quest. Beads of the Dead and bone key are only sold back if you sold yours to him. Steel key ring is a replacement for the One Small Favour key ring; the started-OSF item requirement is my inference, not stated on the wiki.",
+  "evidence": "Shilo Village is a small village in southern Karamja, accessible after completing the Shilo Village quest. / He will also sell the player a replacement steel key ring if it is lost"
+ },
+ "Yarnio's Baked Goods": {
+  "quests": [
+   "CHILDREN_OF_THE_SUN"
+  ],
+  "started": [
+   "PERILOUS_MOONS"
+  ],
+  "note": "Cam Torum needs Perilous Moons progressed to killing the sulphur nagua and talking to Attala (partial progress, recorded as started).",
+  "evidence": "Cam Torum is an underground city beneath Ralos' Rise, accessible after killing the sulphur nagua and then talking to Attala in the Perilous Moons quest. (Cam Torum page)"
+ },
+ "Yarsul's Prodigious Pickaxes": {
+  "skills": {
+   "MINING": 60
+  },
+  "evidence": "a store that sells pickaxes inside the Mining Guild's outer area, requiring 60 Mining to access."
+ },
+ "Ye olde Tea Shoppe": {
+  "evidence": "Ye olde Tea Shoppe is a Tea stall located in south-eastern Varrock"
+ },
+ "Yrsa's Accoutrements": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "evidence": "Yrsa will not change your appearance or sell you clothes if you have not completed The Fremennik Trials quest."
+ },
+ "Yulf Squecks": {
+  "quests": [
+   "THE_FREMENNIK_TRIALS"
+  ],
+  "note": "Etceteria is reached via the Rellekka-Miscellania boat (Fremennik Trials); docking at Etceteria by Sailing needs 65 Sailing + Royal Trouble.",
+  "evidence": "Yulf Squecks is the farmer of the spirit tree farming patch in Etceteria. / A boat ... sails to and from the dock on Miscellania (requires the completion of the quest The Fremennik Trials)."
+ },
+ "Zaff's Superior Staffs!": {
+  "note": "The discounted battlestaff barrel needs Varrock diary tiers but is separate from the shop.",
+  "evidence": "Zaff's Superior Staffs is a staff shop located near central Varrock, owned by Zaff."
+ },
+ "Zanaris General Store": {
+  "note": "LOST_CITY is not in quests.txt, so recorded in other. Zanaris is entered with a dramen/lunar staff (Lost City).",
+  "evidence": "Zanaris General Store is run by the fairy shop keeper ... denizens of Zanaris. / Zanaris: Accessed during the Lost City quest ... by wielding a dramen staff or lunar staff",
+  "quests": [
+   "LOST_CITY"
+  ]
+ },
+ "Zeke's Superior Scimitars": {
+  "evidence": "Zeke's Superior Scimitars is located in Al Kharid, just north-east of the bank."
+ },
+ "Zenesha's Plate Mail Body Shop": {
+  "evidence": "Zenesha's Plate Mail Body Shop is a shop owned by Zenesha in East Ardougne."
+ },
+ "Zenkog": {
+  "quests": [
+   "DEATH_TO_THE_DORGESHUUN"
+  ],
+  "evidence": "operates a market stall in the central plaza of Dorgesh-Kaan. / Dorgesh-Kaan: It can only be accessed after completion of the Death to the Dorgeshuun quest."
+ },
+ "~ Uglug's stuffsies ~": {
+  "started": [
+   "ZOGRE_FLESH_EATERS"
+  ],
+  "other": [
+   "Sell Uglug Nar a Relicym's balm to unlock the shop"
+  ],
+  "evidence": "To unlock his store, players are required to sell him a Relicym's balm after starting Zogre Flesh Eaters."
+ }
+}

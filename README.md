@@ -53,6 +53,9 @@ Asset Manager only reads what the game shows you and never acts for you: it adds
 
 ## Shop flipping
 
+- **Best shop buys** – the side panel lists the five best things to buy from any shop for Death's coffer (items whose GE guide price is high enough that the coffer adds more than the shop charges), and, on accounts that can use the GE, the five best to resell there. Each is one visit to the shop: how many to buy before the price rises too far, the shop runs out or your inventory is full, what it costs, and what you gain. Hop worlds to buy more. **Find** points you to the shop.
+  - Only shops whose requirements you meet are listed: skill levels, quests (finished, or just started where that's enough), achievement diaries, quest points and membership are checked against your account. Requirements that can't be checked (like the Warriors' Guild's combined Attack and Strength, or a Seal of Passage) are shown in orange on the row instead.
+  - Shops that charge a set price rather than their usual % of an item's value (like Diango's Toy Store) are priced at what they actually charge.
 - When a shop is open, items it sells that can be resold on the GE for a profit get a small Grand Exchange icon.
 - Hover one to see how many to buy, the shop price (it rises as the shop's stock drops), what the GE pays after the 2% tax, the profit, and what limits the amount (the price rise, shop stock, inventory space, coins in your inventory, or, with live prices, how many the GE trades in an hour).
 - **Live GE prices (OSRS Wiki)** is an opt-in setting. RuneLite's own prices are a single 30-minute average; the Wiki's real-time data has separate buy and sell prices and how many sold on the GE in the last hour. It's off by default because it contacts a third-party server.

@@ -156,7 +156,10 @@ public class ShopFlipper
 			// With live prices, don't buy more than the GE trades in an hour
 			LivePrices.Volume hour = livePrices.volume(itemManager.canonicalize(itemId));
 			long geVolume = hour == null ? Long.MAX_VALUE : (long) hour.getHigh() + hour.getLow();
-			ShopFlip flip = ShopFlipAdvisor.plan(v.getStorePrice(), w.getItemQuantity(), entry.getS(), sellRate, delta,
+			// Some shops charge a set price rather than their usual % of value
+			int value = entry.getSp() != null && !gloves && sellRate > 0
+				? (int) ((entry.getSp() * 1000L + sellRate - 1) / sellRate) : v.getStorePrice();
+			ShopFlip flip = ShopFlipAdvisor.plan(value, w.getItemQuantity(), entry.getS(), sellRate, delta,
 				v.getGeNetSell(), 1, space, budget, geVolume);
 			if (flip != null && flip.getProfit() >= config.minFlipProfit())
 			{
