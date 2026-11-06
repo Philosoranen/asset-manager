@@ -27,6 +27,7 @@ public class BestBuysTest
 		final Map<Integer, Long> ge = new HashMap<>();
 		final Map<Integer, Integer> value = new HashMap<>();
 		final Set<Integer> stackable = new HashSet<>();
+		final Map<Integer, Long> volume = new HashMap<>();
 
 		@Override
 		public long coffer(int itemId)
@@ -43,7 +44,7 @@ public class BestBuysTest
 		@Override
 		public long geVolume(int itemId)
 		{
-			return Long.MAX_VALUE;
+			return volume.getOrDefault(itemId, Long.MAX_VALUE);
 		}
 
 		@Override
@@ -249,6 +250,47 @@ public class BestBuysTest
 		assertEquals(20, poor.get(0).getFlip().getQuantity());
 		List<BestBuys.Deal> broke = BestBuys.find(BestBuys.Kind.COFFER, shops, p, Unlocks.EVERYTHING, PERKS, 25_000, 1, 5);
 		assertEquals(2, broke.get(0).getFlip().getQuantity());
+	}
+
+	@Test
+	public void cheapShopItemsWorthTheCofferMinimumAreFound()
+	{
+		// Costs 150 at the shop, but its guide price is over Death's 10k minimum
+		Shop gnome = shop("Gianne's Restaurant", 1000, 10, null, Map.of("premade worm hole", item(2233, 3)));
+		FakePrices p = new FakePrices();
+		p.value.put(2233, 150);
+		p.coffer.put(2233, 12_000L);
+
+		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.COFFER, Collections.singletonList(gnome), p, Unlocks.EVERYTHING,
+			PERKS, Long.MAX_VALUE, 500, 5);
+		assertEquals(1, deals.size());
+		assertEquals(150, deals.get(0).getFlip().getFirstPrice());
+		assertEquals(3, deals.get(0).getFlip().getQuantity());
+	}
+
+	@Test
+	public void geDealsBuyOnlyWhatSellsInAnHour()
+	{
+		Shop shop = shop("Shop", 1000, 0, null, Map.of("slow", item(1, 20), "dead", item(2, 20), "busy", item(3, 20)));
+		FakePrices p = new FakePrices();
+		for (int id = 1; id <= 3; id++)
+		{
+			p.value.put(id, 1000);
+			p.ge.put(id, 5000L);
+		}
+		p.volume.put(1, 3L);
+		p.volume.put(2, 0L);
+		p.volume.put(3, 500L);
+
+		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.GE, Collections.singletonList(shop), p, Unlocks.EVERYTHING, PERKS,
+			Long.MAX_VALUE, 1, 5);
+		assertEquals(2, deals.size());
+		assertEquals("busy", deals.get(0).getItem());
+		assertEquals(20, deals.get(0).getFlip().getQuantity());
+		assertEquals(500, deals.get(0).getTradesPerHour());
+		assertEquals("slow", deals.get(1).getItem());
+		assertEquals(3, deals.get(1).getFlip().getQuantity());
+		assertEquals(ShopFlip.Limit.VOLUME, deals.get(1).getFlip().getLimit());
 	}
 
 	@Test

@@ -919,8 +919,8 @@ public class AssetManagerPlugin extends Plugin
 					continue;
 				}
 				values.put(id, itemValuator.get(id));
-				LivePrices.Volume hour = livePrices.volume(id);
-				volumes.put(id, hour == null ? Long.MAX_VALUE : (long) hour.getHigh() + hour.getLow());
+				long perHour = livePrices.tradesPerHour(id);
+				volumes.put(id, perHour < 0 ? Long.MAX_VALUE : perHour);
 				if (itemManager.getItemComposition(id).isStackable())
 				{
 					stackable.add(id);

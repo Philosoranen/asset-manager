@@ -35,6 +35,8 @@ public class LivePrices
 	// The wiki asks for a descriptive User-Agent
 	private static final String USER_AGENT = "Asset Manager RuneLite plugin";
 	private static final long REFRESH_MINUTES = 5;
+	/** The last day's trading changes slowly, so it's fetched less often. */
+	private static final long DAY_REFRESH_MILLIS = TimeUnit.HOURS.toMillis(1);
 
 	@Value
 	public static class Price
@@ -64,6 +66,9 @@ public class LivePrices
 
 	private volatile Map<Integer, Price> prices = Collections.emptyMap();
 	private volatile Map<Integer, Volume> volumes = Collections.emptyMap();
+	/** Items traded in the last day, by id; null until loaded. */
+	private volatile Map<Integer, Long> dayVolumes;
+	private volatile long dayFetchedAt;
 	private ScheduledFuture<?> task;
 	private Runnable onUpdate = () -> {};
 
@@ -97,6 +102,8 @@ public class LivePrices
 		}
 		prices = Collections.emptyMap();
 		volumes = Collections.emptyMap();
+		dayVolumes = null;
+		dayFetchedAt = 0;
 	}
 
 	public boolean isAvailable()
@@ -146,6 +153,29 @@ public class LivePrices
 		return volumes.get(itemId);
 	}
 
+	/**
+	 * About how many of an item trade on the GE an hour, averaged over the last day so a busy or quiet hour doesn't
+	 * skew it; from the last hour alone until the day's figures have loaded. Items missing from the wiki's figures
+	 * didn't trade at all. -1 if unknown (live prices off or not loaded yet).
+	 */
+	public long tradesPerHour(int itemId)
+	{
+		return tradesPerHour(volumes.get(itemId), !volumes.isEmpty(), dayVolumes, itemId);
+	}
+
+	static long tradesPerHour(Volume hour, boolean hourLoaded, Map<Integer, Long> day, int itemId)
+	{
+		if (day != null)
+		{
+			return day.getOrDefault(itemId, 0L) / 24;
+		}
+		if (!hourLoaded)
+		{
+			return -1;
+		}
+		return hour == null ? 0 : (long) hour.getHigh() + hour.getLow();
+	}
+
 	private void refresh()
 	{
 		fetch("latest", data ->
@@ -176,6 +206,21 @@ public class LivePrices
 			}
 			volumes = map;
 		});
+		if (System.currentTimeMillis() - dayFetchedAt >= DAY_REFRESH_MILLIS)
+		{
+			fetch("24h", data ->
+			{
+				Map<Integer, Long> map = new HashMap<>();
+				for (Map.Entry<String, JsonElement> e : data.entrySet())
+				{
+					JsonObject o = e.getValue().getAsJsonObject();
+					map.put(Integer.parseInt(e.getKey()), (long) intOf(o, "highPriceVolume") + intOf(o, "lowPriceVolume"));
+				}
+				dayVolumes = map;
+				dayFetchedAt = System.currentTimeMillis();
+				onUpdate.run();
+			});
+		}
 	}
 
 	private void fetch(String endpoint, Consumer<JsonObject> onData)

@@ -154,8 +154,8 @@ public class ShopFlipper
 			int space = stackable ? (freeSlots > 0 || (inv != null && inv.count(itemId) > 0) ? Integer.MAX_VALUE : 0) : freeSlots;
 
 			// With live prices, don't buy more than the GE trades in an hour
-			LivePrices.Volume hour = livePrices.volume(itemManager.canonicalize(itemId));
-			long geVolume = hour == null ? Long.MAX_VALUE : (long) hour.getHigh() + hour.getLow();
+			long perHour = livePrices.tradesPerHour(itemManager.canonicalize(itemId));
+			long geVolume = perHour < 0 ? Long.MAX_VALUE : perHour;
 			// Some shops charge a set price rather than their usual % of value
 			int value = entry.getSp() != null && !gloves && sellRate > 0
 				? (int) ((entry.getSp() * 1000L + sellRate - 1) / sellRate) : v.getStorePrice();
@@ -210,11 +210,11 @@ public class ShopFlipper
 		p.getChildren().add(line("Profit", QuantityFormatter.formatNumber(f.getProfit()), GOOD));
 		p.getChildren().add(LineComponent.builder().left("Limited by " + f.getLimit().getDescription()).leftColor(MUTED).build());
 
-		LivePrices.Volume vol = livePrices.volume(itemManager.canonicalize(itemId));
-		if (vol != null)
+		long perHour = livePrices.tradesPerHour(itemManager.canonicalize(itemId));
+		if (perHour >= 0)
 		{
 			p.getChildren().add(LineComponent.builder()
-				.left("Traded on the GE last hour: " + QuantityFormatter.formatNumber((long) vol.getHigh() + vol.getLow()))
+				.left("Trades on the GE: about " + QuantityFormatter.formatNumber(perHour) + " an hour")
 				.leftColor(MUTED)
 				.build());
 		}

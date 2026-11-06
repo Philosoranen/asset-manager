@@ -331,6 +331,11 @@ public class AssetManagerPanel extends PluginPanel
 		if (!ge.isEmpty())
 		{
 			subheader("To sell on the GE");
+			if (ge.stream().anyMatch(d -> d.getTradesPerHour() == Long.MAX_VALUE))
+			{
+				addRow(wrapped("Turn on Live GE prices in the settings to leave out items that rarely sell and only buy"
+					+ " as many as sell in an hour.", DETAIL_WIDTH, WARN));
+			}
 			ge.forEach(this::dealRow);
 		}
 	}
@@ -381,6 +386,11 @@ public class AssetManagerPanel extends PluginPanel
 		if (bundle != null && bundle.length == 2)
 		{
 			detail.append(" Offer ").append(gp(bundle[1])).append(" for ").append(bundle[0]).append(" to get that price.");
+		}
+		if (deal.getKind() == BestBuys.Kind.GE && deal.getTradesPerHour() != Long.MAX_VALUE)
+		{
+			detail.append(" About ").append(QuantityFormatter.formatNumber(deal.getTradesPerHour())).append(" trade an hour on the GE");
+			detail.append(f.getLimit() == ShopFlip.Limit.VOLUME ? ", so buy " + QuantityFormatter.formatNumber(f.getQuantity()) + "." : ".");
 		}
 		if (shop.getTalk() != null)
 		{

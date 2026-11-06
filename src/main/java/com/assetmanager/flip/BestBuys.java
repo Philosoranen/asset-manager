@@ -44,7 +44,7 @@ public final class BestBuys
 		/** Coins from selling one on the GE after tax, or 0 if it can't be. */
 		long ge(int itemId);
 
-		/** How many the GE trades in an hour, or Long.MAX_VALUE if unknown. */
+		/** About how many the GE trades in an hour, or Long.MAX_VALUE if unknown (live prices off). */
 		long geVolume(int itemId);
 
 		/** The item's store value, which shop prices are a % of. */
@@ -64,6 +64,8 @@ public final class BestBuys
 		ShopFlip flip;
 		/** Requirements the plugin couldn't check, which the player should make sure of. */
 		List<String> unchecked;
+		/** For GE deals, about how many trade an hour; Long.MAX_VALUE if unknown or for the coffer. */
+		long tradesPerHour;
 
 		/** What one visit gains: every item bought, as the price rises. */
 		public long getGain()
@@ -188,6 +190,6 @@ public final class BestBuys
 			return null;
 		}
 		return new Deal(kind, shop, name, id, flip,
-			missing.getUnchecked().isEmpty() ? Collections.emptyList() : new ArrayList<>(missing.getUnchecked()));
+			missing.getUnchecked().isEmpty() ? Collections.emptyList() : new ArrayList<>(missing.getUnchecked()), volume);
 	}
 }

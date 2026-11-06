@@ -34,7 +34,10 @@ public final class ShopFlipAdvisor
 		return plan(value, stock, normalStock, sellRate, delta, geUnit, minProfitEach, maxSpace, coins, Long.MAX_VALUE);
 	}
 
-	/** As above, buying no more than the GE trades in an hour ({@code geVolume}), so they can actually be sold. */
+	/**
+	 * As above, buying no more than the GE trades in an hour ({@code geVolume}, Long.MAX_VALUE if unknown), so they
+	 * can actually be sold. Items that trade less than once an hour aren't worth buying at all.
+	 */
 	public static ShopFlip plan(int value, int stock, int normalStock, int sellRate, int delta, long geUnit,
 		int minProfitEach, int maxSpace, long coins, long geVolume)
 	{
