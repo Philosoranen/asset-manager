@@ -18,6 +18,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
@@ -42,14 +43,18 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.components.materialtabs.MaterialTab;
+import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.QuantityFormatter;
 
 /**
- * The side panel: a summary of your coffer and death costs, then where your spare items should go. Each destination
+ * The side panel, in two tabs. Liquidate: a summary of your coffer and death costs, then where your spare items should
+ * go. Flipping: things worth buying to sell on or put in the coffer. Each destination
  * is one row (Death's coffer, high alching, the GE, each shop, kept items) with how many items and what they're worth;
  * clicking it shows those items in the bank, where the tooltips have the per-item detail.
  * <p>
@@ -74,7 +79,24 @@ public class AssetManagerPanel extends PluginPanel
 
 	private static final String SECTION_KEPT = "Manage kept items";
 
+	public enum Tab
+	{
+		LIQUIDATE("Liquidate"),
+		FLIPPING("Flipping");
+
+		private final String label;
+
+		Tab(String label)
+		{
+			this.label = label;
+		}
+	}
+
 	private final JPanel content = new WidthTrackingPanel();
+	private final JScrollPane scroll = new JScrollPane(content);
+	private Tab tab = Tab.LIQUIDATE;
+	/** Where each tab was scrolled to, so switching back doesn't lose your place. */
+	private final int[] scrollPositions = new int[Tab.values().length];
 	private final LongConsumer onManualBalance;
 	/** (item id, keep amount); 0 removes the rule. */
 	private final BiConsumer<Integer, Integer> onKeepChange;
@@ -103,11 +125,33 @@ public class AssetManagerPanel extends PluginPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
+		JPanel header = new JPanel(new BorderLayout(0, 6));
+		header.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		header.setBorder(new EmptyBorder(8, 8, 0, 8));
+		JLabel title = new JLabel("Asset Manager");
+		title.setFont(FontManager.getRunescapeBoldFont());
+		title.setForeground(Color.WHITE);
+		header.add(title, BorderLayout.NORTH);
+		MaterialTabGroup tabs = new MaterialTabGroup();
+		tabs.setLayout(new GridLayout(1, 0, 6, 0));
+		for (Tab t : Tab.values())
+		{
+			MaterialTab mt = new MaterialTab(t.label, tabs, null);
+			mt.setOnSelectEvent(() ->
+			{
+				selectTab(t);
+				return true;
+			});
+			tabs.addTab(mt);
+		}
+		tabs.select(tabs.getTab(tab.ordinal()));
+		header.add(tabs, BorderLayout.CENTER);
+		add(header, BorderLayout.NORTH);
+
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 		content.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		content.setBorder(new EmptyBorder(8, 8, 8, 8));
+		content.setBorder(new EmptyBorder(0, 8, 8, 8));
 
-		JScrollPane scroll = new JScrollPane(content);
 		scroll.setBorder(null);
 		scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -124,22 +168,31 @@ public class AssetManagerPanel extends PluginPanel
 		update(lastState, warnDeaths);
 	}
 
+	private void selectTab(Tab t)
+	{
+		if (t == tab)
+		{
+			return;
+		}
+		scrollPositions[tab.ordinal()] = scroll.getVerticalScrollBar().getValue();
+		tab = t;
+		update(lastState, warnDeaths);
+		int position = scrollPositions[t.ordinal()];
+		// Restore after the new content has been laid out, or the scroll bar's range is still the old tab's
+		SwingUtilities.invokeLater(() -> scroll.getVerticalScrollBar().setValue(position));
+	}
+
 	public void update(PanelState state, int warnDeaths)
 	{
 		this.lastState = state;
 		this.warnDeaths = warnDeaths;
 		content.removeAll();
 
-		JLabel title = new JLabel("Asset Manager");
-		title.setFont(FontManager.getRunescapeBoldFont());
-		title.setForeground(Color.WHITE);
-		addRow(title);
-
 		if (state == null)
 		{
-			addRow(text("Log in to see your death costs.", Color.LIGHT_GRAY));
+			addRow(text(tab == Tab.LIQUIDATE ? "Log in to see your death costs." : "Log in to see shop deals.", Color.LIGHT_GRAY));
 		}
-		else
+		else if (tab == Tab.LIQUIDATE)
 		{
 			if (state.getAccountMode().canUseCoffer())
 			{
@@ -151,8 +204,11 @@ public class AssetManagerPanel extends PluginPanel
 			}
 			addRiskSection(state);
 			addDestinationsSection(state);
-			addBestBuysSection(state);
 			addKeptSection(state);
+		}
+		else
+		{
+			addBestBuysSection(state);
 		}
 
 		content.revalidate();
@@ -317,7 +373,15 @@ public class AssetManagerPanel extends PluginPanel
 	{
 		List<BestBuys.Deal> coffer = state.getCofferBuys();
 		List<BestBuys.Deal> ge = state.getGeBuys();
-		if (coffer.isEmpty() && ge.isEmpty() || !header("Best shop buys"))
+		if (coffer.isEmpty() && ge.isEmpty())
+		{
+			addGap(10);
+			addRow(text("No shop deals right now. Turn on Show best shop buys in the settings if it's off; otherwise"
+				+ " nothing you can buy from a shop is worth more than it costs" + (state.isCoinsKnown() ? "" : ", or you need to"
+				+ " open your bank so this counts your banked coins") + ".", Color.LIGHT_GRAY));
+			return;
+		}
+		if (!header("Best shop buys"))
 		{
 			return;
 		}
