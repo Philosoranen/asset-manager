@@ -67,6 +67,12 @@ public final class BestBuys
 
 		boolean stackable(int itemId);
 
+		/** Whether it's a members item, which can't be used on a free-to-play world. */
+		default boolean members(int itemId)
+		{
+			return false;
+		}
+
 		/** Hours the player will wait for GE offers to fill. */
 		default double geHours()
 		{
@@ -404,6 +410,10 @@ public final class BestBuys
 		Integer id = item.getId();
 		// Only items the shop keeps in stock can be bought
 		if (id == null || item.isNs() || item.getS() == 0)
+		{
+			return null;
+		}
+		if (!unlocks.isMembers() && prices.members(id))
 		{
 			return null;
 		}

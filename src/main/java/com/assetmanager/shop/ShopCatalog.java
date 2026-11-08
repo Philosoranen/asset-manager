@@ -184,10 +184,10 @@ public class ShopCatalog
 		return out;
 	}
 
-	/** The shop in a group closest to {@code from}, or null if there's none. */
-	public Shop nearestInGroup(String group, WorldPoint from)
+	/** The shop in a group closest to {@code from}, or null if there's none; members shops only on a members world. */
+	public Shop nearestInGroup(String group, WorldPoint from, boolean freeWorld)
 	{
-		return groupMembers(group).stream().min(Comparator.comparingInt(s -> s.distanceTo(from))).orElse(null);
+		return groupMembers(group).stream().filter(s -> !freeWorld || !s.isMembers()).min(Comparator.comparingInt(s -> s.distanceTo(from))).orElse(null);
 	}
 
 	/** The shops that might buy an item, in the catalog's order: those listing it, and general stores. */
@@ -293,7 +293,7 @@ public class ShopCatalog
 		Map<Long, ShopOffer> byRate = new HashMap<>();
 		for (Shop shop : candidates(key))
 		{
-			if (perks.isAvoidWilderness() && shop.isWilderness() || !usable.test(shop))
+			if (perks.isAvoidWilderness() && shop.isWilderness() || perks.isFreeWorld() && shop.isMembers() || !usable.test(shop))
 			{
 				continue;
 			}

@@ -26,6 +26,13 @@ public class ShopPerks
 	 * switch to another as the player walks towards it.
 	 */
 	Set<String> preferredShops;
+	/** On a free-to-play world, where members shops can't be used. */
+	boolean freeWorld;
+
+	public ShopPerks(int glovesTier, boolean charos, boolean avoidWilderness, WorldPoint location, Set<String> preferredShops)
+	{
+		this(glovesTier, charos, avoidWilderness, location, preferredShops, false);
+	}
 
 	public ShopPerks(int glovesTier, boolean charos, boolean avoidWilderness, WorldPoint location)
 	{

@@ -35,7 +35,7 @@ public class UnlocksTest
 		Unlocks.Missing m = u.missing(shop(req, true), null);
 
 		assertFalse(m.isMet());
-		assertEquals(Arrays.asList("Membership", "46 Hunter", "Children Of The Sun", "Start The Giant Dwarf", "Karamja Easy diary",
+		assertEquals(Arrays.asList("Members world", "46 Hunter", "Children Of The Sun", "Start The Giant Dwarf", "Karamja Easy diary",
 			"50 quest points"), m.getUnmet());
 	}
 

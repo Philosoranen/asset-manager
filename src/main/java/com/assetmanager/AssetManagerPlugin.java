@@ -85,6 +85,7 @@ import net.runelite.api.MenuEntry;
 import net.runelite.api.Player;
 import net.runelite.api.ScriptID;
 import net.runelite.api.SkullIcon;
+import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
@@ -643,7 +644,8 @@ public class AssetManagerPlugin extends Plugin
 		}
 		// For a group of shops paying the same, the one nearest the player now
 		WorldPoint here = playerLocation();
-		Shop shop = Optional.ofNullable(shopCatalog.nearestInGroup(name, here)).orElse(fallback);
+		boolean freeWorld = !client.getWorldType().contains(WorldType.MEMBERS);
+		Shop shop = Optional.ofNullable(shopCatalog.nearestInGroup(name, here, freeWorld)).orElse(fallback);
 		WorldPoint at = shop.nearestPoint(here);
 		if (at == null)
 		{
@@ -729,7 +731,9 @@ public class AssetManagerPlugin extends Plugin
 		{
 			preferred.add(shopFinder.getShop());
 		}
-		ShopPerks perks = new ShopPerks(glovesTier, charos, config.avoidWilderness(), location, preferred);
+		// Members shops and items can't be used on a free-to-play world
+		boolean freeWorld = !client.getWorldType().contains(WorldType.MEMBERS);
+		ShopPerks perks = new ShopPerks(glovesTier, charos, config.avoidWilderness(), location, preferred, freeWorld);
 		// Flips spend only the coins carried, so the player controls how much is considered by how much they take out
 		long budget = inventoryCoins();
 		if (bestBuysStale || budget != bestBuysBudget)
@@ -770,6 +774,11 @@ public class AssetManagerPlugin extends Plugin
 				values.put(itemId, itemValuator.get(itemId));
 			}
 			Map<Integer, Integer> spare = holdings.spare(keepRules);
+			if (freeWorld)
+			{
+				// Members items can't be sold, alched or sacrificed on a free-to-play world
+				spare.keySet().removeIf(id -> itemManager.getItemComposition(id).isMembers());
+			}
 			int natureRuneCost = itemValuator.getNatureRuneCost();
 			// Shops others are overstocking an item at on every world aren't worth a trip for it until they restock
 			Map<String, Set<String>> busyShops = new HashMap<>();
@@ -928,6 +937,7 @@ public class AssetManagerPlugin extends Plugin
 		Map<Integer, Long> volumes = new HashMap<>();
 		Map<Integer, Long> geSells = new HashMap<>();
 		Set<Integer> stackable = new HashSet<>();
+		Set<Integer> membersItems = new HashSet<>();
 		for (Shop shop : shopCatalog.getShops())
 		{
 			for (Shop.Item item : shop.getItems().values())
@@ -944,9 +954,14 @@ public class AssetManagerPlugin extends Plugin
 				// Sold at the price the player's patience gets, when live prices say what that is
 				int live = livePrices.sellPrice(id, patience.getPrice());
 				geSells.put(id, live > 0 && v.isTradeable() ? ItemValues.afterTax(live) : v.getGeNetSell());
-				if (itemManager.getItemComposition(id).isStackable())
+				ItemComposition comp = itemManager.getItemComposition(id);
+				if (comp.isStackable())
 				{
 					stackable.add(id);
+				}
+				if (comp.isMembers())
+				{
+					membersItems.add(id);
 				}
 			}
 		}
@@ -998,6 +1013,12 @@ public class AssetManagerPlugin extends Plugin
 			public boolean stackable(int itemId)
 			{
 				return stackable.contains(itemId);
+			}
+
+			@Override
+			public boolean members(int itemId)
+			{
+				return membersItems.contains(itemId);
 			}
 		};
 		Flip.Dest dest = Flips.destination(mode, config.flipDest());
@@ -1057,7 +1078,7 @@ public class AssetManagerPlugin extends Plugin
 			trades.put(id, patience.tradesIn(livePrices.tradesPerHour(id)));
 			info.put(id, i);
 			long guide = itemManager.getItemPriceWithSource(id, false);
-			if (guide >= ItemValues.COFFER_MIN_GUIDE_PRICE)
+			if (ItemValues.cofferAccepts(id, guide))
 			{
 				coffer.put(id, guide * 105 / 100);
 			}
@@ -1116,6 +1137,12 @@ public class AssetManagerPlugin extends Plugin
 			public boolean alchable(int itemId)
 			{
 				return info.get(itemId).isAlchable();
+			}
+
+			@Override
+			public boolean members(int itemId)
+			{
+				return info.get(itemId).isMembers();
 			}
 
 			@Override

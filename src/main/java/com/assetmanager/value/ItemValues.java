@@ -1,6 +1,8 @@
 package com.assetmanager.value;
 
+import java.util.Set;
 import lombok.Value;
+import net.runelite.api.gameval.ItemID;
 
 /**
  * Snapshot of everything we know about the worth of a single unit of an item.
@@ -18,6 +20,9 @@ public class ItemValues
 	/** Items sold for less than this each aren't taxed. */
 	public static final int GE_TAX_FREE_BELOW = 50;
 
+	/** Tradeable items Death's coffer turns down anyway: "You cannot trade that item to Death." */
+	private static final Set<Integer> COFFER_REFUSES = Set.of(ItemID.OSRS_BOND, ItemID.BOUGHT_OSRS_BOND, ItemID.OSRS_BOND_UNTRADEABLE);
+
 	int itemId;
 	String name;
 	/** Jagex's official Grand Exchange guide price. Used by Death's coffer and death fees. */
@@ -32,11 +37,17 @@ public class ItemValues
 	/** Coins added to the coffer when one unit is sacrificed: 105% of the guide price, or 0 if not accepted. */
 	public long getCofferValue()
 	{
-		if (!tradeable || guidePrice < COFFER_MIN_GUIDE_PRICE)
+		if (!tradeable || !cofferAccepts(itemId, guidePrice))
 		{
 			return 0;
 		}
 		return (long) guidePrice * 105 / 100;
+	}
+
+	/** Whether Death's coffer takes a tradeable item with this guide price. Old school bonds it never does. */
+	public static boolean cofferAccepts(int itemId, long guidePrice)
+	{
+		return guidePrice >= COFFER_MIN_GUIDE_PRICE && !COFFER_REFUSES.contains(itemId);
 	}
 
 	/** Coins received from selling one unit on the GE at the real price, after tax. */

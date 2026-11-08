@@ -90,6 +90,12 @@ public final class Flips
 		/** Whether it can be alched; shops won't buy items that can't. */
 		boolean alchable(int itemId);
 
+		/** Whether it's a members item, which can't be traded or used on a free-to-play world. */
+		default boolean members(int itemId)
+		{
+			return false;
+		}
+
 		/** Hours the player will wait for offers to fill. */
 		default double geHours()
 		{
@@ -132,8 +138,8 @@ public final class Flips
 		{
 			long cost = m.buy(id);
 			long trades = m.trades(id);
-			// Items that don't trade can't be bought
-			if (cost <= 0 || trades < 1)
+			// Items that don't trade can't be bought, nor members items on a free-to-play world
+			if (cost <= 0 || trades < 1 || !unlocks.isMembers() && m.members(id))
 			{
 				continue;
 			}

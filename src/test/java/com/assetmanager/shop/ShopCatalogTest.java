@@ -244,7 +244,29 @@ public class ShopCatalogTest
 		// A shop like no other keeps its name
 		assertEquals("Bandit Duty Free", c.findByName("Bandit Duty Free").getGroup());
 		// The nearest of a group from Rimmington is Rimmington's
-		assertEquals("Rimmington General Store", c.nearestInGroup("General store", new WorldPoint(2950, 3215, 0)).getName());
+		assertEquals("Rimmington General Store", c.nearestInGroup("General store", new WorldPoint(2950, 3215, 0), false).getName());
+		// From Catherby it's a members store, unless the player is on a free-to-play world
+		WorldPoint catherby = new WorldPoint(2809, 3440, 0);
+		assertTrue(c.nearestInGroup("General store", catherby, false).isMembers());
+		assertFalse(c.nearestInGroup("General store", catherby, true).isMembers());
+	}
+
+	@Test
+	public void membersShopsAreSkippedOnAFreeWorld()
+	{
+		Shop members = shop("Members Store", true, 600, 30, null, null, Collections.emptyMap());
+		members.setMembers(true);
+		ShopCatalog c = new ShopCatalog(Arrays.asList(members,
+			shop("General Store", true, 400, 30, null, null, Collections.emptyMap())), "test");
+
+		assertEquals("Members Store", c.bestOffer("Rune platebody", 65_000, 1, true, ShopPerks.NONE, 0, 1, 10).getShop().getName());
+		ShopPerks f2p = new ShopPerks(0, false, false, null, Collections.emptySet(), true);
+		assertEquals("General Store", c.bestOffer("Rune platebody", 65_000, 1, true, f2p, 0, 1, 10).getShop().getName());
+
+		// The bundled data knows which shops are members-only
+		ShopCatalog bundled = ShopCatalog.load(new Gson());
+		assertFalse(bundled.findByName("Lumbridge General Store").isMembers());
+		assertTrue(bundled.findByName("Arhein's General Goods").isMembers());
 	}
 
 	@Test

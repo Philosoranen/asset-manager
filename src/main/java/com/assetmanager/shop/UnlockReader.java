@@ -11,6 +11,7 @@ import net.runelite.api.Player;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
+import net.runelite.api.WorldType;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
 
@@ -101,7 +102,8 @@ public class UnlockReader
 				diaries.add(name);
 			}
 		});
-		boolean members = client.getVarpValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
+		// Members content is only usable on a members world, which only members can log in to
+		boolean members = client.getWorldType().contains(WorldType.MEMBERS);
 		return new Unlocks(skills, finished, started, diaries, me.getCombatLevel(),
 			client.getVarpValue(VarPlayerID.QP_TOTAL), members);
 	}

@@ -57,6 +57,8 @@ public class LivePrices
 		 * they're protected on death, and shops won't buy them.
 		 */
 		boolean alchable;
+		/** Whether it's a members item. */
+		boolean members;
 	}
 
 	@Value
@@ -324,7 +326,8 @@ public class LivePrices
 						if (o.has("id") && o.has("name"))
 						{
 							map.put(o.get("id").getAsInt(), new Info(o.get("name").getAsString(), intOf(o, "value"),
-								intOf(o, "highalch"), intOf(o, "limit"), o.has("highalch")));
+								intOf(o, "highalch"), intOf(o, "limit"), o.has("highalch"),
+								o.has("members") && o.get("members").getAsBoolean()));
 						}
 					}
 					mapping = map;

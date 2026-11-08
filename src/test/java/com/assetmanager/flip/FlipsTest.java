@@ -31,6 +31,7 @@ public class FlipsTest
 		final Map<Integer, Long> coffer = new HashMap<>();
 		final Map<Integer, Long> alch = new HashMap<>();
 		final Set<Integer> unalchable = new HashSet<>();
+		final Set<Integer> members = new HashSet<>();
 		double hours = 1;
 
 		FakeMarket add(int id, String n, long cost, long traded, int buyLimit, int storeValue)
@@ -95,6 +96,12 @@ public class FlipsTest
 		public boolean alchable(int itemId)
 		{
 			return !unalchable.contains(itemId);
+		}
+
+		@Override
+		public boolean members(int itemId)
+		{
+			return members.contains(itemId);
 		}
 
 		@Override
@@ -168,6 +175,33 @@ public class FlipsTest
 			Collections.emptySet(), 100, 100, true);
 
 		assertTrue(Flips.fromGe(m, Flip.Dest.SHOP, catalog(stall), lowSailing, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8).isEmpty());
+	}
+
+	/** Someone on a free-to-play world. */
+	private static final Unlocks F2P = new Unlocks(null, null, null, null, Integer.MAX_VALUE, Integer.MAX_VALUE, false);
+
+	@Test
+	public void membersShopsAreSkippedOnAFreeWorld()
+	{
+		Shop stall = buyer("Cannonball Stall", 500, 0, "rune cannonball");
+		stall.setMembers(true);
+		FakeMarket m = new FakeMarket().add(1, "rune cannonball", 350, 50_000, 11_000, 800);
+
+		assertTrue(Flips.fromGe(m, Flip.Dest.SHOP, catalog(stall), F2P, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8).isEmpty());
+		stall.setMembers(false);
+		assertEquals(1, Flips.fromGe(m, Flip.Dest.SHOP, catalog(stall), F2P, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8).size());
+	}
+
+	@Test
+	public void membersItemsAreSkippedOnAFreeWorld()
+	{
+		FakeMarket m = new FakeMarket().add(1, "rune cannonball", 350, 50_000, 11_000, 800);
+		m.alch.put(1, 500L);
+		m.members.add(1);
+
+		assertTrue(Flips.fromGe(m, Flip.Dest.ALCH, catalog(), F2P, ShopPerks.NONE, 10, Long.MAX_VALUE, Flips.ALCHS_PER_HOUR, 8).isEmpty());
+		assertEquals(1, Flips.fromGe(m, Flip.Dest.ALCH, catalog(), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE,
+			Flips.ALCHS_PER_HOUR, 8).size());
 	}
 
 	@Test

@@ -20,7 +20,7 @@ Asset Manager only reads what the game shows you and never acts for you: it adds
   - boss item retrieval services (Vorkath, Zulrah, Nex, ToB, ToA, Hydra, Nightmare, ...). These are picked automatically when you're in the boss's area; everywhere else it's the gravestone.
   - Ironmen get 50% off grave and Death's Office fees, and ultimate ironmen can't use the coffer.
 - **Deaths covered** – an infobox shows how many deaths your coffer pays for in your current gear, and turns red when it's running low.
-- **Top-up plan** – after you open your bank once, lists the banked items that are worth more sacrificed to the coffer (105% of GE guide price) than sold on the GE after 2% tax (not for ironmen) or high-alched after the nature rune cost. It then plans the cheapest way to cover your target number of deaths.
+- **Top-up plan** – after you open your bank once, lists the banked items that are worth more sacrificed to the coffer (105% of GE guide price; it won't take Old school bonds) than sold on the GE after 2% tax (not for ironmen) or high-alched after the nature rune cost. It then plans the cheapest way to cover your target number of deaths.
 
 ## Spare items
 
@@ -31,6 +31,7 @@ Asset Manager only reads what the game shows you and never acts for you: it adds
 - **Shops** – compares what 360+ shops across Gielinor would pay (from the OSRS Wiki), including specialty shops like Ali Morrisane's rune shop, the Wilderness Bandit Camp, the Rogues' Den, the Void Knight General Store and Davon's Amulet Store.
   - Karamja gloves prices are used when you've earned them (detected from your Karamja diary rewards, or set in the config). Gloves 3+ unlock the better prices at the Karamja General Store and Jiminua's Jungle Store.
   - An activated Ring of Charos gets better prices from Baraek (furs: 150 gp for grey wolf fur instead of 120) and Fritz the Glassblower (molten glass: 25 gp instead of 20). It's used when the ring is in your bank, inventory or equipment.
+  - On a free-to-play world, members shops and members items are left out, and finding the nearest of a group of shops only points to free-to-play ones.
   - **Avoid Wilderness shops** leaves out the 14 shops the OSRS Wiki places in the Wilderness (Bandit Duty Free, Battle Runes, the Mage Arena shops, the Wilderness cape shops, Tony's Pizza Bases). The Old Nite in Ferox Enclave is a safe zone, so it's still suggested.
   - Traders who pay a fixed amount through dialogue (Baraek, Fritz, silk merchants and others) are priced at their actual coin amounts.
   - Prices that depend on quests, ranks or leagues aren't used.
@@ -63,7 +64,7 @@ Asset Manager only reads what the game shows you and never acts for you: it adds
 - Each row says where to go, how many of each item to buy, what each costs and fetches, what it makes, about how long a go takes, and what stops each item buying more: shop stock, the price rising, inventory space, coins, the GE buy limit, how many trade on the GE in the time you'll wait, worlds to hop (or that more hopping would make less an hour), or an hour of alching. **Find** points you to the shop.
   - From a shop, it buys a few on each world while the price is low, then hops, up to **Max worlds to hop**: every world's shop starts with its full stock.
   - Shops take noted items, except traders you talk to (Baraek, the silk merchant), which only take an inventory of unnoted ones a trip. Items that can't be alched (event rewards and the like) aren't sold to shops: their store value only protects them on death.
-  - Only shops whose requirements you meet are used: skill levels, quests (finished, or just started where that's enough), achievement diaries, quest points and membership are checked against your account. Requirements that can't be checked (like the Warriors' Guild's combined Attack and Strength, or a Seal of Passage) are shown in orange on the row instead.
+  - Only shops whose requirements you meet are used: skill levels, quests (finished, or just started where that's enough), achievement diaries, quest points and membership are checked against your account (members shops and items only on a members world). Requirements that can't be checked (like the Warriors' Guild's combined Attack and Strength, or a Seal of Passage) are shown in orange on the row instead.
   - Shops that charge a set price rather than their usual % of an item's value (like Diango's Toy Store) are priced at what they actually charge.
   - Buying on the GE needs **Live GE prices** on. Prices that can't be relied on (nothing traded in the last hour, or buyers paying more than twice what sellers accept) are left out.
 - When a shop is open, items it sells that can be resold on the GE for a profit get a small Grand Exchange icon, and items that add more to Death's coffer than they cost get a coffer icon (**Show shop coffer buys**). Where both would, the icon is whichever makes more. Each is labelled with how many to buy from what the shop holds now: for the coffer, with the **Top-up plan**, just enough to reach your coffer target (none once it's there), or as many as are worth it with **All worth sacrificing**. Ironmen see only coffer icons.

@@ -136,6 +136,15 @@ def item_mapping():
     return {i["name"].lower(): (i["id"], i.get("value", 0)) for i in items}
 
 
+def members_by_page(rows):
+    """Whether each page is members-only: every version of it is. The bucket API gives a true boolean as an empty
+    string and leaves out false ones."""
+    out = {}
+    for r in rows:
+        out[r["page_name"]] = out.get(r["page_name"], True) and "is_members_only" in r
+    return out
+
+
 def requirement(entry):
     return {k: entry[k] for k in REQ_FIELDS if entry.get(k)}
 
@@ -163,8 +172,11 @@ def rate(r, key):
 
 
 def main():
-    shops_info = {r["page_name"]: r for r in bucket(
-        "bucket('infobox_shop').select('page_name','specialty','location','is_members_only')")}
+    shop_rows = bucket("bucket('infobox_shop').select('page_name','specialty','location','is_members_only')")
+    shops_info = {r["page_name"]: r for r in shop_rows}
+    # Traders without a shop page of their own (like Kaqemeex) say on their NPC page
+    shop_members = members_by_page(shop_rows)
+    npc_members = members_by_page(bucket("bucket('infobox_npc').select('page_name','is_members_only')"))
     lines = bucket("bucket('storeline').select('sold_by','store_buy_price','store_sell_price','store_currency',"
                    "'store_delta','store_stock','store_buy_multiplier','store_sell_multiplier','store_notes','sold_item_json')")
     mapping = item_mapping()
@@ -292,7 +304,8 @@ def main():
         s = {
             "name": name.rstrip("."),
             "location": LOCATION_OVERRIDES.get(name.rstrip("."), clean(info.get("location")) or shop.get("loc", "")),
-            "members": str(info.get("is_members_only")).lower() in ("true", "1", "yes"),
+            "members": next((m[t] for m in (shop_members, npc_members) for t in (name, base + ".", base,
+                                                                              name.rstrip(".")) if t in m), False),
             "general": clean(info.get("specialty")).lower() == "general store" or SECTION_NOTES.get("(" + section, False),
             "buyMultiplier": buy,
             "sellMultiplier": sell,

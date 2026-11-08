@@ -28,6 +28,7 @@ public class BestBuysTest
 		final Map<Integer, Integer> value = new HashMap<>();
 		final Set<Integer> stackable = new HashSet<>();
 		final Map<Integer, Long> volume = new HashMap<>();
+		final Set<Integer> members = new HashSet<>();
 
 		@Override
 		public long coffer(int itemId)
@@ -57,6 +58,12 @@ public class BestBuysTest
 		public boolean stackable(int itemId)
 		{
 			return stackable.contains(itemId);
+		}
+
+		@Override
+		public boolean members(int itemId)
+		{
+			return members.contains(itemId);
 		}
 	}
 
@@ -104,6 +111,26 @@ public class BestBuysTest
 		assertEquals(7, d.getFlip().getQuantity());
 		assertEquals(ShopFlip.Limit.PRICE, d.getFlip().getLimit());
 		assertEquals(7 * 12_000 - (10_000 + 10_300 + 10_600 + 10_900 + 11_200 + 11_500 + 11_800), d.getGain());
+	}
+
+	@Test
+	public void membersShopsAndItemsAreSkippedOnAFreeWorld()
+	{
+		Unlocks f2p = new Unlocks(null, null, null, null, Integer.MAX_VALUE, Integer.MAX_VALUE, false);
+		Shop garden = shop("Garden Centre", 1000, 30, null, Map.of("bagged willow tree", item(1, 20)));
+		Shop.Item tree = garden.getItems().get("bagged willow tree");
+		FakePrices p = new FakePrices();
+		p.value.put(1, 10_000);
+		p.coffer.put(1, 12_000L);
+
+		assertNotNull(BestBuys.deal(BestBuys.Kind.COFFER, garden, "bagged willow tree", tree, p, f2p, PERKS, Long.MAX_VALUE));
+		p.members.add(1);
+		assertNull(BestBuys.deal(BestBuys.Kind.COFFER, garden, "bagged willow tree", tree, p, f2p, PERKS, Long.MAX_VALUE));
+		p.members.clear();
+		garden.setMembers(true);
+		assertNull(BestBuys.deal(BestBuys.Kind.COFFER, garden, "bagged willow tree", tree, p, f2p, PERKS, Long.MAX_VALUE));
+		assertNotNull(BestBuys.deal(BestBuys.Kind.COFFER, garden, "bagged willow tree", tree, p, Unlocks.EVERYTHING, PERKS,
+			Long.MAX_VALUE));
 	}
 
 	@Test

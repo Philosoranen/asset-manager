@@ -27,6 +27,7 @@ public class Unlocks
 	Set<String> diaries;
 	int combat;
 	int questPoints;
+	/** On a members world, so members shops and items can be used. */
 	boolean members;
 
 	/** What's still needed for a shop item: the shop's and the item's own requirements. */
@@ -35,7 +36,7 @@ public class Unlocks
 		Missing m = new Missing();
 		if (shop.isMembers() && !members)
 		{
-			m.unmet.add("Membership");
+			m.unmet.add("Members world");
 		}
 		check(shop.getReq(), m);
 		if (item != null)
