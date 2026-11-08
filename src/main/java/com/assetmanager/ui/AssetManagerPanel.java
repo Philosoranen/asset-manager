@@ -6,6 +6,8 @@ import com.assetmanager.death.DeathScenario;
 import com.assetmanager.dest.Destination;
 import com.assetmanager.dest.Destinations;
 import com.assetmanager.flip.Flip;
+import com.assetmanager.flip.FlipRun;
+import com.assetmanager.flip.FlipTime;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.flip.Flips;
 import com.assetmanager.keep.Holdings;
@@ -31,6 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -499,7 +502,7 @@ public class AssetManagerPanel extends PluginPanel
 		{
 			notes.add("Things to buy from shops and sell on the GE.");
 		}
-		List<Flip> flips = state.getFlips();
+		List<FlipRun> flips = state.getFlips();
 		if (state.getFlipCoins() <= 0)
 		{
 			addRow(text("Carry some coins to see flips. They only spend the coins in your inventory, so take out as much as you"
@@ -512,9 +515,12 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		else
 		{
-			addRow(text((state.getFlipSort() == FlipSort.RETURN ? "Best return first" : "Most profitable first")
-				+ ", spending up to the " + gp(state.getFlipCoins()) + " in your inventory and using"
-				+ " shops whose requirements you meet. Each is one go: a shop visit, or one round of GE offers.", MUTED));
+			FlipSort sort = state.getFlipSort();
+			addRow(text((sort == FlipSort.RETURN ? "Best return first" : sort == FlipSort.PROFIT ? "Most profitable first"
+				: "Most an hour first") + ", spending up to the " + gp(state.getFlipCoins()) + " in your inventory and using"
+				+ " shops whose requirements you meet. Each is one go: a shop visit with everything worth it there, or one round"
+				+ " of GE offers." + (sort == FlipSort.GP_PER_HOUR ? " Times are rough: hops, trips, conversations, alchs and the"
+				+ " GE's wait." : ""), MUTED));
 		}
 		for (String note : notes)
 		{
@@ -524,8 +530,8 @@ public class AssetManagerPanel extends PluginPanel
 		flips.forEach(f -> flipRow(f, state.getFlipSort()));
 	}
 
-	/** One flip: the route, what it makes, how many and why no more, and a Find button for a shop. */
-	private void flipRow(Flip flip, FlipSort sort)
+	/** One go: where, what it makes, what to buy and how long it takes, and a Find button for a shop. */
+	private void flipRow(FlipRun run, FlipSort sort)
 	{
 		JPanel row = new JPanel(new BorderLayout(4, 0));
 		row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -533,22 +539,22 @@ public class AssetManagerPanel extends PluginPanel
 
 		JPanel top = new JPanel(new BorderLayout(4, 0));
 		top.setOpaque(false);
-		top.add(wrapped(capitalise(flip.getItem()) + "<br><font color='#FF9800'>" + flip.getSource().getLabel() + " &rarr; "
-			+ flip.getDest().getLabel() + "</font>", NAME_WIDTH, Color.WHITE), BorderLayout.CENTER);
+		String route = run.getSource().getLabel() + " &rarr; " + run.getDest().getLabel()
+			+ (run.getFlips().size() > 1 ? " &middot; " + run.getFlips().size() + " items" : "");
+		top.add(wrapped(capitalise(run.getName()) + "<br><font color='#FF9800'>" + route + "</font>", NAME_WIDTH, Color.WHITE),
+			BorderLayout.CENTER);
 		JPanel east = new JPanel();
 		east.setLayout(new BoxLayout(east, BoxLayout.Y_AXIS));
 		east.setOpaque(false);
 		// What it's sorted by goes first, in green
-		JLabel profit = new JLabel("+" + gp(flip.getProfit()));
-		profit.setToolTipText("What this flip makes in all");
-		JLabel ret = new JLabel("+" + percent(flip.getReturnPercent()));
-		ret.setToolTipText("Return: what it makes for each coin spent, " + gp(flip.getCost()) + " in all");
-		JLabel second = sort == FlipSort.RETURN ? profit : new JLabel("+" + gp(flip.getProfitEach()) + " ea");
-		if (second != profit)
-		{
-			second.setToolTipText(percent(flip.getPercent()) + " profit on what the first one costs");
-		}
-		JLabel first = sort == FlipSort.RETURN ? ret : profit;
+		JLabel profit = new JLabel("+" + gp(run.getProfit()));
+		profit.setToolTipText("What one go makes, " + gp(run.getCost()) + " spent");
+		JLabel hourly = new JLabel("+" + QuantityFormatter.quantityToStackSize(Math.round(run.getGpPerHour())) + "/hr");
+		hourly.setToolTipText("About what it makes an hour, at about " + FlipTime.describe(run.getSeconds()) + " a go");
+		JLabel ret = new JLabel("+" + percent(run.getReturnPercent()));
+		ret.setToolTipText("Return: what it makes for each coin spent, " + gp(run.getCost()) + " in all");
+		JLabel first = sort == FlipSort.RETURN ? ret : sort == FlipSort.PROFIT ? profit : hourly;
+		JLabel second = sort == FlipSort.PROFIT ? hourly : profit;
 		for (JLabel l : new JLabel[]{first, second})
 		{
 			l.setFont(FontManager.getRunescapeSmallFont());
@@ -556,7 +562,7 @@ public class AssetManagerPanel extends PluginPanel
 			l.setAlignmentX(Component.RIGHT_ALIGNMENT);
 			east.add(l);
 		}
-		Shop shop = flip.getShop();
+		Shop shop = run.getShop();
 		if (shop != null)
 		{
 			boolean finding = shop.getName().equals(findingShop);
@@ -569,89 +575,105 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		top.add(east, BorderLayout.EAST);
 		row.add(top, BorderLayout.CENTER);
-		row.add(wrapped(flipDetail(flip), DETAIL_WIDTH, MUTED), BorderLayout.SOUTH);
+		row.add(wrapped(runDetail(run), DETAIL_WIDTH, MUTED), BorderLayout.SOUTH);
 		addRow(row);
 	}
 
-	private static String flipDetail(Flip flip)
+	private static String runDetail(FlipRun run)
 	{
-		String qty = QuantityFormatter.formatNumber(flip.getQuantity());
 		StringBuilder d = new StringBuilder();
-		Shop buyShop = flip.getBuyShop();
-		if (buyShop != null)
+		Shop shop = run.getShop();
+		String others = run.getEqualShops() > 0 ? " (or any of " + run.getEqualShops() + " others the same)" : "";
+		String hop = run.getWorlds() > 1 ? ", a few on each of " + run.getWorlds() + " worlds" : "";
+		if (run.getSource() == Flip.Source.SHOP)
 		{
-			d.append("Buy ").append(qty).append(" from ").append(where(buyShop)).append(" from ").append(gp(flip.getFirstCost()))
-				.append(flip.isPriceRises() ? ", rising with each one" : " each");
-			if (flip.getBuyWorlds() > 1)
+			d.append("Buy at ").append(where(shop)).append(others).append(hop).append(':');
+		}
+		else if (run.getDest() == Flip.Dest.SHOP)
+		{
+			d.append("Buy on the GE, then sell to ").append(where(shop)).append(others).append(hop);
+			ShopOffer o = run.getFlips().get(0).getSellOffer();
+			if (o.isUsesKaramjaGloves())
 			{
-				// Each world's shop starts full, so a few on each keeps the price down
-				d.append(", ").append(QuantityFormatter.formatNumber(flip.getPerWorld())).append(" a world, hopping over ")
-					.append(flip.getBuyWorlds()).append(" worlds");
+				d.append(", wearing Karamja gloves");
 			}
+			if (o.isUsesCharos())
+			{
+				d.append(", wearing your Ring of Charos (a)");
+			}
+			d.append(':');
 		}
 		else
 		{
-			d.append("Buy ").append(qty).append(" on the GE at about ").append(gp(flip.getFirstCost())).append(" each");
+			d.append("Buy on the GE:");
 		}
-		d.append(" (").append(gp(flip.getCost())).append(" in all), then ");
-		switch (flip.getDest())
+		Set<String> unchecked = new LinkedHashSet<>();
+		for (Flip f : run.getFlips())
 		{
-			case GE:
-				d.append("sell them on the GE for ").append(gp(flip.getFirstValue())).append(" each after tax.");
-				break;
-			case COFFER:
-				d.append("put them in Death's coffer for ").append(gp(flip.getFirstValue())).append(" each.");
-				break;
-			case ALCH:
-				d.append("alch them for ").append(gp(flip.getFirstValue())).append(" each after the nature rune.");
-				break;
-			case SHOP:
-				ShopOffer o = flip.getSellOffer();
-				d.append("sell them to ").append(where(o.getShop()));
-				if (o.getEqualShops() > 0)
-				{
-					d.append(" (or any of ").append(o.getEqualShops()).append(" others paying the same)");
-				}
-				d.append(" from ").append(gp(o.getFirstUnit())).append(" each");
-				if (o.getWorlds() > 1)
-				{
-					d.append(", ").append(QuantityFormatter.formatNumber(o.getPerWorld())).append(" a world over ")
-						.append(o.getWorlds()).append(" worlds");
-				}
-				if (o.isUsesKaramjaGloves())
-				{
-					d.append(", wearing Karamja gloves");
-				}
-				if (o.isUsesCharos())
-				{
-					d.append(", wearing your Ring of Charos (a)");
-				}
-				d.append(o.getShop().getTalk() != null ? ". " + o.getShop().getTalk() + " only takes unnoted ones, so it's an"
-					+ " inventory a trip." : ". The shop takes noted ones.");
-				break;
-		}
-		d.append(" Limited by ").append(flip.getLimit().getDescription());
-		if (flip.getGeTrades() != Long.MAX_VALUE)
-		{
-			d.append("; about ").append(QuantityFormatter.formatNumber(flip.getGeTrades())).append(" trade on the GE in that time");
-		}
-		d.append('.');
-		if (buyShop != null)
-		{
-			Shop.Item item = buyShop.getItems().get(flip.getItem());
+			d.append("<br>&middot; ").append(QuantityFormatter.formatNumber(f.getQuantity())).append(' ').append(f.getItem())
+				.append(": ").append(gp(f.getFirstCost())).append(f.isPriceRises() ? " up" : "").append(" &rarr; ")
+				.append(gp(f.getFirstValue())).append(f.getSellOffer() != null && f.getSellOffer().getWorlds() > 1 ? " down" : "")
+				.append(" each, +").append(gp(f.getProfit())).append(" (").append(f.getLimit().getDescription());
+			if (f.getGeTrades() != Long.MAX_VALUE)
+			{
+				d.append("; ").append(QuantityFormatter.formatNumber(f.getGeTrades())).append(" trade in that time");
+			}
+			d.append(')');
+			Shop.Item item = f.getBuyShop() == null ? null : f.getBuyShop().getItems().get(f.getItem());
 			int[] bundle = item == null ? null : item.getB();
 			if (bundle != null && bundle.length == 2)
 			{
-				d.append(" Offer ").append(gp(bundle[1])).append(" for ").append(bundle[0]).append(" to get that price.");
+				d.append(". Offer ").append(gp(bundle[1])).append(" for ").append(bundle[0]).append(" to get that price");
 			}
-			if (buyShop.getTalk() != null)
-			{
-				d.append(" Bought by talking to ").append(buyShop.getTalk()).append(", sometimes one at a time.");
-			}
+			unchecked.addAll(f.getUnchecked());
 		}
-		if (!flip.getUnchecked().isEmpty())
+		d.append("<br>");
+		switch (run.getDest())
 		{
-			d.append(" <font color='#FF9800'>Also needs: ").append(String.join("; ", flip.getUnchecked())).append(".</font>");
+			case GE:
+				d.append("Then sell them on the GE (prices after tax).");
+				break;
+			case COFFER:
+				d.append("Then put them in Death's coffer.");
+				break;
+			case ALCH:
+				d.append("Then alch them (after the nature rune).");
+				break;
+			case SHOP:
+				d.append(shop.getTalk() != null ? shop.getTalk() + " only takes unnoted ones, so it's an inventory a trip."
+					: "The shop takes noted ones.");
+				break;
+		}
+		if (run.getSource() == Flip.Source.SHOP && shop.getTalk() != null)
+		{
+			d.append(" Bought by talking to ").append(shop.getTalk()).append(", sometimes one at a time.");
+		}
+		List<String> parts = new ArrayList<>();
+		if (shop != null || run.getDest() == Flip.Dest.COFFER)
+		{
+			parts.add("a trip");
+		}
+		if (run.getWorlds() > 1)
+		{
+			parts.add(run.getWorlds() - 1 + " hops");
+		}
+		if (shop != null && shop.getTalk() != null && run.getSource() == Flip.Source.SHOP)
+		{
+			parts.add("talking");
+		}
+		if (run.getDest() == Flip.Dest.ALCH)
+		{
+			parts.add("alching");
+		}
+		if (run.getSource() == Flip.Source.GE || run.getDest() == Flip.Dest.GE)
+		{
+			parts.add("the GE's wait");
+		}
+		d.append(" About ").append(FlipTime.describe(run.getSeconds())).append(" a go (").append(String.join(", ", parts))
+			.append(").");
+		if (!unchecked.isEmpty())
+		{
+			d.append(" <font color='#FF9800'>Also needs: ").append(String.join("; ", unchecked)).append(".</font>");
 		}
 		return d.toString();
 	}

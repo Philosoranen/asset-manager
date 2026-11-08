@@ -16,6 +16,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
@@ -39,7 +40,7 @@ import net.runelite.client.util.Text;
 
 /**
  * While a shop is open, works out which shop it is, finds the items it sells that could be resold on the
- * Grand Exchange for a profit, and shows how many to buy when one is hovered.
+ * Grand Exchange or put in Death's coffer for a profit, and shows how many to buy when one is hovered.
  */
 @Slf4j
 @Singleton
@@ -61,6 +62,15 @@ public class ShopFlipper
 	private ShopCatalog shops;
 	@Setter
 	private int glovesTier;
+	/** Whether the account can sell on the GE. */
+	@Setter
+	private volatile boolean canUseGe = true;
+	/**
+	 * Coins Death's coffer should take: how far it is below the target, Long.MAX_VALUE for no limit, or 0 when it's full
+	 * or the account can't use it.
+	 */
+	@Setter
+	private volatile long cofferRoom;
 
 	/** The open shop, if it's in the shop data. */
 	@Getter
@@ -68,9 +78,30 @@ public class ShopFlipper
 	@Getter
 	private volatile int openShopGlovesTier;
 
-	/** Profitable flips in the open shop, by item id. */
+	/** What's worth buying in the open shop, and where to take it, by item id. */
 	@Getter
-	private volatile Map<Integer, ShopFlip> flips = Collections.emptyMap();
+	private volatile Map<Integer, Buy> flips = Collections.emptyMap();
+
+	/** A shop item worth buying: to sell on the GE, to put in Death's coffer, or both. */
+	@Value
+	public static class Buy
+	{
+		/** Selling on the GE, or null if it isn't worth it. */
+		ShopFlip ge;
+		/** Putting in Death's coffer, or null if it isn't worth it. */
+		ShopFlip coffer;
+
+		/** Whichever makes more. */
+		public ShopFlip best()
+		{
+			return isCofferBest() ? coffer : ge;
+		}
+
+		public boolean isCofferBest()
+		{
+			return ge == null || coffer != null && coffer.getProfit() > ge.getProfit();
+		}
+	}
 	private String lastTitle;
 
 	@Inject
@@ -106,7 +137,9 @@ public class ShopFlipper
 			lastTitle = title;
 			log.debug("Shop opened: \"{}\" ({})", title, shop == null ? "not in shop data" : "matched " + shop.getName());
 		}
-		if (!config.shopFlips() || shop == null || items.getDynamicChildren() == null)
+		boolean geFlips = config.shopFlips() && canUseGe;
+		long room = config.shopCofferBuys() ? cofferRoom : 0;
+		if (!geFlips && room <= 0 || shop == null || items.getDynamicChildren() == null)
 		{
 			flips = Collections.emptyMap();
 			return;
@@ -132,7 +165,7 @@ public class ShopFlipper
 		// With no coins on hand the player will fetch some, so don't limit by them
 		long budget = coins > 0 ? coins : Long.MAX_VALUE;
 
-		Map<Integer, ShopFlip> found = new HashMap<>();
+		Map<Integer, Buy> found = new HashMap<>();
 		for (Widget w : items.getDynamicChildren())
 		{
 			int itemId = w.getItemId();
@@ -153,26 +186,45 @@ public class ShopFlipper
 			boolean stackable = itemManager.getItemComposition(itemId).isStackable();
 			int space = stackable ? (freeSlots > 0 || (inv != null && inv.count(itemId) > 0) ? Integer.MAX_VALUE : 0) : freeSlots;
 
-			// With live prices, don't buy more than the GE trades in an hour
-			long perHour = livePrices.tradesPerHour(itemManager.canonicalize(itemId));
-			long geVolume = perHour < 0 ? Long.MAX_VALUE : perHour;
 			// Some shops charge a set price rather than their usual % of value
 			int value = entry.getSp() != null && !gloves && sellRate > 0
 				? (int) ((entry.getSp() * 1000L + sellRate - 1) / sellRate) : v.getStorePrice();
-			ShopFlip flip = ShopFlipAdvisor.plan(value, w.getItemQuantity(), entry.getS(), sellRate, delta,
-				v.getGeNetSell(), 1, space, budget, geVolume);
-			if (flip != null && flip.getProfit() >= config.minFlipProfit())
+			ShopFlip ge = null;
+			if (geFlips)
 			{
-				found.put(itemId, flip);
+				// With live prices, don't buy more than the GE trades in an hour
+				long perHour = livePrices.tradesPerHour(itemManager.canonicalize(itemId));
+				long geVolume = perHour < 0 ? Long.MAX_VALUE : perHour;
+				ge = worthIt(ShopFlipAdvisor.plan(value, w.getItemQuantity(), entry.getS(), sellRate, delta,
+					v.getGeNetSell(), 1, space, budget, geVolume));
+			}
+			ShopFlip coffer = null;
+			long unit = v.getCofferValue();
+			if (room > 0 && unit > 0)
+			{
+				// Enough to fill the coffer, the last one going a little over
+				long need = room == Long.MAX_VALUE ? Long.MAX_VALUE : (room + unit - 1) / unit;
+				coffer = worthIt(ShopFlipAdvisor.plan(value, w.getItemQuantity(), entry.getS(), sellRate, delta,
+					unit, 1, space, budget, need, ShopFlip.Limit.COFFER));
+			}
+			if (ge != null || coffer != null)
+			{
+				found.put(itemId, new Buy(ge, coffer));
 			}
 		}
 		flips = found;
 	}
 
+	/** The flip, if it makes at least the player's minimum. */
+	private ShopFlip worthIt(ShopFlip flip)
+	{
+		return flip != null && flip.getProfit() >= config.minFlipProfit() ? flip : null;
+	}
+
 	@Subscribe
 	public void onBeforeRender(BeforeRender event)
 	{
-		Map<Integer, ShopFlip> current = flips;
+		Map<Integer, Buy> current = flips;
 		if (current.isEmpty() || client.isMenuOpen())
 		{
 			return;
@@ -188,40 +240,57 @@ public class ShopFlipper
 		{
 			return;
 		}
-		ShopFlip flip = current.get(w.getItemId());
-		if (flip != null)
+		Buy buy = current.get(w.getItemId());
+		if (buy != null)
 		{
-			tooltipManager.add(new Tooltip(tooltip(w.getItemId(), flip)));
+			tooltipManager.add(new Tooltip(tooltip(w.getItemId(), buy)));
 		}
 	}
 
-	private PanelComponent tooltip(int itemId, ShopFlip f)
+	private PanelComponent tooltip(int itemId, Buy buy)
 	{
 		PanelComponent p = new PanelComponent();
 		p.setBackgroundColor(PriceTooltip.SOLID_BACKGROUND);
 		p.setPreferredSize(new Dimension(180, 0));
-		p.getChildren().add(TitleComponent.builder().text("Flip on the GE").color(GOOD).build());
-		p.getChildren().add(line("Buy", QuantityFormatter.formatNumber(f.getQuantity()), NORMAL));
-		String each = f.getFirstPrice() == f.getLastPrice()
-			? QuantityFormatter.formatNumber(f.getFirstPrice())
-			: QuantityFormatter.formatNumber(f.getFirstPrice()) + " – " + QuantityFormatter.formatNumber(f.getLastPrice());
-		p.getChildren().add(line("Shop price each", each, NORMAL));
-		p.getChildren().add(line("GE sells for each", QuantityFormatter.formatNumber(f.getGeUnit()), NORMAL));
-		p.getChildren().add(line("Profit", QuantityFormatter.formatNumber(f.getProfit()), GOOD));
-		p.getChildren().add(LineComponent.builder().left("Limited by " + f.getLimit().getDescription()).leftColor(MUTED).build());
-
-		long perHour = livePrices.tradesPerHour(itemManager.canonicalize(itemId));
-		if (perHour >= 0)
+		// The better one first
+		ShopFlip first = buy.best();
+		for (ShopFlip f : new ShopFlip[]{first, first == buy.getGe() ? buy.getCoffer() : buy.getGe()})
 		{
-			p.getChildren().add(LineComponent.builder()
-				.left("Trades on the GE: about " + QuantityFormatter.formatNumber(perHour) + " an hour")
-				.leftColor(MUTED)
-				.build());
+			if (f == null)
+			{
+				continue;
+			}
+			boolean coffer = f == buy.getCoffer();
+			if (p.getChildren().size() > 0)
+			{
+				p.getChildren().add(LineComponent.builder().left(" ").build());
+			}
+			p.getChildren().add(TitleComponent.builder().text(coffer ? "Put in Death's coffer" : "Flip on the GE").color(GOOD).build());
+			p.getChildren().add(line("Buy", QuantityFormatter.formatNumber(f.getQuantity()), NORMAL));
+			String each = f.getFirstPrice() == f.getLastPrice()
+				? QuantityFormatter.formatNumber(f.getFirstPrice())
+				: QuantityFormatter.formatNumber(f.getFirstPrice()) + " – " + QuantityFormatter.formatNumber(f.getLastPrice());
+			p.getChildren().add(line("Shop price each", each, NORMAL));
+			p.getChildren().add(line(coffer ? "Coffer adds each" : "GE sells for each", QuantityFormatter.formatNumber(f.getGeUnit()),
+				NORMAL));
+			p.getChildren().add(line("Profit", QuantityFormatter.formatNumber(f.getProfit()), GOOD));
+			p.getChildren().add(LineComponent.builder().left("Limited by " + f.getLimit().getDescription()).leftColor(MUTED).build());
+			if (!coffer)
+			{
+				long perHour = livePrices.tradesPerHour(itemManager.canonicalize(itemId));
+				if (perHour >= 0)
+				{
+					p.getChildren().add(LineComponent.builder()
+						.left("Trades on the GE: about " + QuantityFormatter.formatNumber(perHour) + " an hour")
+						.leftColor(MUTED)
+						.build());
+				}
+				p.getChildren().add(LineComponent.builder()
+					.left("GE: " + itemValuator.getGePriceDescription() + ", after tax")
+					.leftColor(MUTED)
+					.build());
+			}
 		}
-		p.getChildren().add(LineComponent.builder()
-			.left("GE: " + itemValuator.getGePriceDescription() + ", after tax")
-			.leftColor(MUTED)
-			.build());
 		return p;
 	}
 

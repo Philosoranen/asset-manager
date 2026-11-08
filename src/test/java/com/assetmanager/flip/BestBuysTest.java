@@ -182,6 +182,12 @@ public class BestBuysTest
 		assertEquals(ShopFlip.Limit.SPACE, d.getFlip().getLimit());
 	}
 
+	/** Each shop's go, hopping up to 5 worlds, most profitable first. */
+	private static List<FlipRun> runs(BestBuys.Kind kind, List<Shop> shops, FakePrices p, Unlocks unlocks, long coins)
+	{
+		return Flips.rank(BestBuys.runs(kind, shops, p, unlocks, PERKS, coins, 5, false, 8), 1, 10, FlipSort.PROFIT);
+	}
+
 	@Test
 	public void shopsNeedingWhatThePlayerHasntDoneAreSkipped()
 	{
@@ -199,15 +205,15 @@ public class BestBuysTest
 		List<Shop> shops = Arrays.asList(armoury, furs);
 
 		Unlocks beginner = player(Map.of("HUNTER", 10), Collections.emptySet());
-		assertTrue(BestBuys.find(BestBuys.Kind.COFFER, shops, p, beginner, PERKS, Long.MAX_VALUE, 1, 5).isEmpty());
+		assertTrue(runs(BestBuys.Kind.COFFER, shops, p, beginner, Long.MAX_VALUE).isEmpty());
 
 		Unlocks hunterOnly = player(Map.of("HUNTER", 46), Collections.emptySet());
-		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.COFFER, shops, p, hunterOnly, PERKS, Long.MAX_VALUE, 1, 5);
-		assertEquals(1, deals.size());
-		assertEquals("mixed hide base", deals.get(0).getItem());
+		List<FlipRun> runs = runs(BestBuys.Kind.COFFER, shops, p, hunterOnly, Long.MAX_VALUE);
+		assertEquals(1, runs.size());
+		assertEquals("mixed hide base", runs.get(0).getFlips().get(0).getItem());
 
 		Unlocks both = player(Map.of("HUNTER", 50), Set.of("THE_SLUG_MENACE"));
-		assertEquals(2, BestBuys.find(BestBuys.Kind.COFFER, shops, p, both, PERKS, Long.MAX_VALUE, 1, 5).size());
+		assertEquals(2, runs(BestBuys.Kind.COFFER, shops, p, both, Long.MAX_VALUE).size());
 	}
 
 	@Test
@@ -225,10 +231,11 @@ public class BestBuysTest
 		p.value.put(5575, 20_000);
 		p.coffer.put(5575, 21_000L);
 
-		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.COFFER, Collections.singletonList(armoury), p,
-			player(Collections.emptyMap(), Collections.emptySet()), PERKS, Long.MAX_VALUE, 1, 5);
-		assertEquals(1, deals.size());
-		assertEquals("initiate harness m", deals.get(0).getItem());
+		List<FlipRun> runs = runs(BestBuys.Kind.COFFER, Collections.singletonList(armoury), p,
+			player(Collections.emptyMap(), Collections.emptySet()), Long.MAX_VALUE);
+		assertEquals(1, runs.size());
+		assertEquals(1, runs.get(0).getFlips().size());
+		assertEquals("initiate harness m", runs.get(0).getFlips().get(0).getItem());
 	}
 
 	@Test
@@ -241,14 +248,14 @@ public class BestBuysTest
 		p.value.put(8850, 1000);
 		p.ge.put(8850, 5000L);
 
-		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.GE, Collections.singletonList(shop), p,
-			player(Collections.emptyMap(), Collections.emptySet()), PERKS, Long.MAX_VALUE, 1, 5);
-		assertEquals(1, deals.size());
-		assertEquals(Collections.singletonList("Combined Attack + Strength of 130"), deals.get(0).getUnchecked());
+		List<FlipRun> runs = runs(BestBuys.Kind.GE, Collections.singletonList(shop), p,
+			player(Collections.emptyMap(), Collections.emptySet()), Long.MAX_VALUE);
+		assertEquals(1, runs.size());
+		assertEquals(Collections.singletonList("Combined Attack + Strength of 130"), runs.get(0).getFlips().get(0).getUnchecked());
 	}
 
 	@Test
-	public void bestShopPerItemMostGainedFirst()
+	public void everythingWorthBuyingAtAShopIsOneGo()
 	{
 		Shop cheap = shop("Cheap", 1000, 0, null, Map.of("a", item(1, 5), "b", item(2, 5)));
 		Shop dear = shop("Dear", 1300, 0, null, Map.of("a", item(1, 5)));
@@ -257,18 +264,46 @@ public class BestBuysTest
 		p.value.put(2, 100);
 		p.ge.put(1, 200L);
 		p.ge.put(2, 150L);
+		p.stackable.add(1);
+		p.stackable.add(2);
 
-		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.GE, Arrays.asList(dear, cheap), p, Unlocks.EVERYTHING, PERKS,
-			Long.MAX_VALUE, 1, 5);
-		assertEquals(2, deals.size());
-		assertEquals("a", deals.get(0).getItem());
-		assertEquals("Cheap", deals.get(0).getShop().getName());
-		assertEquals(5 * 100, deals.get(0).getGain());
-		assertEquals("b", deals.get(1).getItem());
+		List<FlipRun> runs = runs(BestBuys.Kind.GE, Arrays.asList(dear, cheap), p, Unlocks.EVERYTHING, Long.MAX_VALUE);
+		assertEquals(2, runs.size());
+		FlipRun best = runs.get(0);
+		assertEquals("Cheap", best.getShop().getName());
+		assertEquals(2, best.getFlips().size());
+		// 5 a world on each of 5 worlds, of each item
+		assertEquals(25 * 100 + 25 * 50, best.getProfit());
+		assertEquals("a", best.getFlips().get(0).getItem());
+		assertEquals(5, best.getWorlds());
+		assertEquals("Dear", runs.get(1).getShop().getName());
 	}
 
 	@Test
-	public void cofferDealsRankByPercentAndMustBeAffordable()
+	public void itemsAtAShopShareTheInventoryAndCoins()
+	{
+		// Unstackables: 28 slots between them, the better one first (4 a world on 5 worlds)
+		Shop shop = shop("Shop", 1000, 0, null, Map.of("good", item(1, 4), "ok", item(2, 20)));
+		FakePrices p = new FakePrices();
+		p.value.put(1, 100);
+		p.value.put(2, 100);
+		p.coffer.put(1, 300L);
+		p.coffer.put(2, 150L);
+
+		FlipRun r = runs(BestBuys.Kind.COFFER, Collections.singletonList(shop), p, Unlocks.EVERYTHING, Long.MAX_VALUE).get(0);
+		assertEquals(28, r.getQuantity());
+		assertEquals(20, r.getFlips().get(0).getQuantity());
+		assertEquals(8, r.getFlips().get(1).getQuantity());
+		assertEquals(ShopFlip.Limit.SPACE, r.getFlips().get(1).getLimit());
+
+		// 2,500 coins buy 25
+		r = runs(BestBuys.Kind.COFFER, Collections.singletonList(shop), p, Unlocks.EVERYTHING, 2_500).get(0);
+		assertEquals(25, r.getQuantity());
+		assertEquals(ShopFlip.Limit.COINS, r.getFlips().get(1).getLimit());
+	}
+
+	@Test
+	public void cofferRunsRankByPercentAndMustBeAffordable()
 	{
 		// Condensed gold gains more per visit, but bagged willows return a higher % of what they cost
 		Shop stonemason = shop("Keldagrim Stonemason", 1000, 0, null, Map.of("condensed gold", item(1, 10)));
@@ -280,18 +315,18 @@ public class BestBuysTest
 		p.coffer.put(2, 14_400L);
 		List<Shop> shops = Arrays.asList(stonemason, garden);
 
-		List<BestBuys.Deal> rich = BestBuys.find(BestBuys.Kind.COFFER, shops, p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 1, 5);
-		assertEquals("bagged willow tree", rich.get(0).getItem());
-		assertEquals(4_400, rich.get(0).getProfitEach());
-		assertEquals(44.0, rich.get(0).getPercent(), 0.001);
-		assertEquals("condensed gold", rich.get(1).getItem());
+		List<FlipRun> rich = Flips.rank(BestBuys.runs(BestBuys.Kind.COFFER, shops, p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 1,
+			false, 8), 1, 10, FlipSort.RETURN);
+		assertEquals("Garden Centre", rich.get(0).getShop().getName());
+		assertEquals(44.0, rich.get(0).getReturnPercent(), 0.001);
+		assertEquals("Keldagrim Stonemason", rich.get(1).getShop().getName());
 
 		// With 1m coins, condensed gold is out of reach and willows are bought only as far as the coins go
-		List<BestBuys.Deal> poor = BestBuys.find(BestBuys.Kind.COFFER, shops, p, Unlocks.EVERYTHING, PERKS, 1_000_000, 1, 5);
+		List<FlipRun> poor = BestBuys.runs(BestBuys.Kind.COFFER, shops, p, Unlocks.EVERYTHING, PERKS, 1_000_000, 1, false, 8);
 		assertEquals(1, poor.size());
-		assertEquals(20, poor.get(0).getFlip().getQuantity());
-		List<BestBuys.Deal> broke = BestBuys.find(BestBuys.Kind.COFFER, shops, p, Unlocks.EVERYTHING, PERKS, 25_000, 1, 5);
-		assertEquals(2, broke.get(0).getFlip().getQuantity());
+		assertEquals(20, poor.get(0).getQuantity());
+		List<FlipRun> broke = BestBuys.runs(BestBuys.Kind.COFFER, shops, p, Unlocks.EVERYTHING, PERKS, 25_000, 1, false, 8);
+		assertEquals(2, broke.get(0).getQuantity());
 	}
 
 	@Test
@@ -303,15 +338,15 @@ public class BestBuysTest
 		p.value.put(2233, 150);
 		p.coffer.put(2233, 12_000L);
 
-		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.COFFER, Collections.singletonList(gnome), p, Unlocks.EVERYTHING,
-			PERKS, Long.MAX_VALUE, 500, 5);
-		assertEquals(1, deals.size());
-		assertEquals(150, deals.get(0).getFlip().getFirstPrice());
-		assertEquals(3, deals.get(0).getFlip().getQuantity());
+		List<FlipRun> runs = BestBuys.runs(BestBuys.Kind.COFFER, Collections.singletonList(gnome), p, Unlocks.EVERYTHING, PERKS,
+			Long.MAX_VALUE, 1, false, 8);
+		assertEquals(1, runs.size());
+		assertEquals(150, runs.get(0).getFlips().get(0).getFirstCost());
+		assertEquals(3, runs.get(0).getQuantity());
 	}
 
 	@Test
-	public void geDealsBuyOnlyWhatSellsInAnHour()
+	public void geRunsBuyOnlyWhatSellsInTheWait()
 	{
 		Shop shop = shop("Shop", 1000, 0, null, Map.of("slow", item(1, 20), "dead", item(2, 20), "busy", item(3, 20)));
 		FakePrices p = new FakePrices();
@@ -319,20 +354,128 @@ public class BestBuysTest
 		{
 			p.value.put(id, 1000);
 			p.ge.put(id, 5000L);
+			p.stackable.add(id);
 		}
 		p.volume.put(1, 3L);
 		p.volume.put(2, 0L);
 		p.volume.put(3, 500L);
 
-		List<BestBuys.Deal> deals = BestBuys.find(BestBuys.Kind.GE, Collections.singletonList(shop), p, Unlocks.EVERYTHING, PERKS,
-			Long.MAX_VALUE, 1, 5);
-		assertEquals(2, deals.size());
-		assertEquals("busy", deals.get(0).getItem());
-		assertEquals(20, deals.get(0).getFlip().getQuantity());
-		assertEquals(500, deals.get(0).getTradesPerHour());
-		assertEquals("slow", deals.get(1).getItem());
-		assertEquals(3, deals.get(1).getFlip().getQuantity());
-		assertEquals(ShopFlip.Limit.VOLUME, deals.get(1).getFlip().getLimit());
+		FlipRun r = BestBuys.runs(BestBuys.Kind.GE, Collections.singletonList(shop), p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 1,
+			false, 8).get(0);
+		assertEquals(2, r.getFlips().size());
+		assertEquals("busy", r.getFlips().get(0).getItem());
+		assertEquals(20, r.getFlips().get(0).getQuantity());
+		assertEquals(500, r.getFlips().get(0).getGeTrades());
+		assertEquals("slow", r.getFlips().get(1).getItem());
+		assertEquals(3, r.getFlips().get(1).getQuantity());
+		assertEquals(ShopFlip.Limit.VOLUME, r.getFlips().get(1).getLimit());
+		// Selling takes the hour the player waits
+		assertEquals(3600, r.getSeconds(), 0.001);
+	}
+
+	@Test
+	public void shopBuysForTheGeTakeNoMoreItemsThanItHasSlotsFor()
+	{
+		Map<String, Shop.Item> stock = new HashMap<>();
+		FakePrices p = new FakePrices();
+		for (int id = 1; id <= 10; id++)
+		{
+			stock.put("item " + id, item(id, 5));
+			p.value.put(id, 100);
+			p.ge.put(id, 100L + id * 10);
+			p.stackable.add(id);
+		}
+		Shop shop = shop("Shop", 1000, 0, null, stock);
+
+		FlipRun r = BestBuys.runs(BestBuys.Kind.GE, Collections.singletonList(shop), p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 1,
+			false, 8).get(0);
+		assertEquals(8, r.getFlips().size());
+		// The two making least are left out
+		assertTrue(r.getFlips().stream().noneMatch(f -> f.getItemId() <= 2));
+		// The coffer isn't the GE, so there's no limit there
+		p.coffer.putAll(p.ge);
+		r = BestBuys.runs(BestBuys.Kind.COFFER, Collections.singletonList(shop), p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 1,
+			false, 8).get(0);
+		assertEquals(10, r.getFlips().size());
+	}
+
+	@Test
+	public void tradersTakeAConversationPerBundle()
+	{
+		// Like Wyson: 2 woad leaves for 20 a conversation, unstackable, never runs out
+		Shop wyson = shop("Wyson the gardener", 1000, 0, null, Map.of("woad leaf", item(1793, -1)));
+		wyson.setTalk("Wyson the gardener");
+		Shop.Item leaf = wyson.getItems().get("woad leaf");
+		leaf.setSp(10);
+		leaf.setB(new int[]{2, 20});
+		FakePrices p = new FakePrices();
+		p.value.put(1793, 1);
+		p.ge.put(1793, 50L);
+
+		FlipRun r = BestBuys.runs(BestBuys.Kind.GE, Collections.singletonList(wyson), p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 0,
+			true, 8).get(0);
+		assertEquals(28, r.getQuantity());
+		assertEquals(1, r.getWorlds());
+		// A trip and 14 conversations, but the GE's hour is longer
+		assertEquals(3600, r.getSeconds(), 0.001);
+
+		// To the coffer there's no GE wait: 28 bought in 14 conversations
+		p.coffer.put(1793, 12_000L);
+		r = BestBuys.runs(BestBuys.Kind.COFFER, Collections.singletonList(wyson), p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 0,
+			true, 8).get(0);
+		assertEquals(FlipTime.TRIP_SECONDS + 14 * FlipTime.TALK_SECONDS, r.getSeconds(), 0.001);
+	}
+
+	@Test
+	public void forTheMostAnHourHopFewerWorldsAndBuyDeeper()
+	{
+		// A stackable with 10 in stock, its price rising 5% of value per one bought, and no limit on worlds
+		Shop shop = shop("Rune Shop", 1000, 50, null, Map.of("rune", item(1, 10)));
+		FakePrices p = new FakePrices();
+		p.value.put(1, 100);
+		p.coffer.put(1, 200L);
+		p.stackable.add(1);
+
+		FlipRun most = BestBuys.runs(BestBuys.Kind.COFFER, Collections.singletonList(shop), p, Unlocks.EVERYTHING, PERKS,
+			Long.MAX_VALUE, 0, false, 8).get(0);
+		FlipRun quickest = BestBuys.runs(BestBuys.Kind.COFFER, Collections.singletonList(shop), p, Unlocks.EVERYTHING, PERKS,
+			Long.MAX_VALUE, 0, true, 8).get(0);
+		// Hopping without limit, each of the 10,000 is bought on a fresh world
+		assertEquals(BestBuys.MAX_STACK, most.getWorlds());
+		assertTrue(quickest.getWorlds() < most.getWorlds());
+		assertTrue(quickest.getGpPerHour() > most.getGpPerHour());
+		assertTrue(quickest.getProfit() < most.getProfit());
+		assertEquals(ShopFlip.Limit.QUICKER, quickest.getFlips().get(0).getLimit());
+	}
+
+	@Test
+	public void allBundledShopsAreQuickEvenFindingTheFastestHops()
+	{
+		ShopCatalog catalog = ShopCatalog.load(new Gson());
+		FakePrices p = new FakePrices();
+		for (Shop shop : catalog.getShops())
+		{
+			for (Shop.Item item : shop.getItems().values())
+			{
+				Integer id = item.getId();
+				if (id != null)
+				{
+					// Everything worth twice its value, and half of it stackable: far more than really is
+					p.value.put(id, 100 + id % 1000);
+					p.coffer.put(id, 2L * (100 + id % 1000));
+					if (id % 2 == 0)
+					{
+						p.stackable.add(id);
+					}
+				}
+			}
+		}
+		long start = System.nanoTime();
+		List<FlipRun> runs = BestBuys.runs(BestBuys.Kind.COFFER, catalog.getShops(), p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE,
+			ShopCatalog.NO_WORLD_LIMIT, true, 8);
+		long ms = (System.nanoTime() - start) / 1_000_000;
+		System.out.println("runs over " + catalog.getShops().size() + " shops: " + ms + " ms, " + runs.size() + " runs");
+		assertTrue("took " + ms + " ms", ms < 5_000);
 	}
 
 	@Test

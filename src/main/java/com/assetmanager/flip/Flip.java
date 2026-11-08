@@ -4,6 +4,7 @@ import com.assetmanager.shop.Shop;
 import com.assetmanager.shop.ShopOffer;
 import java.util.List;
 import lombok.Value;
+import lombok.With;
 
 /**
  * Something to buy in one place and cash out in another: from a shop or the GE, to the GE, a shop, Death's coffer or
@@ -78,6 +79,7 @@ public class Flip
 	/** What the first one fetches. */
 	long firstValue;
 	/** What stopped the quantity going higher. */
+	@With
 	ShopFlip.Limit limit;
 	/** Requirements the plugin couldn't check, which the player should make sure of. */
 	List<String> unchecked;

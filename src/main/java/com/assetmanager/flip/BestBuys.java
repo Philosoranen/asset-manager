@@ -6,15 +6,14 @@ import com.assetmanager.shop.Unlocks;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.PriorityQueue;
 import lombok.Value;
 
 /**
- * The best things to buy from shops anywhere, for Death's coffer, to resell on the GE or to alch, out of the shops the
- * player has the requirements for. Each deal is one visit: buying from one world until the shop runs out, the price rises
- * too far, or the inventory is full. The player can hop worlds to repeat it.
+ * The best shops to buy from, for Death's coffer, to resell on the GE or to alch, out of the shops the player has the
+ * requirements for. Each go is one visit: buying everything worth it, a few on each world while the price is low,
+ * until the shop runs out, the price rises too far, or the inventory or coins run out.
  */
 public final class BestBuys
 {
@@ -22,6 +21,8 @@ public final class BestBuys
 	static final int INVENTORY_SIZE = 28;
 	/** Most bought per visit of a stackable item a shop never runs out of; it has to stop somewhere. */
 	static final int MAX_STACK = 10_000;
+	/** Most worlds tried when looking for the quickest go; past this, hopping takes longer than it's worth. */
+	private static final long MAX_FAST_WORLDS = 1024;
 
 	private BestBuys()
 	{
@@ -65,6 +66,12 @@ public final class BestBuys
 		int storeValue(int itemId);
 
 		boolean stackable(int itemId);
+
+		/** Hours the player will wait for GE offers to fill. */
+		default double geHours()
+		{
+			return 1;
+		}
 	}
 
 	@Value
@@ -107,55 +114,45 @@ public final class BestBuys
 	}
 
 	/**
-	 * The best deals of a kind, one per item (from whichever shop gains most per visit, the closest if several do).
-	 * Coffer deals are ranked by their percentage return, since filling the coffer is about getting the most out of
-	 * the coins spent; GE deals by what a visit gains, since flipping is about money made per trip. Deals the player
-	 * can't afford even one of are left out.
+	 * A go at each shop worth visiting: everything worth buying there, bought together so every hop and trip serves
+	 * them all. Each shop's go shares the coins, the inventory and (for alching) an hour of casts between its items.
+	 * Shops where the go would be just the same are merged into the closest. Gos the player can't afford even one item
+	 * of are left out.
 	 *
-	 * @param coins   coins to spend per visit
-	 * @param minGain only deals gaining at least this much per visit
-	 * @param limit   at most this many deals
+	 * @param coins     coins to spend per go
+	 * @param maxWorlds the most worlds to hop, or ShopCatalog.NO_WORLD_LIMIT
+	 * @param fastest   hop only as many worlds as makes the most an hour, rather than as many as makes the most
+	 * @param maxItems  the most different items to sell on the GE in one go (it has 8 offer slots)
 	 */
-	public static List<Deal> find(Kind kind, List<Shop> shops, Prices prices, Unlocks unlocks, ShopPerks perks,
-		long coins, long minGain, int limit)
+	public static List<FlipRun> runs(Kind kind, List<Shop> shops, Prices prices, Unlocks unlocks, ShopPerks perks,
+		long coins, int maxWorlds, boolean fastest, int maxItems)
 	{
-		return find(kind, shops, prices, unlocks, perks, coins, minGain, limit, 1);
-	}
-
-	/**
-	 * As above, hopping up to {@code maxWorlds} worlds (0 for no limit) to buy a few on each while the price is low,
-	 * rather than buying deep on one.
-	 */
-	public static List<Deal> find(Kind kind, List<Shop> shops, Prices prices, Unlocks unlocks, ShopPerks perks,
-		long coins, long minGain, int limit, int maxWorlds)
-	{
-		Map<Integer, Deal> best = new HashMap<>();
+		List<FlipRun> out = new ArrayList<>();
 		for (Shop shop : shops)
 		{
 			if (perks.isAvoidWilderness() && shop.isWilderness() || shop.getSellMultiplier() <= 0 && !hasOwnRates(shop))
 			{
 				continue;
 			}
+			List<Leg> legs = new ArrayList<>();
 			shop.getItems().forEach((name, item) ->
 			{
-				Deal deal = deal(kind, shop, name, item, prices, unlocks, perks, coins, maxWorlds);
-				if (deal == null || deal.getGain() < Math.max(1, minGain))
+				Leg leg = leg(kind, shop, name, item, prices, unlocks, perks);
+				if (leg != null && leg.getUnit() - leg.price(0) >= 1 && leg.price(0) <= coins)
 				{
-					return;
-				}
-				Deal current = best.get(deal.getItemId());
-				if (current == null || better(deal, current, perks))
-				{
-					best.put(deal.getItemId(), deal);
+					legs.add(leg);
 				}
 			});
+			if (!legs.isEmpty())
+			{
+				FlipRun run = bestRun(kind, shop, legs, prices, coins, maxWorlds, fastest, kind == Kind.GE ? maxItems : Integer.MAX_VALUE);
+				if (run != null)
+				{
+					out.add(run);
+				}
+			}
 		}
-		List<Deal> out = new ArrayList<>(best.values());
-		Comparator<Deal> order = kind == Kind.COFFER
-			? Comparator.comparingDouble(Deal::getPercent).reversed().thenComparing(Comparator.comparingLong(Deal::getGain).reversed())
-			: Comparator.comparingLong(Deal::getGain).reversed();
-		out.sort(order.thenComparing(Deal::getItem));
-		return out.size() > limit ? new ArrayList<>(out.subList(0, limit)) : out;
+		return Flips.mergeEqual(out, perks.getLocation());
 	}
 
 	private static boolean hasOwnRates(Shop shop)
@@ -163,25 +160,246 @@ public final class BestBuys
 		return shop.getItems().values().stream().anyMatch(i -> i.getSm() != null || i.getSp() != null);
 	}
 
-	private static boolean better(Deal a, Deal b, ShopPerks perks)
+	/** The go at a shop: on as many worlds as allowed, or, if {@code fastest}, as many as make the most an hour. */
+	static FlipRun bestRun(Kind kind, Shop shop, List<Leg> legs, Prices prices, long coins, int maxWorlds, boolean fastest,
+		int maxItems)
 	{
-		if (a.getGain() != b.getGain())
+		// Buying by talking is sometimes one per conversation, so hopping isn't suggested; a shop that never runs out
+		// has nothing to hop for
+		boolean hops = shop.getTalk() == null && legs.stream().anyMatch(l -> l.getNormalStock() >= 0);
+		long allowed = !hops ? 1 : maxWorlds <= 0 ? Long.MAX_VALUE : maxWorlds;
+		if (!fastest || allowed == 1)
 		{
-			return a.getGain() > b.getGain();
+			return plan(kind, shop, legs, prices, coins, allowed, maxItems);
 		}
-		return a.getShop().distanceTo(perks.getLocation()) < b.getShop().distanceTo(perks.getLocation());
+		FlipRun best = null;
+		long bestWorlds = 1;
+		long top = Math.min(allowed, MAX_FAST_WORLDS);
+		for (long w = 1; ; w = Math.min(top, w < 4 ? w + 1 : w * 3 / 2))
+		{
+			FlipRun run = plan(kind, shop, legs, prices, coins, w, maxItems);
+			if (run != null && (best == null || run.getGpPerHour() > best.getGpPerHour()))
+			{
+				best = run;
+				bestWorlds = w;
+			}
+			if (w == top)
+			{
+				break;
+			}
+		}
+		if (best == null || bestWorlds >= allowed)
+		{
+			return best;
+		}
+		// Stopped short of the player's limit because more hopping would make less an hour
+		List<Flip> flips = new ArrayList<>();
+		for (Flip f : best.getFlips())
+		{
+			flips.add(f.getLimit() == ShopFlip.Limit.WORLDS || f.getLimit() == ShopFlip.Limit.STOCK && bestWorlds > 1
+				? f.withLimit(ShopFlip.Limit.QUICKER) : f);
+		}
+		return best.withFlips(flips);
 	}
 
-	/** One visit's worth of an item from a shop, or null if it isn't worth buying or the player can't. */
-	static Deal deal(Kind kind, Shop shop, String name, Shop.Item item, Prices prices, Unlocks unlocks, ShopPerks perks,
-		long coins)
+	/** One item's progress while planning a go. */
+	private static class Buying
 	{
-		return deal(kind, shop, name, item, prices, unlocks, perks, coins, 1);
+		final Leg leg;
+		long bought;
+		long cost;
+		long first;
+		long last;
+		long nextPrice;
+		ShopFlip.Limit limit;
+
+		Buying(Leg leg)
+		{
+			this.leg = leg;
+		}
+
+		long nextProfit()
+		{
+			return leg.getUnit() - nextPrice;
+		}
+
+		/** Works out the next one's price; false, with the reason, if no more can be bought. */
+		boolean advance(long worlds)
+		{
+			long depth = bought / worlds;
+			if (leg.getNormalStock() >= 0 && depth >= leg.getNormalStock())
+			{
+				// Every world's stock is bought: more worlds would mean more
+				limit = worlds == 1 || worlds == Long.MAX_VALUE ? ShopFlip.Limit.STOCK : ShopFlip.Limit.WORLDS;
+				return false;
+			}
+			if (leg.isStackable() && bought >= MAX_STACK)
+			{
+				limit = ShopFlip.Limit.SPACE;
+				return false;
+			}
+			if (bought >= leg.getCap())
+			{
+				limit = leg.getCapLimit();
+				return false;
+			}
+			nextPrice = leg.price(depth);
+			return true;
+		}
 	}
 
-	/** As above, hopping up to {@code maxWorlds} worlds (0 for no limit). */
-	static Deal deal(Kind kind, Shop shop, String name, Shop.Item item, Prices prices, Unlocks unlocks, ShopPerks perks,
-		long coins, int maxWorlds)
+	/**
+	 * Buying at a shop over {@code worlds} worlds (Long.MAX_VALUE for as many as it takes), a few of each item on each
+	 * world, round the worlds in turn. Each step buys whichever item's next one makes the most, until none makes
+	 * anything or the coins, inventory or alchs run out, buying no more than {@code maxItems} different items. Null if
+	 * nothing's bought.
+	 */
+	static FlipRun plan(Kind kind, Shop shop, List<Leg> legs, Prices prices, long coins, long worlds, int maxItems)
+	{
+		PriorityQueue<Buying> next = new PriorityQueue<>(Comparator.comparingLong(Buying::nextProfit).reversed()
+			.thenComparing(b -> b.leg.getName()));
+		List<Buying> all = new ArrayList<>();
+		for (Leg leg : legs)
+		{
+			Buying b = new Buying(leg);
+			all.add(b);
+			if (b.advance(worlds))
+			{
+				next.add(b);
+			}
+		}
+		int slots = INVENTORY_SIZE;
+		long left = coins;
+		long casts = kind == Kind.ALCH ? prices.alchCasts() : Long.MAX_VALUE;
+		long total = 0;
+		int items = 0;
+		ShopFlip.Limit stopped = ShopFlip.Limit.PRICE;
+		while (!next.isEmpty())
+		{
+			if (total >= casts)
+			{
+				stopped = ShopFlip.Limit.CASTS;
+				break;
+			}
+			Buying b = next.peek();
+			if (b.nextProfit() < 1)
+			{
+				break;
+			}
+			next.poll();
+			long price = b.nextPrice;
+			boolean needsSlot = !b.leg.isStackable() || b.bought == 0;
+			if (needsSlot && slots <= 0)
+			{
+				b.limit = ShopFlip.Limit.SPACE;
+				continue;
+			}
+			if (price > left)
+			{
+				b.limit = ShopFlip.Limit.COINS;
+				continue;
+			}
+			if (b.bought == 0 && items >= maxItems)
+			{
+				b.limit = ShopFlip.Limit.GE_SLOTS;
+				continue;
+			}
+			if (b.bought == 0)
+			{
+				items++;
+			}
+			if (needsSlot)
+			{
+				slots--;
+			}
+			left -= price;
+			b.cost += price;
+			if (b.bought == 0)
+			{
+				b.first = price;
+			}
+			b.last = Math.max(b.last, price);
+			b.bought++;
+			total++;
+			if (b.advance(worlds))
+			{
+				next.add(b);
+			}
+		}
+		for (Buying b : next)
+		{
+			b.limit = stopped;
+		}
+
+		List<Flip> flips = new ArrayList<>();
+		int used = 1;
+		long talks = 0;
+		long clicks = 0;
+		for (Buying b : all)
+		{
+			if (b.bought == 0)
+			{
+				continue;
+			}
+			Leg leg = b.leg;
+			int bought = (int) b.bought;
+			int onWorlds = (int) Math.min(worlds, b.bought);
+			used = Math.max(used, onWorlds);
+			talks += (b.bought + leg.getPerTalk() - 1) / leg.getPerTalk();
+			clicks += FlipTime.clicks(b.bought, onWorlds);
+			ShopFlip f = new ShopFlip(bought, b.cost, leg.getUnit() * bought, b.first, b.last, leg.getUnit(), b.limit, onWorlds);
+			flips.add(Flips.fromShop(new Deal(kind, shop, leg.getName(), leg.getItemId(), f, leg.getUnchecked(), leg.getVolume())));
+		}
+		if (flips.isEmpty())
+		{
+			return null;
+		}
+		flips.sort(Comparator.comparingLong(Flip::getProfit).reversed().thenComparing(Flip::getItem));
+		double active = FlipTime.TRIP_SECONDS + (shop.getTalk() != null ? talks * FlipTime.TALK_SECONDS
+			: (used - 1) * FlipTime.HOP_SECONDS + clicks * FlipTime.CLICK_SECONDS);
+		if (kind == Kind.ALCH)
+		{
+			active += total * FlipTime.ALCH_SECONDS;
+		}
+		double wait = kind == Kind.GE ? prices.geHours() * 3600 : 0;
+		Flip.Dest dest = flips.get(0).getDest();
+		return new FlipRun(Flip.Source.SHOP, dest, shop, flips, used, Math.max(active, wait), 0);
+	}
+
+	/** An item a shop sells and what it's worth where it's going, ready to plan buying it. */
+	@Value
+	static class Leg
+	{
+		String name;
+		int itemId;
+		/** Store value, or what gives the shop's set price. */
+		int value;
+		/** What the shop charges at normal stock, in tenths of a percent. */
+		int rate;
+		int delta;
+		/** The shop's normal stock, or -1 if it never runs out. */
+		int normalStock;
+		/** What one is worth where it's going. */
+		long unit;
+		boolean stackable;
+		/** Most to buy: what the GE trades, alchs in an hour, or Long.MAX_VALUE. */
+		long cap;
+		ShopFlip.Limit capLimit;
+		/** For the GE, about how many trade in the time the player will wait; Long.MAX_VALUE otherwise. */
+		long volume;
+		/** Bought per conversation, from a trader bought from by talking. */
+		int perTalk;
+		List<String> unchecked;
+
+		/** What the next one costs once {@code depth} have been bought on a world. */
+		long price(long depth)
+		{
+			return ShopFlipAdvisor.price(value, normalStock < 0 ? rate : (int) Math.min(Integer.MAX_VALUE, rate + delta * depth));
+		}
+	}
+
+	/** An item to plan buying from a shop, or null if it isn't worth anything where it's going or the player can't. */
+	static Leg leg(Kind kind, Shop shop, String name, Shop.Item item, Prices prices, Unlocks unlocks, ShopPerks perks)
 	{
 		Integer id = item.getId();
 		// Only items the shop keeps in stock can be bought
@@ -212,7 +430,6 @@ public final class BestBuys
 		{
 			return null;
 		}
-		int space = prices.stackable(id) ? MAX_STACK : INVENTORY_SIZE;
 		long volume = kind == Kind.GE ? prices.geVolume(id) : Long.MAX_VALUE;
 		long cap;
 		ShopFlip.Limit capLimit;
@@ -230,14 +447,37 @@ public final class BestBuys
 				cap = Long.MAX_VALUE;
 				capLimit = ShopFlip.Limit.VOLUME;
 		}
+		int[] bundle = item.getB();
+		int perTalk = bundle != null && bundle.length == 2 && bundle[0] > 0 ? bundle[0] : 1;
+		return new Leg(name, id, value, rate, delta, item.getS() < 0 ? -1 : item.getS(), unit, prices.stackable(id), cap, capLimit,
+			volume, perTalk, missing.getUnchecked().isEmpty() ? Collections.emptyList() : new ArrayList<>(missing.getUnchecked()));
+	}
+
+	/** One visit's worth of an item from a shop, or null if it isn't worth buying or the player can't. */
+	static Deal deal(Kind kind, Shop shop, String name, Shop.Item item, Prices prices, Unlocks unlocks, ShopPerks perks,
+		long coins)
+	{
+		return deal(kind, shop, name, item, prices, unlocks, perks, coins, 1);
+	}
+
+	/** As above, hopping up to {@code maxWorlds} worlds (0 for no limit). */
+	static Deal deal(Kind kind, Shop shop, String name, Shop.Item item, Prices prices, Unlocks unlocks, ShopPerks perks,
+		long coins, int maxWorlds)
+	{
+		Leg leg = leg(kind, shop, name, item, prices, unlocks, perks);
+		if (leg == null)
+		{
+			return null;
+		}
+		int space = leg.isStackable() ? MAX_STACK : INVENTORY_SIZE;
 		// Bought by talking, sometimes one per conversation: hopping isn't suggested there
 		int worlds = shop.getTalk() != null ? 1 : maxWorlds;
-		ShopFlip flip = ShopFlipAdvisor.planHopping(value, item.getS(), rate, delta, unit, 1, space, coins, cap, capLimit, worlds);
+		ShopFlip flip = ShopFlipAdvisor.planHopping(leg.getValue(), leg.getNormalStock(), leg.getRate(), leg.getDelta(),
+			leg.getUnit(), 1, space, coins, leg.getCap(), leg.getCapLimit(), worlds);
 		if (flip == null)
 		{
 			return null;
 		}
-		return new Deal(kind, shop, name, id, flip,
-			missing.getUnchecked().isEmpty() ? Collections.emptyList() : new ArrayList<>(missing.getUnchecked()), volume);
+		return new Deal(kind, shop, name, leg.getItemId(), flip, leg.getUnchecked(), leg.getVolume());
 	}
 }

@@ -13,16 +13,20 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import lombok.Value;
+import lombok.With;
+import net.runelite.api.coords.WorldPoint;
 
 /**
  * The best flips of every kind in one list. Shop-bought ones come from {@link BestBuys}; this adds what's worth buying
  * on the Grand Exchange to sell to a shop, put in Death's coffer or alch.
  * <p>
  * Every flip is one go: a shop visit, or one round of GE offers in the time the player will wait (no more than the buy
- * limit). They're ranked by what that makes.
+ * limit). They're ranked by what that makes, or what it makes an hour (see {@link FlipTime}).
  */
 public final class Flips
 {
@@ -85,19 +89,28 @@ public final class Flips
 
 		/** Whether it can be alched; shops won't buy items that can't. */
 		boolean alchable(int itemId);
+
+		/** Hours the player will wait for offers to fill. */
+		default double geHours()
+		{
+			return 1;
+		}
 	}
 
 	/**
 	 * Whatever's worth buying on the GE to cash out at {@code dest}. Selling back on the GE isn't a flip this finds.
+	 * Alching and the coffer are a go per item; selling to shops is a go per shop, with everything it pays more for
+	 * than the GE charges sold together, on the same hops.
 	 *
 	 * @param dest      where the player wants to cash out: a shop, the coffer or alching
 	 * @param unlocks   what the player has unlocked, for the shops they can sell to
 	 * @param maxWorlds the most worlds to hop selling to a shop, or ShopCatalog.NO_WORLD_LIMIT
 	 * @param coins     coins to spend
 	 * @param alchCasts how many alchs to plan for
+	 * @param maxItems  the most different items to buy on the GE for one shop go (it has 8 offer slots)
 	 */
-	public static List<Flip> fromGe(GeMarket m, Flip.Dest dest, ShopCatalog catalog, Unlocks unlocks, ShopPerks perks,
-		int maxWorlds, long coins, long alchCasts)
+	public static List<FlipRun> fromGe(GeMarket m, Flip.Dest dest, ShopCatalog catalog, Unlocks unlocks, ShopPerks perks,
+		int maxWorlds, long coins, long alchCasts, int maxItems)
 	{
 		if (dest == Flip.Dest.GE)
 		{
@@ -108,9 +121,13 @@ public final class Flips
 		{
 			missing.put(shop, unlocks.missing(shop, null));
 		}
+		Predicate<Shop> usable = shop -> missing.get(shop).isMet();
 		Predicate<Shop> noted = shop -> missing.get(shop).isMet() && shop.getTalk() == null;
 		Predicate<Shop> unnoted = shop -> missing.get(shop).isMet() && shop.getTalk() != null;
-		List<Flip> out = new ArrayList<>();
+		double geHours = m.geHours();
+		List<FlipRun> out = new ArrayList<>();
+		// What each shop pays more for than the GE charges
+		Map<Shop, List<Sale>> sales = new IdentityHashMap<>();
 		for (int id : m.items())
 		{
 			long cost = m.buy(id);
@@ -137,20 +154,22 @@ public final class Flips
 			{
 				continue;
 			}
-			Flip best = null;
+			double wait = FlipTime.geWaitSeconds(geHours, why);
 
 			long coffer = m.coffer(id);
 			if (dest == Flip.Dest.COFFER && coffer > cost)
 			{
-				best = flip(Flip.Dest.COFFER, m, id, cap, cost, coffer, why, trades);
+				out.add(FlipRun.single(flip(Flip.Dest.COFFER, m, id, cap, cost, coffer, why, trades),
+					Math.max(FlipTime.TRIP_SECONDS, wait)));
 			}
 
 			long alch = m.alch(id);
 			if (dest == Flip.Dest.ALCH && alch > cost)
 			{
-				best = better(best, alchCasts < cap
+				Flip f = alchCasts < cap
 					? flip(Flip.Dest.ALCH, m, id, alchCasts, cost, alch, ShopFlip.Limit.CASTS, trades)
-					: flip(Flip.Dest.ALCH, m, id, cap, cost, alch, why, trades));
+					: flip(Flip.Dest.ALCH, m, id, cap, cost, alch, why, trades);
+				out.add(FlipRun.single(f, Math.max(f.getQuantity() * FlipTime.ALCH_SECONDS, wait)));
 			}
 
 			String name = m.name(id);
@@ -158,50 +177,197 @@ public final class Flips
 			// Shops won't buy items that can't be alched, though some have a store value to protect them on death
 			if (dest == Flip.Dest.SHOP && name != null && value > 0 && m.alchable(id))
 			{
-				best = better(best, toShop(m, catalog, perks, noted, id, name, value, cost, cap, why, maxWorlds, trades, missing));
+				// Most items no shop pays more for than the GE charges, which one sale finds out
+				ShopOffer probe = catalog.bestOffer(name, value, 1, true, perks, cost, UNLIMITED, usable);
+				if (probe == null || probe.getQuantity() == 0)
+				{
+					continue;
+				}
+				Sale sale = new Sale(id, name, value, cost, why, trades, null, why);
+				addSales(sales, catalog, perks, noted, sale, cap, why, maxWorlds);
 				// Traders bought from by talking only take unnoted items, so it's an inventory a trip
 				long trip = Math.min(cap, BestBuys.INVENTORY_SIZE);
-				best = better(best, toShop(m, catalog, perks, unnoted, id, name, value, cost, trip,
-					trip < cap ? ShopFlip.Limit.SPACE : why, maxWorlds, trades, missing));
-			}
-
-			if (best != null)
-			{
-				out.add(best);
+				addSales(sales, catalog, perks, unnoted, sale, trip, trip < cap ? ShopFlip.Limit.SPACE : why, maxWorlds);
 			}
 		}
-		return out;
+		// In the catalog's order, so the result is the same every time
+		for (Shop shop : catalog.getShops())
+		{
+			List<Sale> list = sales.get(shop);
+			FlipRun run = list == null ? null : sellRun(shop, list, catalog, perks, coins, geHours, missing.get(shop), maxItems);
+			if (run != null)
+			{
+				out.add(run);
+			}
+		}
+		return mergeEqual(out, perks.getLocation());
+	}
+
+	/** An item bought on the GE to sell to a shop. */
+	@Value
+	private static class Sale
+	{
+		int itemId;
+		String name;
+		int value;
+		/** What one costs on the GE. */
+		long cost;
+		/** What stopped the GE buying going higher. */
+		ShopFlip.Limit geLimit;
+		long trades;
+		/** What the shop pays for the stack; set per shop. */
+		@With
+		ShopOffer offer;
+		/** What stopped the quantity going higher; set per shop. */
+		@With
+		ShopFlip.Limit limit;
 	}
 
 	/**
-	 * Selling up to {@code cap} bought on the GE to the best of the {@code usable} shops, hopping no more than
-	 * {@code maxWorlds}; null if none pays more than the GE charges.
+	 * Adds a sale of up to {@code qty} to each of the {@code usable} shops paying more than the GE charges, hopping no
+	 * more than {@code maxWorlds}.
 	 */
-	private static Flip toShop(GeMarket m, ShopCatalog catalog, ShopPerks perks, Predicate<Shop> usable, int id, String name,
-		int value, long cost, long cap, ShopFlip.Limit why, int maxWorlds, long trades, Map<Shop, Unlocks.Missing> missing)
+	private static void addSales(Map<Shop, List<Sale>> sales, ShopCatalog catalog, ShopPerks perks, Predicate<Shop> usable,
+		Sale sale, long qty, ShopFlip.Limit why, int maxWorlds)
 	{
-		// Most items no shop pays more for than the GE charges, which one sale finds out
-		ShopOffer probe = catalog.bestOffer(name, value, 1, true, perks, cost, UNLIMITED, usable);
-		if (probe == null || probe.getQuantity() == 0)
+		int n = (int) Math.min(qty, Integer.MAX_VALUE);
+		for (ShopOffer offer : catalog.offers(sale.getName(), sale.getValue(), n, true, perks, sale.getCost(), UNLIMITED, usable))
+		{
+			if (offer.getQuantity() == 0)
+			{
+				continue;
+			}
+			ShopFlip.Limit limit = why;
+			if (maxWorlds != ShopCatalog.NO_WORLD_LIMIT && offer.getWorlds() > maxWorlds)
+			{
+				offer = offerAt(catalog, perks, sale, offer.getShop(), offer.getPerWorld() * maxWorlds);
+				limit = ShopFlip.Limit.WORLDS;
+			}
+			if (offer != null && offer.getQuantity() > 0)
+			{
+				sales.computeIfAbsent(offer.getShop(), s -> new ArrayList<>()).add(sale.withOffer(offer).withLimit(limit));
+			}
+		}
+	}
+
+	/** What one shop pays for {@code qty}; null if it won't buy them. */
+	private static ShopOffer offerAt(ShopCatalog catalog, ShopPerks perks, Sale sale, Shop shop, long qty)
+	{
+		List<ShopOffer> offers = catalog.offers(sale.getName(), sale.getValue(), (int) Math.min(qty, Integer.MAX_VALUE), true,
+			perks, sale.getCost(), UNLIMITED, s -> s == shop);
+		return offers.isEmpty() ? null : offers.get(0);
+	}
+
+	/**
+	 * A go selling to one shop: the {@code maxItems} items making the most that the coins reach, then the best returns
+	 * first while the coins last (and, for a trader taking only unnoted items, the inventory). Null if nothing's worth it.
+	 */
+	private static FlipRun sellRun(Shop shop, List<Sale> sales, ShopCatalog catalog, ShopPerks perks, long coins, double geHours,
+		Unlocks.Missing missing, int maxItems)
+	{
+		// The GE has only so many offer slots, so it's the items making the most
+		sales.sort(Comparator.comparingLong(Flips::saleProfit).reversed().thenComparing(Sale::getName));
+		List<Sale> chosen = new ArrayList<>();
+		for (Sale sale : sales)
+		{
+			if (chosen.size() >= maxItems)
+			{
+				break;
+			}
+			if (sale.getCost() <= coins)
+			{
+				chosen.add(sale);
+			}
+		}
+		sales = chosen;
+		sales.sort(Comparator.comparingDouble(Flips::saleReturn).reversed().thenComparing(Sale::getName));
+		boolean talk = shop.getTalk() != null;
+		long coinsLeft = coins;
+		long slotsLeft = talk ? BestBuys.INVENTORY_SIZE : Long.MAX_VALUE;
+		List<Flip> flips = new ArrayList<>();
+		int worlds = 1;
+		long clicks = 0;
+		double wait = 0;
+		for (Sale sale : sales)
+		{
+			ShopOffer offer = sale.getOffer();
+			ShopFlip.Limit limit = sale.getLimit();
+			long fit = Math.min(offer.getQuantity(), Math.min(coinsLeft / sale.getCost(), slotsLeft));
+			if (fit < 1)
+			{
+				continue;
+			}
+			if (fit < offer.getQuantity())
+			{
+				limit = fit == slotsLeft ? ShopFlip.Limit.SPACE : ShopFlip.Limit.COINS;
+				offer = offerAt(catalog, perks, sale, shop, fit);
+				if (offer == null || offer.getQuantity() == 0)
+				{
+					continue;
+				}
+			}
+			int qty = offer.getQuantity();
+			coinsLeft -= sale.getCost() * qty;
+			slotsLeft -= qty;
+			worlds = Math.max(worlds, offer.getWorlds());
+			clicks += talk ? 1 : FlipTime.clicks(qty, offer.getWorlds());
+			wait = Math.max(wait, FlipTime.geWaitSeconds(geHours, sale.getGeLimit()));
+			List<String> unchecked = missing.getUnchecked();
+			flips.add(new Flip(Flip.Source.GE, Flip.Dest.SHOP, sale.getName(), sale.getItemId(), null, offer, qty, sale.getCost() * qty,
+				offer.getTotal(), sale.getCost(), offer.getFirstUnit(), limit,
+				unchecked.isEmpty() ? Collections.emptyList() : new ArrayList<>(unchecked), sale.getTrades(), false, 1));
+		}
+		if (flips.isEmpty())
 		{
 			return null;
 		}
-		long qty = Math.min(cap, Integer.MAX_VALUE);
-		ShopOffer offer = catalog.bestOffer(name, value, (int) qty, true, perks, cost, UNLIMITED, usable);
-		if (offer != null && maxWorlds != ShopCatalog.NO_WORLD_LIMIT && offer.getWorlds() > maxWorlds)
+		flips.sort(Comparator.comparingLong(Flip::getProfit).reversed().thenComparing(Flip::getItem));
+		double active = FlipTime.TRIP_SECONDS + (worlds - 1) * FlipTime.HOP_SECONDS
+			+ clicks * (talk ? FlipTime.TALK_SECONDS : FlipTime.CLICK_SECONDS);
+		return new FlipRun(Flip.Source.GE, Flip.Dest.SHOP, shop, flips, worlds, Math.max(active, wait), 0);
+	}
+
+	/** What selling the whole stack makes. */
+	private static long saleProfit(Sale s)
+	{
+		return s.getOffer().getTotal() - s.getCost() * s.getOffer().getQuantity();
+	}
+
+	/** What selling the whole stack makes for each coin it costs on the GE. */
+	private static double saleReturn(Sale s)
+	{
+		long cost = s.getCost() * s.getOffer().getQuantity();
+		return (s.getOffer().getTotal() - cost) / (double) cost;
+	}
+
+	/**
+	 * Gos that are just the same at different shops (stores sharing a stock and rates, often), as one: the closest
+	 * shop's, counting the others.
+	 */
+	static List<FlipRun> mergeEqual(List<FlipRun> runs, WorldPoint from)
+	{
+		List<FlipRun> out = new ArrayList<>(runs.size());
+		Map<String, FlipRun> best = new LinkedHashMap<>();
+		Map<String, Integer> count = new HashMap<>();
+		for (FlipRun run : runs)
 		{
-			qty = (long) offer.getPerWorld() * maxWorlds;
-			why = ShopFlip.Limit.WORLDS;
-			offer = catalog.bestOffer(name, value, (int) qty, true, perks, cost, UNLIMITED, usable);
+			if (run.getShop() == null)
+			{
+				out.add(run);
+				continue;
+			}
+			StringBuilder key = new StringBuilder().append(run.getSource()).append(run.getDest()).append(':').append(run.getProfit())
+				.append(':').append(run.getCost()).append(':').append(run.getWorlds()).append(':').append(run.getShop().getTalk() != null);
+			for (Flip f : run.getFlips())
+			{
+				key.append(':').append(f.getItemId()).append('x').append(f.getQuantity());
+			}
+			String k = key.toString();
+			count.merge(k, 1, Integer::sum);
+			best.merge(k, run, (a, b) -> b.getShop().distanceTo(from) < a.getShop().distanceTo(from) ? b : a);
 		}
-		if (offer == null || offer.getQuantity() == 0)
-		{
-			return null;
-		}
-		List<String> unchecked = missing.get(offer.getShop()).getUnchecked();
-		return new Flip(Flip.Source.GE, Flip.Dest.SHOP, name, id, null, offer, offer.getQuantity(), cost * offer.getQuantity(),
-			offer.getTotal(), cost, offer.getFirstUnit(), why, unchecked.isEmpty() ? Collections.emptyList() : new ArrayList<>(unchecked),
-			trades, false, 1);
+		best.forEach((k, run) -> out.add(count.get(k) > 1 ? run.withEqualShops(count.get(k) - 1) : run));
+		return out;
 	}
 
 	private static Flip flip(Flip.Dest dest, GeMarket m, int id, long qty, long cost, long unit, ShopFlip.Limit why, long trades)
@@ -209,15 +375,6 @@ public final class Flips
 		String name = m.name(id);
 		return new Flip(Flip.Source.GE, dest, name == null ? "item " + id : name, id, null, null, (int) Math.min(qty, Integer.MAX_VALUE),
 			cost * qty, unit * qty, cost, unit, why, Collections.emptyList(), trades, false, 1);
-	}
-
-	private static Flip better(Flip a, Flip b)
-	{
-		if (b == null)
-		{
-			return a;
-		}
-		return a == null || b.getProfit() > a.getProfit() ? b : a;
 	}
 
 	/** A shop deal as a flip. */
@@ -232,26 +389,28 @@ public final class Flips
 	}
 
 	/**
-	 * The best flips, best first by {@code sort}: for each item, the best way to flip it from each source (a shop and
-	 * the GE have their own limits, so both can be worth doing).
+	 * The best gos, best first by {@code sort}. Only the best general store is kept: they all buy the same things, so
+	 * the rest are worse ways to do the same.
 	 *
-	 * @param minGain only flips making at least this much
+	 * @param minGain only gos making at least this much
 	 * @param limit   at most this many
 	 */
-	public static List<Flip> rank(Collection<Flip> flips, long minGain, int limit, FlipSort sort)
+	public static List<FlipRun> rank(Collection<FlipRun> runs, long minGain, int limit, FlipSort sort)
 	{
-		Comparator<Flip> order = sort.best();
-		Map<String, Flip> best = new HashMap<>();
-		for (Flip f : flips)
+		List<FlipRun> sorted = new ArrayList<>(runs);
+		sorted.sort(sort.best());
+		List<FlipRun> out = new ArrayList<>();
+		boolean generalStore = false;
+		for (FlipRun r : sorted)
 		{
-			if (f.getProfit() < Math.max(1, minGain))
+			boolean general = r.getShop() != null && r.getShop().isGeneral();
+			if (r.getProfit() < Math.max(1, minGain) || general && generalStore)
 			{
 				continue;
 			}
-			best.merge(f.getItemId() + ":" + f.getSource(), f, (a, b) -> order.compare(b, a) < 0 ? b : a);
+			generalStore |= general;
+			out.add(r);
 		}
-		List<Flip> out = new ArrayList<>(best.values());
-		out.sort(order);
 		return out.size() > limit ? new ArrayList<>(out.subList(0, limit)) : out;
 	}
 }

@@ -23,7 +23,13 @@ public class ShopFlip
 		/** The GE's buy limit (per 4 hours). */
 		BUY_LIMIT("GE buy limit"),
 		/** More would take hopping more worlds than the player's limit. */
-		WORLDS("worlds you'd hop");
+		WORLDS("worlds you'd hop"),
+		/** Hopping more worlds would make more, but less an hour. */
+		QUICKER("hopping more makes less an hour"),
+		/** Enough to fill Death's coffer to the target. */
+		COFFER("room in your coffer"),
+		/** As many different items as the player will flip through the GE at once. */
+		GE_SLOTS("items per GE flip");
 
 		private final String description;
 

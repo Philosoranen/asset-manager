@@ -15,6 +15,7 @@ import com.assetmanager.dest.Destination;
 import com.assetmanager.dest.Destinations;
 import com.assetmanager.flip.BestBuys;
 import com.assetmanager.flip.Flip;
+import com.assetmanager.flip.FlipRun;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.flip.Flips;
 import com.assetmanager.flip.ShopFlipOverlay;
@@ -236,7 +237,7 @@ public class AssetManagerPlugin extends Plugin
 	private boolean unlocksStale = true;
 	/** The flips need working out again: prices, unlocks or settings changed. */
 	private boolean bestBuysStale = true;
-	private List<Flip> flips = Collections.emptyList();
+	private List<FlipRun> flips = Collections.emptyList();
 	/** Whether the flips include GE-bought ones. */
 	private boolean geFlips;
 	/** Coins the flips were worked out for. */
@@ -883,6 +884,10 @@ public class AssetManagerPlugin extends Plugin
 			itemValuator.getNatureRuneCost(), mode.canUseGrandExchange(), keepRules, holdings) : null);
 		geCofferOverlay.setShortfall(mode.canUseCoffer() ? Math.max(0, in.target - in.balance) : 0);
 		geCofferOverlay.setCofferKnown(cofferTracker.isKnown());
+		shopFlipper.setCanUseGe(mode.canUseGrandExchange());
+		// The top-up plan buys what reaches the target; "all worth sacrificing" has no limit
+		shopFlipper.setCofferRoom(!mode.canUseCoffer() ? 0 : config.cofferSuggestions() == CofferSuggestionMode.ALL ? Long.MAX_VALUE
+			: Math.max(0, in.target - in.balance));
 		priceTooltip.setContext(new PriceTooltip.Context(mode, itemValuator.getNatureRuneCost(), perks, in.sellRules,
 			saleResult.getSkippedShops(), destinations.getSuggestions().getShop(), shopCatalog, keepRules, holdings));
 		bankViews.update(destinations);
@@ -978,6 +983,12 @@ public class AssetManagerPlugin extends Plugin
 			}
 
 			@Override
+			public double geHours()
+			{
+				return patience.getHours();
+			}
+
+			@Override
 			public int storeValue(int itemId)
 			{
 				return values.get(itemId).getStorePrice();
@@ -999,25 +1010,23 @@ public class AssetManagerPlugin extends Plugin
 		long minGain = config.minFlipProfit();
 		FlipSort sort = config.flipSort();
 		int maxWorlds = config.shopMaxWorlds();
+		int geItems = config.geFlipItems();
 		ShopCatalog catalog = shopCatalog;
 		planner.execute(() ->
 		{
-			List<Flip> all = new ArrayList<>();
+			List<FlipRun> all = new ArrayList<>();
 			// Shops are only sold to what's bought on the GE
 			BestBuys.Kind kind = dest == Flip.Dest.ALCH ? BestBuys.Kind.ALCH : dest == Flip.Dest.COFFER ? BestBuys.Kind.COFFER
 				: dest == Flip.Dest.GE ? BestBuys.Kind.GE : null;
 			if (kind != null)
 			{
-				for (BestBuys.Deal d : BestBuys.find(kind, shops, prices, have, perks, coins, minGain, Integer.MAX_VALUE, maxWorlds))
-				{
-					all.add(Flips.fromShop(d));
-				}
+				all.addAll(BestBuys.runs(kind, shops, prices, have, perks, coins, maxWorlds, sort == FlipSort.GP_PER_HOUR, geItems));
 			}
 			if (market != null)
 			{
-				all.addAll(Flips.fromGe(market, dest, catalog, have, perks, maxWorlds, coins, Flips.ALCHS_PER_HOUR));
+				all.addAll(Flips.fromGe(market, dest, catalog, have, perks, maxWorlds, coins, Flips.ALCHS_PER_HOUR, geItems));
 			}
-			List<Flip> best = Flips.rank(all, minGain, FLIPS_SHOWN, sort);
+			List<FlipRun> best = Flips.rank(all, minGain, FLIPS_SHOWN, sort);
 			clientThread.invokeLater(() ->
 			{
 				flips = best;
@@ -1107,6 +1116,12 @@ public class AssetManagerPlugin extends Plugin
 			public boolean alchable(int itemId)
 			{
 				return info.get(itemId).isAlchable();
+			}
+
+			@Override
+			public double geHours()
+			{
+				return patience.getHours();
 			}
 		};
 	}

@@ -5,6 +5,7 @@ import com.assetmanager.coffer.CofferPlan;
 import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.dest.Destinations;
 import com.assetmanager.flip.Flip;
+import com.assetmanager.flip.FlipRun;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.shop.ShopPerks;
 import com.assetmanager.shop.ShopStock;
@@ -55,8 +56,8 @@ public class PanelState
 	Map<String, Long> restockedBy;
 	/** Shop items others have overstocked on several worlds, which aren't suggested until they restock. */
 	List<ShopStock.Busy> busyShops;
-	/** The best flips, most profitable first; empty if none, turned off or not worked out yet. */
-	List<Flip> flips;
+	/** The best flips, best first by flipSort; empty if none, turned off or not worked out yet. */
+	List<FlipRun> flips;
 	/** Whether flips are turned on in the settings. */
 	boolean flipsEnabled;
 	/** Whether GE-bought flips are included: the account can use the GE and live prices are on and loaded. */

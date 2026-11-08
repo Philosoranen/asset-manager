@@ -121,11 +121,25 @@ public interface AssetManagerConfig extends Config
 	@ConfigItem(
 		keyName = "shopFlips",
 		name = "Show shop flips",
-		description = "Mark items in shops that can be resold on the GE for a profit; hover one to see how many to buy",
+		description = "Mark items in shops that can be resold on the GE for a profit, with how many to buy; hover one for more",
 		section = flipSection,
 		position = 1
 	)
 	default boolean shopFlips()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "shopCofferBuys",
+		name = "Show shop coffer buys",
+		description = "Mark items in shops that add more to Death's coffer than they cost, with how many to buy: enough to"
+			+ " reach your coffer target with the Top-up plan, or as many as are worth it with All worth sacrificing."
+			+ " Where the GE would make more, the GE icon shows instead; hover either to see both.",
+		section = flipSection,
+		position = 1
+	)
+	default boolean shopCofferBuys()
 	{
 		return true;
 	}
@@ -195,13 +209,28 @@ public interface AssetManagerConfig extends Config
 	@ConfigItem(
 		keyName = "flipSort",
 		name = "Sort flips by",
-		description = "Order flips by total profit, or by return on what they cost (best for Death's coffer, where the coins"
-			+ " spent are gone); set on the side panel's Flipping tab",
+		description = "Order flips by GP per hour (counting hops, trips, conversations, alchs and waiting for the GE), total"
+			+ " profit, or return on what they cost (best for Death's coffer, where the coins spent are gone); set on the side"
+			+ " panel's Flipping tab",
 		hidden = true
 	)
 	default FlipSort flipSort()
 	{
-		return FlipSort.PROFIT;
+		return FlipSort.GP_PER_HOUR;
+	}
+
+	@Range(min = 1, max = 28)
+	@ConfigItem(
+		keyName = "geFlipItems",
+		name = "Items per GE flip",
+		description = "The most different items to flip in one go through the GE: buying on the GE to sell to a shop, or"
+			+ " buying from a shop to sell on the GE. The GE has 8 offer slots; noted items take an inventory slot each.",
+		section = flipSection,
+		position = 2
+	)
+	default int geFlipItems()
+	{
+		return 8;
 	}
 
 	@Range(min = 1, max = 100_000_000)

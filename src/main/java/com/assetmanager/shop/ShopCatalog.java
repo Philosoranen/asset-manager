@@ -271,9 +271,20 @@ public class ShopCatalog
 	public ShopOffer bestOffer(String name, int storeValue, int quantity, boolean tradeable, ShopPerks perks,
 		long alternativeUnit, SellRules rules, Predicate<Shop> usable)
 	{
+		return pick(offers(name, storeValue, quantity, tradeable, perks, alternativeUnit, rules, usable),
+			alternativeUnit * quantity, perks.getLocation(), perks.getPreferredShops());
+	}
+
+	/**
+	 * What each of the {@code usable} shops would pay for a whole stack, as {@link #bestOffer}; an offer's quantity is 0
+	 * where the stack isn't worth selling. Empty if no shop buys it.
+	 */
+	public List<ShopOffer> offers(String name, int storeValue, int quantity, boolean tradeable, ShopPerks perks,
+		long alternativeUnit, SellRules rules, Predicate<Shop> usable)
+	{
 		if (storeValue <= 0 || quantity <= 0)
 		{
-			return null;
+			return Collections.emptyList();
 		}
 		long minUnit = alternativeUnit + Math.max(1, rules.getMinGainPerItem());
 		String key = name.toLowerCase();
@@ -310,7 +321,7 @@ public class ShopCatalog
 			}
 			offers.add(offer);
 		}
-		return pick(offers, alternativeUnit * quantity, perks.getLocation(), perks.getPreferredShops());
+		return offers;
 	}
 
 	/** As above, with no shops skipped. */
