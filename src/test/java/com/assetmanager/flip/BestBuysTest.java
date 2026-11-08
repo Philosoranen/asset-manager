@@ -107,6 +107,48 @@ public class BestBuysTest
 	}
 
 	@Test
+	public void hoppingBuysAFewOnEachWorldWhileThePriceIsLow()
+	{
+		// As above, but over 10 worlds: 10 at 10,000, 10 at 10,300, then 8 at 10,600 fill the inventory
+		Shop garden = shop("Garden Centre", 1000, 30, null, Map.of("bagged willow tree", item(1, 20)));
+		FakePrices p = new FakePrices();
+		p.value.put(1, 10_000);
+		p.coffer.put(1, 12_000L);
+
+		BestBuys.Deal d = BestBuys.deal(BestBuys.Kind.COFFER, garden, "bagged willow tree", garden.getItems().get("bagged willow tree"),
+			p, Unlocks.EVERYTHING, PERKS, Long.MAX_VALUE, 10);
+
+		assertEquals(28, d.getFlip().getQuantity());
+		assertEquals(ShopFlip.Limit.SPACE, d.getFlip().getLimit());
+		assertEquals(10, d.getFlip().getWorlds());
+		assertEquals(3, d.getFlip().getPerWorld());
+		assertEquals(10 * 2_000 + 10 * 1_700 + 8 * 1_400, d.getGain());
+	}
+
+	@Test
+	public void hoppingStopsWhenEveryWorldsStockIsBought()
+	{
+		Shop shop = shop("Small Shop", 1000, 30, null, Map.of("thing", item(1, 2)));
+		FakePrices p = new FakePrices();
+		p.value.put(1, 10_000);
+		p.coffer.put(1, 20_000L);
+		p.stackable.add(1);
+
+		BestBuys.Deal d = BestBuys.deal(BestBuys.Kind.COFFER, shop, "thing", shop.getItems().get("thing"), p, Unlocks.EVERYTHING,
+			PERKS, Long.MAX_VALUE, 3);
+		assertEquals(6, d.getFlip().getQuantity());
+		assertEquals(ShopFlip.Limit.WORLDS, d.getFlip().getLimit());
+
+		// Bought by talking: no hopping
+		shop.setTalk("Shopkeeper");
+		d = BestBuys.deal(BestBuys.Kind.COFFER, shop, "thing", shop.getItems().get("thing"), p, Unlocks.EVERYTHING, PERKS,
+			Long.MAX_VALUE, 3);
+		assertEquals(2, d.getFlip().getQuantity());
+		assertEquals(ShopFlip.Limit.STOCK, d.getFlip().getLimit());
+		assertEquals(1, d.getFlip().getWorlds());
+	}
+
+	@Test
 	public void setPriceIsUsedInsteadOfValue()
 	{
 		// Diango sells the disk for 21,000 though its value is 120; the coffer would only add ~12.8k

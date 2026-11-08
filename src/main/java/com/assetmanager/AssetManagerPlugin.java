@@ -14,6 +14,9 @@ import com.assetmanager.death.RiskItem;
 import com.assetmanager.dest.Destination;
 import com.assetmanager.dest.Destinations;
 import com.assetmanager.flip.BestBuys;
+import com.assetmanager.flip.Flip;
+import com.assetmanager.flip.FlipSort;
+import com.assetmanager.flip.Flips;
 import com.assetmanager.flip.ShopFlipOverlay;
 import com.assetmanager.flip.ShopFlipper;
 import com.assetmanager.flip.ShopRatesOverlay;
@@ -42,12 +45,14 @@ import com.assetmanager.ui.SuggestionOverlay;
 import com.assetmanager.value.ItemValuator;
 import com.assetmanager.value.ItemValues;
 import com.assetmanager.value.LivePrices;
+import com.assetmanager.value.Patience;
 import com.assetmanager.value.SaleAdvisor;
 import com.google.gson.Gson;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -130,8 +135,8 @@ public class AssetManagerPlugin extends Plugin
 	private static final Duration PEAK_FEE_TTL = Duration.ofDays(14);
 	/** Refresh prices every 30 minutes (in game ticks). */
 	private static final int PRICE_REFRESH_TICKS = 3000;
-	/** Deals listed in each of the panel's best-buys lists. */
-	private static final int BEST_BUYS_SHOWN = 5;
+	/** Flips listed on the panel's Flipping tab. */
+	private static final int FLIPS_SHOWN = 10;
 	/** Tiles moved before shop distances are worked out again. */
 	private static final int RECALC_DISTANCE = 64;
 
@@ -229,11 +234,12 @@ public class AssetManagerPlugin extends Plugin
 	/** What the player has unlocked, for shop requirements; read again when levels, quests or the account change. */
 	private Unlocks unlocks = Unlocks.EVERYTHING;
 	private boolean unlocksStale = true;
-	/** The best shop buys need working out again: prices, unlocks or settings changed. */
+	/** The flips need working out again: prices, unlocks or settings changed. */
 	private boolean bestBuysStale = true;
-	private List<BestBuys.Deal> cofferBuys = Collections.emptyList();
-	private List<BestBuys.Deal> geBuys = Collections.emptyList();
-	/** Coins the best buys were worked out for. */
+	private List<Flip> flips = Collections.emptyList();
+	/** Whether the flips include GE-bought ones. */
+	private boolean geFlips;
+	/** Coins the flips were worked out for. */
 	private long bestBuysBudget = -1;
 
 	@Provides
@@ -257,7 +263,12 @@ public class AssetManagerPlugin extends Plugin
 			(itemId, keep) -> clientThread.invokeLater(() -> setKeep(itemId, keep)),
 			destination -> clientThread.invokeLater(() -> showInBank(destination)),
 			destination -> clientThread.invokeLater(() -> findShop(destination.getName(), destination.getShop())),
-			shop -> clientThread.invokeLater(() -> findShop(shop.getName(), shop)));
+			shop -> clientThread.invokeLater(() -> findShop(shop.getName(), shop)),
+			config.flipPatience(),
+			patience -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipPatience", patience),
+			dest -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipDest", dest),
+			config.flipSort(),
+			sort -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipSort", sort));
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
 			.tooltip("Asset Manager")
@@ -718,13 +729,13 @@ public class AssetManagerPlugin extends Plugin
 			preferred.add(shopFinder.getShop());
 		}
 		ShopPerks perks = new ShopPerks(glovesTier, charos, config.avoidWilderness(), location, preferred);
-		// Deals have to be affordable: coins in the bank and inventory, or no limit until the bank has been seen
-		long budget = bankItems == null ? Long.MAX_VALUE : bankCoins + inventoryCoins();
+		// Flips spend only the coins carried, so the player controls how much is considered by how much they take out
+		long budget = inventoryCoins();
 		if (bestBuysStale || budget != bestBuysBudget)
 		{
 			bestBuysStale = false;
 			bestBuysBudget = budget;
-			updateBestBuys(mode, perks, budget);
+			updateFlips(mode, perks, budget);
 		}
 		shopFlipper.setGlovesTier(glovesTier);
 		perkGuard.setGlovesTier(glovesTier);
@@ -880,7 +891,7 @@ public class AssetManagerPlugin extends Plugin
 		publish(new PanelState(mode, in.balance, cofferTracker.isKnown(), cofferTracker.getSource(), cofferTracker.getUpdatedAt(),
 			in.skulled, in.protectItem, in.estimate, plan, in.target, in.peakFee, config.minCofferTarget(), kept, perks,
 			bankCoins, config.targetDeaths(), bankItems == null ? null : destinations, restockedBy(shopStock, destinations, now),
-			shopStock.busy(now), cofferBuys, geBuys, bankItems != null));
+			shopStock.busy(now), flips, config.bestBuys(), geFlips, Flips.destination(mode, config.flipDest()), config.flipSort(), inventoryCoins()));
 	}
 
 	private long inventoryCoins()
@@ -890,15 +901,15 @@ public class AssetManagerPlugin extends Plugin
 	}
 
 	/**
-	 * Works out the best things to buy from shops for the coffer and the GE, off the client thread. Prices are gathered
-	 * here first; the player's unlocks are read only when they may have changed, as that runs a script per quest.
+	 * Works out the best flips, off the client thread. Prices are gathered here first; the player's unlocks are read
+	 * only when they may have changed, as that runs a script per quest.
 	 */
-	private void updateBestBuys(AccountMode mode, ShopPerks perks, long coins)
+	private void updateFlips(AccountMode mode, ShopPerks perks, long coins)
 	{
 		if (!config.bestBuys())
 		{
-			cofferBuys = Collections.emptyList();
-			geBuys = Collections.emptyList();
+			flips = Collections.emptyList();
+			geFlips = false;
 			return;
 		}
 		if (unlocksStale)
@@ -906,8 +917,11 @@ public class AssetManagerPlugin extends Plugin
 			unlocksStale = false;
 			unlocks = unlockReader.read();
 		}
+		Patience patience = config.flipPatience();
+		int natureRuneCost = itemValuator.getNatureRuneCost();
 		Map<Integer, ItemValues> values = new HashMap<>();
 		Map<Integer, Long> volumes = new HashMap<>();
+		Map<Integer, Long> geSells = new HashMap<>();
 		Set<Integer> stackable = new HashSet<>();
 		for (Shop shop : shopCatalog.getShops())
 		{
@@ -918,9 +932,13 @@ public class AssetManagerPlugin extends Plugin
 				{
 					continue;
 				}
-				values.put(id, itemValuator.get(id));
-				long perHour = livePrices.tradesPerHour(id);
-				volumes.put(id, perHour < 0 ? Long.MAX_VALUE : perHour);
+				ItemValues v = itemValuator.get(id);
+				values.put(id, v);
+				long trades = patience.tradesIn(livePrices.tradesPerHour(id));
+				volumes.put(id, trades < 0 ? Long.MAX_VALUE : trades);
+				// Sold at the price the player's patience gets, when live prices say what that is
+				int live = livePrices.sellPrice(id, patience.getPrice());
+				geSells.put(id, live > 0 && v.isTradeable() ? ItemValues.afterTax(live) : v.getGeNetSell());
 				if (itemManager.getItemComposition(id).isStackable())
 				{
 					stackable.add(id);
@@ -938,13 +956,25 @@ public class AssetManagerPlugin extends Plugin
 			@Override
 			public long ge(int itemId)
 			{
-				return values.get(itemId).getGeNetSell();
+				return geSells.get(itemId);
 			}
 
 			@Override
 			public long geVolume(int itemId)
 			{
 				return volumes.get(itemId);
+			}
+
+			@Override
+			public long alch(int itemId)
+			{
+				return values.get(itemId).getHighAlchNet(natureRuneCost);
+			}
+
+			@Override
+			public long alchCasts()
+			{
+				return Flips.ALCHS_PER_HOUR;
 			}
 
 			@Override
@@ -959,26 +989,126 @@ public class AssetManagerPlugin extends Plugin
 				return stackable.contains(itemId);
 			}
 		};
+		Flip.Dest dest = Flips.destination(mode, config.flipDest());
+		boolean ge = mode.canUseGrandExchange();
+		// Selling on the GE is only flipped from shops; the rest can be bought on the GE too
+		Flips.GeMarket market = ge && dest != Flip.Dest.GE && livePrices.isAvailable() ? geMarket(patience, natureRuneCost) : null;
+		geFlips = ge && livePrices.isAvailable();
 		Unlocks have = unlocks;
 		List<Shop> shops = shopCatalog.getShops();
 		long minGain = config.minFlipProfit();
-		boolean coffer = mode.canUseCoffer();
-		boolean ge = mode.canUseGrandExchange();
+		FlipSort sort = config.flipSort();
+		int maxWorlds = config.shopMaxWorlds();
+		ShopCatalog catalog = shopCatalog;
 		planner.execute(() ->
 		{
-			List<BestBuys.Deal> c = coffer
-				? BestBuys.find(BestBuys.Kind.COFFER, shops, prices, have, perks, coins, minGain, BEST_BUYS_SHOWN)
-				: Collections.emptyList();
-			List<BestBuys.Deal> g = ge
-				? BestBuys.find(BestBuys.Kind.GE, shops, prices, have, perks, coins, minGain, BEST_BUYS_SHOWN)
-				: Collections.emptyList();
+			List<Flip> all = new ArrayList<>();
+			// Shops are only sold to what's bought on the GE
+			BestBuys.Kind kind = dest == Flip.Dest.ALCH ? BestBuys.Kind.ALCH : dest == Flip.Dest.COFFER ? BestBuys.Kind.COFFER
+				: dest == Flip.Dest.GE ? BestBuys.Kind.GE : null;
+			if (kind != null)
+			{
+				for (BestBuys.Deal d : BestBuys.find(kind, shops, prices, have, perks, coins, minGain, Integer.MAX_VALUE, maxWorlds))
+				{
+					all.add(Flips.fromShop(d));
+				}
+			}
+			if (market != null)
+			{
+				all.addAll(Flips.fromGe(market, dest, catalog, have, perks, maxWorlds, coins, Flips.ALCHS_PER_HOUR));
+			}
+			List<Flip> best = Flips.rank(all, minGain, FLIPS_SHOWN, sort);
 			clientThread.invokeLater(() ->
 			{
-				cofferBuys = c;
-				geBuys = g;
+				flips = best;
 				dirty = true;
 			});
 		});
+	}
+
+	/**
+	 * GE prices and what items are worth elsewhere, for every item with a live price, copied so the flips can be worked
+	 * out off the client thread. Names, values and buy limits come from the wiki too, so no item definitions are loaded.
+	 */
+	private Flips.GeMarket geMarket(Patience patience, int natureRuneCost)
+	{
+		Map<Integer, Long> buy = new HashMap<>();
+		Map<Integer, Long> trades = new HashMap<>();
+		Map<Integer, Long> coffer = new HashMap<>();
+		Map<Integer, LivePrices.Info> info = new HashMap<>();
+		for (int id : livePrices.items())
+		{
+			LivePrices.Info i = livePrices.info(id);
+			int cost = livePrices.buyPrice(id, patience);
+			if (i == null || cost <= 0)
+			{
+				continue;
+			}
+			buy.put(id, (long) cost);
+			trades.put(id, patience.tradesIn(livePrices.tradesPerHour(id)));
+			info.put(id, i);
+			long guide = itemManager.getItemPriceWithSource(id, false);
+			if (guide >= ItemValues.COFFER_MIN_GUIDE_PRICE)
+			{
+				coffer.put(id, guide * 105 / 100);
+			}
+		}
+		return new Flips.GeMarket()
+		{
+			@Override
+			public Collection<Integer> items()
+			{
+				return buy.keySet();
+			}
+
+			@Override
+			public long buy(int itemId)
+			{
+				return buy.get(itemId);
+			}
+
+			@Override
+			public long trades(int itemId)
+			{
+				return trades.get(itemId);
+			}
+
+			@Override
+			public int buyLimit(int itemId)
+			{
+				return info.get(itemId).getLimit();
+			}
+
+			@Override
+			public String name(int itemId)
+			{
+				return info.get(itemId).getName().toLowerCase();
+			}
+
+			@Override
+			public int storeValue(int itemId)
+			{
+				return info.get(itemId).getValue();
+			}
+
+			@Override
+			public long coffer(int itemId)
+			{
+				return coffer.getOrDefault(itemId, 0L);
+			}
+
+			@Override
+			public long alch(int itemId)
+			{
+				return Math.max(0, info.get(itemId).getHighAlch() - natureRuneCost);
+			}
+
+			@Override
+			public boolean alchable(int itemId)
+			{
+				return info.get(itemId).isAlchable();
+			}
+		};
 	}
 
 	/** What a recalculation worked out on the client thread, for applying its results. */

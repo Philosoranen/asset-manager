@@ -1,6 +1,9 @@
 package com.assetmanager;
 
+import com.assetmanager.flip.Flip;
+import com.assetmanager.flip.FlipSort;
 import com.assetmanager.value.GePrice;
+import com.assetmanager.value.Patience;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -155,9 +158,10 @@ public interface AssetManagerConfig extends Config
 
 	@ConfigItem(
 		keyName = "bestBuys",
-		name = "Show best shop buys",
-		description = "List the most profitable things to buy from shops for Death's coffer (and to resell on the GE, "
-			+ "for accounts that can use it), out of the shops whose skill, quest and diary requirements you meet",
+		name = "Show flips",
+		description = "List the most profitable things to buy and cash out somewhere else, on the side panel's Flipping tab:"
+			+ " from shops whose requirements you meet to Death's coffer or alching (and, for accounts that can use the GE,"
+			+ " shop to GE, and with Live GE prices on, GE to shop, coffer or alching)",
 		section = flipSection,
 		position = 1
 	)
@@ -166,11 +170,45 @@ public interface AssetManagerConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "flipPatience",
+		name = "GE flip patience",
+		description = "How long you'll wait for GE offers when flipping; set on the side panel's Flipping tab",
+		hidden = true
+	)
+	default Patience flipPatience()
+	{
+		return Patience.HOUR;
+	}
+
+	@ConfigItem(
+		keyName = "flipDest",
+		name = "Cash out flips at",
+		description = "Where flips cash out: alching, the GE, shops or Death's coffer; set on the side panel's Flipping tab",
+		hidden = true
+	)
+	default Flip.Dest flipDest()
+	{
+		return Flip.Dest.GE;
+	}
+
+	@ConfigItem(
+		keyName = "flipSort",
+		name = "Sort flips by",
+		description = "Order flips by total profit, or by return on what they cost (best for Death's coffer, where the coins"
+			+ " spent are gone); set on the side panel's Flipping tab",
+		hidden = true
+	)
+	default FlipSort flipSort()
+	{
+		return FlipSort.PROFIT;
+	}
+
 	@Range(min = 1, max = 100_000_000)
 	@ConfigItem(
 		keyName = "minFlipProfit",
 		name = "Min. flip profit (gp)",
-		description = "Only mark a shop item when buying the suggested amount makes at least this much",
+		description = "Only mark a shop item, or list a flip, when buying the suggested amount makes at least this much",
 		section = flipSection,
 		position = 2
 	)
@@ -435,9 +473,9 @@ public interface AssetManagerConfig extends Config
 	@ConfigItem(
 		keyName = "shopMaxWorlds",
 		name = "Max worlds to hop",
-		description = "The most worlds you'd hop to sell one item. Each shop's own price drop sets how many to sell per"
-			+ " world; a stack needing more worlds than this is left for another shop, the GE or alching. 0 = no"
-			+ " limit: hop as much as it takes, over as many sessions as you like.",
+		description = "The most worlds you'd hop to sell one item, or to buy one for a flip. Each shop's own price change"
+			+ " sets how many to sell or buy per world; a stack needing more worlds than this is left for another shop, the"
+			+ " GE or alching. 0 = no limit: hop as much as it takes, over as many sessions as you like.",
 		section = bankSection,
 		position = 13
 	)

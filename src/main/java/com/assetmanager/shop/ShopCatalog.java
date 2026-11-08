@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -262,6 +263,14 @@ public class ShopCatalog
 	public ShopOffer bestOffer(String name, int storeValue, int quantity, boolean tradeable, ShopPerks perks,
 		long alternativeUnit, SellRules rules, Set<String> skipShops)
 	{
+		return bestOffer(name, storeValue, quantity, tradeable, perks, alternativeUnit, rules,
+			shop -> !skipShops.contains(shop.getName()) && !skipShops.contains(shop.getGroup()));
+	}
+
+	/** As above, out of only the shops {@code usable} accepts. */
+	public ShopOffer bestOffer(String name, int storeValue, int quantity, boolean tradeable, ShopPerks perks,
+		long alternativeUnit, SellRules rules, Predicate<Shop> usable)
+	{
 		if (storeValue <= 0 || quantity <= 0)
 		{
 			return null;
@@ -273,8 +282,7 @@ public class ShopCatalog
 		Map<Long, ShopOffer> byRate = new HashMap<>();
 		for (Shop shop : candidates(key))
 		{
-			if (perks.isAvoidWilderness() && shop.isWilderness() || skipShops.contains(shop.getName())
-				|| skipShops.contains(shop.getGroup()))
+			if (perks.isAvoidWilderness() && shop.isWilderness() || !usable.test(shop))
 			{
 				continue;
 			}

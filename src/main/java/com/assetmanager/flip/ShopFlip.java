@@ -2,7 +2,7 @@ package com.assetmanager.flip;
 
 import lombok.Value;
 
-/** How many of a shop's item to buy and sell on the GE, and the profit it makes. */
+/** How many of a shop's item to buy and sell on (on the GE, to Death's coffer or by alching), and the profit it makes. */
 @Value
 public class ShopFlip
 {
@@ -16,8 +16,14 @@ public class ShopFlip
 		SPACE("inventory space"),
 		/** Not enough coins in the inventory. */
 		COINS("coins in inventory"),
-		/** More than the GE trades in an hour. */
-		VOLUME("what the GE trades in an hour");
+		/** More than the GE trades in the time the player will wait. */
+		VOLUME("what the GE trades in that time"),
+		/** As many as can be alched in an hour. */
+		CASTS("an hour of alching"),
+		/** The GE's buy limit (per 4 hours). */
+		BUY_LIMIT("GE buy limit"),
+		/** More would take hopping more worlds than the player's limit. */
+		WORLDS("worlds you'd hop");
 
 		private final String description;
 
@@ -34,14 +40,22 @@ public class ShopFlip
 
 	int quantity;
 	long cost;
-	/** Coins from selling them all on the GE, after tax. */
+	/** Coins from selling them all on the GE after tax, the coffer value, or what alching them makes. */
 	long revenue;
 	long firstPrice;
 	long lastPrice;
-	/** Coins from selling one on the GE, after tax. */
+	/** What one is worth where it's going: the GE sale after tax, the coffer value, or alching less the rune. */
 	long geUnit;
 	/** What stopped the quantity going higher. */
 	Limit limit;
+	/** Worlds to buy them on, a few on each before hopping (1 if the price doesn't rise or the shop is in front of you). */
+	int worlds;
+
+	/** About how many to buy on each world. */
+	public int getPerWorld()
+	{
+		return (quantity + worlds - 1) / Math.max(1, worlds);
+	}
 
 	public long getProfit()
 	{

@@ -1,9 +1,11 @@
 package com.assetmanager.value;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +39,25 @@ public class LivePrices
 	private static final long REFRESH_MINUTES = 5;
 	/** The last day's trading changes slowly, so it's fetched less often. */
 	private static final long DAY_REFRESH_MILLIS = TimeUnit.HOURS.toMillis(1);
+	/** Item names, values and buy limits hardly ever change: once a day. */
+	private static final long MAPPING_REFRESH_MILLIS = TimeUnit.DAYS.toMillis(1);
+
+	/** What the wiki knows about an item that isn't a price. */
+	@Value
+	public static class Info
+	{
+		String name;
+		/** The item's store value. */
+		int value;
+		int highAlch;
+		/** GE buy limit per 4 hours, or 0 if unknown. */
+		int limit;
+		/**
+		 * Whether it can be alched. Items that can't (event rewards and the like) often have a store value only so
+		 * they're protected on death, and shops won't buy them.
+		 */
+		boolean alchable;
+	}
 
 	@Value
 	public static class Price
@@ -69,6 +90,8 @@ public class LivePrices
 	/** Items traded in the last day, by id; null until loaded. */
 	private volatile Map<Integer, Long> dayVolumes;
 	private volatile long dayFetchedAt;
+	private volatile Map<Integer, Info> mapping = Collections.emptyMap();
+	private volatile long mappingFetchedAt;
 	private ScheduledFuture<?> task;
 	private Runnable onUpdate = () -> {};
 
@@ -104,6 +127,8 @@ public class LivePrices
 		volumes = Collections.emptyMap();
 		dayVolumes = null;
 		dayFetchedAt = 0;
+		mapping = Collections.emptyMap();
+		mappingFetchedAt = 0;
 	}
 
 	public boolean isAvailable()
@@ -132,6 +157,50 @@ public class LivePrices
 			low = lower(low, hour.getAvgLow());
 		}
 		return mode.pick(high, low);
+	}
+
+	/**
+	 * What buying one costs, waiting as long as the player will, or 0 if the price can't be relied on: nothing traded
+	 * in the last hour, or the spread is so wide that the item barely trades. The latest trade on each side can be a
+	 * one-off, so the higher of it and the last hour's average is used.
+	 */
+	public int buyPrice(int itemId, Patience patience)
+	{
+		Price p = prices.get(itemId);
+		Volume hour = volumes.get(itemId);
+		if (p == null || hour == null || hour.getHigh() + hour.getLow() == 0)
+		{
+			return 0;
+		}
+		int high = Math.max(p.getHigh(), hour.getAvgHigh());
+		int low = Math.max(p.getLow(), hour.getAvgLow());
+		if (high <= 0 || low <= 0 || (long) high > (long) low * GePrice.MAX_SPREAD)
+		{
+			return 0;
+		}
+		switch (patience.getPrice())
+		{
+			case INSTANT:
+				// Paying what buyers have been paying fills right away
+				return high;
+			case MIDPOINT:
+				return (int) (((long) high + low + 1) / 2);
+			default:
+				// Offering what sellers have been accepting fills in time
+				return Math.max(low, Math.min(high, low + 1));
+		}
+	}
+
+	/** The items with live prices. */
+	public Collection<Integer> items()
+	{
+		return prices.keySet();
+	}
+
+	/** Names, values and buy limits by id; empty until loaded. */
+	public Info info(int itemId)
+	{
+		return mapping.get(itemId);
 	}
 
 	/** The lower of two prices, ignoring unknown (0) ones. */
@@ -206,6 +275,10 @@ public class LivePrices
 			}
 			volumes = map;
 		});
+		if (System.currentTimeMillis() - mappingFetchedAt >= MAPPING_REFRESH_MILLIS)
+		{
+			fetchMapping();
+		}
 		if (System.currentTimeMillis() - dayFetchedAt >= DAY_REFRESH_MILLIS)
 		{
 			fetch("24h", data ->
@@ -221,6 +294,49 @@ public class LivePrices
 				onUpdate.run();
 			});
 		}
+	}
+
+	private void fetchMapping()
+	{
+		Request request = new Request.Builder().url(BASE + "mapping").header("User-Agent", USER_AGENT).build();
+		http.newCall(request).enqueue(new Callback()
+		{
+			@Override
+			public void onFailure(Call call, IOException e)
+			{
+				log.debug("Live price request failed: mapping", e);
+			}
+
+			@Override
+			public void onResponse(Call call, Response response)
+			{
+				try (ResponseBody body = response.body())
+				{
+					if (!response.isSuccessful() || body == null)
+					{
+						log.debug("Live price request failed: mapping {}", response.code());
+						return;
+					}
+					Map<Integer, Info> map = new HashMap<>();
+					for (JsonElement e : gson.fromJson(body.charStream(), JsonArray.class))
+					{
+						JsonObject o = e.getAsJsonObject();
+						if (o.has("id") && o.has("name"))
+						{
+							map.put(o.get("id").getAsInt(), new Info(o.get("name").getAsString(), intOf(o, "value"),
+								intOf(o, "highalch"), intOf(o, "limit"), o.has("highalch")));
+						}
+					}
+					mapping = map;
+					mappingFetchedAt = System.currentTimeMillis();
+					onUpdate.run();
+				}
+				catch (RuntimeException e)
+				{
+					log.debug("Unreadable live price response: mapping", e);
+				}
+			}
+		});
 	}
 
 	private void fetch(String endpoint, Consumer<JsonObject> onData)

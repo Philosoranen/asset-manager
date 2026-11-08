@@ -12,8 +12,8 @@ import java.util.Map;
 import lombok.Value;
 
 /**
- * The best things to buy from shops anywhere, for Death's coffer or to resell on the GE, out of the shops the player
- * has the requirements for. Each deal is one visit: buying from one world until the shop runs out, the price rises
+ * The best things to buy from shops anywhere, for Death's coffer, to resell on the GE or to alch, out of the shops the
+ * player has the requirements for. Each deal is one visit: buying from one world until the shop runs out, the price rises
  * too far, or the inventory is full. The player can hop worlds to repeat it.
  */
 public final class BestBuys
@@ -32,7 +32,9 @@ public final class BestBuys
 		/** Sacrificed to Death's coffer at 105% of the guide price. */
 		COFFER,
 		/** Sold on the Grand Exchange, after tax. */
-		GE
+		GE,
+		/** Cast High Level Alchemy on, less the nature rune. */
+		ALCH
 	}
 
 	/** What an item is worth, by id. Gathered on the client thread, so planning can run elsewhere. */
@@ -44,8 +46,20 @@ public final class BestBuys
 		/** Coins from selling one on the GE after tax, or 0 if it can't be. */
 		long ge(int itemId);
 
-		/** About how many the GE trades in an hour, or Long.MAX_VALUE if unknown (live prices off). */
+		/** About how many the GE trades in the time the player will wait, or Long.MAX_VALUE if unknown (live prices off). */
 		long geVolume(int itemId);
+
+		/** Coins from alching one, less the nature rune, or 0 if it isn't worth alching. */
+		default long alch(int itemId)
+		{
+			return 0;
+		}
+
+		/** How many alchs to plan for. */
+		default long alchCasts()
+		{
+			return Long.MAX_VALUE;
+		}
 
 		/** The item's store value, which shop prices are a % of. */
 		int storeValue(int itemId);
@@ -64,7 +78,7 @@ public final class BestBuys
 		ShopFlip flip;
 		/** Requirements the plugin couldn't check, which the player should make sure of. */
 		List<String> unchecked;
-		/** For GE deals, about how many trade an hour; Long.MAX_VALUE if unknown or for the coffer. */
+		/** For GE deals, about how many trade in the time the player will wait; Long.MAX_VALUE if unknown or not for the GE. */
 		long tradesPerHour;
 
 		/** What one visit gains: every item bought, as the price rises. */
@@ -105,6 +119,16 @@ public final class BestBuys
 	public static List<Deal> find(Kind kind, List<Shop> shops, Prices prices, Unlocks unlocks, ShopPerks perks,
 		long coins, long minGain, int limit)
 	{
+		return find(kind, shops, prices, unlocks, perks, coins, minGain, limit, 1);
+	}
+
+	/**
+	 * As above, hopping up to {@code maxWorlds} worlds (0 for no limit) to buy a few on each while the price is low,
+	 * rather than buying deep on one.
+	 */
+	public static List<Deal> find(Kind kind, List<Shop> shops, Prices prices, Unlocks unlocks, ShopPerks perks,
+		long coins, long minGain, int limit, int maxWorlds)
+	{
 		Map<Integer, Deal> best = new HashMap<>();
 		for (Shop shop : shops)
 		{
@@ -114,7 +138,7 @@ public final class BestBuys
 			}
 			shop.getItems().forEach((name, item) ->
 			{
-				Deal deal = deal(kind, shop, name, item, prices, unlocks, perks, coins);
+				Deal deal = deal(kind, shop, name, item, prices, unlocks, perks, coins, maxWorlds);
 				if (deal == null || deal.getGain() < Math.max(1, minGain))
 				{
 					return;
@@ -152,13 +176,20 @@ public final class BestBuys
 	static Deal deal(Kind kind, Shop shop, String name, Shop.Item item, Prices prices, Unlocks unlocks, ShopPerks perks,
 		long coins)
 	{
+		return deal(kind, shop, name, item, prices, unlocks, perks, coins, 1);
+	}
+
+	/** As above, hopping up to {@code maxWorlds} worlds (0 for no limit). */
+	static Deal deal(Kind kind, Shop shop, String name, Shop.Item item, Prices prices, Unlocks unlocks, ShopPerks perks,
+		long coins, int maxWorlds)
+	{
 		Integer id = item.getId();
 		// Only items the shop keeps in stock can be bought
 		if (id == null || item.isNs() || item.getS() == 0)
 		{
 			return null;
 		}
-		long unit = kind == Kind.COFFER ? prices.coffer(id) : prices.ge(id);
+		long unit = kind == Kind.COFFER ? prices.coffer(id) : kind == Kind.ALCH ? prices.alch(id) : prices.ge(id);
 		if (unit <= 0)
 		{
 			return null;
@@ -183,8 +214,25 @@ public final class BestBuys
 		}
 		int space = prices.stackable(id) ? MAX_STACK : INVENTORY_SIZE;
 		long volume = kind == Kind.GE ? prices.geVolume(id) : Long.MAX_VALUE;
-		int stock = item.isInfinite() ? Integer.MAX_VALUE : item.getS();
-		ShopFlip flip = ShopFlipAdvisor.plan(value, stock, item.getS(), rate, delta, unit, 1, space, coins, volume);
+		long cap;
+		ShopFlip.Limit capLimit;
+		switch (kind)
+		{
+			case ALCH:
+				cap = prices.alchCasts();
+				capLimit = ShopFlip.Limit.CASTS;
+				break;
+			case GE:
+				cap = volume;
+				capLimit = ShopFlip.Limit.VOLUME;
+				break;
+			default:
+				cap = Long.MAX_VALUE;
+				capLimit = ShopFlip.Limit.VOLUME;
+		}
+		// Bought by talking, sometimes one per conversation: hopping isn't suggested there
+		int worlds = shop.getTalk() != null ? 1 : maxWorlds;
+		ShopFlip flip = ShopFlipAdvisor.planHopping(value, item.getS(), rate, delta, unit, 1, space, coins, cap, capLimit, worlds);
 		if (flip == null)
 		{
 			return null;

@@ -1763,6 +1763,12 @@
  "Lundail's Arena-side Rune Shop": {
   "evidence": "one of the few Magic shops that sells law runes and cosmic runes, and the only one accessible with no requirements."
  },
+ "Lunderwin": {
+  "other": [
+   "A diamond to get to her"
+  ],
+  "evidence": "Reported by a player: reaching Lunderwin in the Zanaris market costs 1 diamond."
+ },
  "Lyra": {
   "quests": [
    "PRIEST_IN_PERIL"

@@ -4,7 +4,8 @@ import com.assetmanager.AccountMode;
 import com.assetmanager.coffer.CofferPlan;
 import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.dest.Destinations;
-import com.assetmanager.flip.BestBuys;
+import com.assetmanager.flip.Flip;
+import com.assetmanager.flip.FlipSort;
 import com.assetmanager.shop.ShopPerks;
 import com.assetmanager.shop.ShopStock;
 import java.time.Instant;
@@ -54,12 +55,18 @@ public class PanelState
 	Map<String, Long> restockedBy;
 	/** Shop items others have overstocked on several worlds, which aren't suggested until they restock. */
 	List<ShopStock.Busy> busyShops;
-	/** The best things to buy from shops for Death's coffer, of the shops the player can use; empty if none or not worked out. */
-	List<BestBuys.Deal> cofferBuys;
-	/** The best things to buy from shops to resell on the GE; empty for ironmen. */
-	List<BestBuys.Deal> geBuys;
-	/** Whether the best buys count banked coins too: the bank has been seen. */
-	boolean coinsKnown;
+	/** The best flips, most profitable first; empty if none, turned off or not worked out yet. */
+	List<Flip> flips;
+	/** Whether flips are turned on in the settings. */
+	boolean flipsEnabled;
+	/** Whether GE-bought flips are included: the account can use the GE and live prices are on and loaded. */
+	boolean geFlips;
+	/** Where the flips cash out: the player's choice, if their account can. */
+	Flip.Dest flipDest;
+	/** How the flips are ordered. */
+	FlipSort flipSort;
+	/** Coins in the inventory, which is what the flips spend. */
+	long flipCoins;
 
 	/** Deaths the coffer covers at the selected scenario; -1 if unknown, Long.MAX_VALUE if free. */
 	public long getDeathsCovered()

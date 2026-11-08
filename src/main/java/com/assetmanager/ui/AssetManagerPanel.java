@@ -5,14 +5,17 @@ import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.death.DeathScenario;
 import com.assetmanager.dest.Destination;
 import com.assetmanager.dest.Destinations;
-import com.assetmanager.flip.BestBuys;
-import com.assetmanager.flip.ShopFlip;
+import com.assetmanager.flip.Flip;
+import com.assetmanager.flip.FlipSort;
+import com.assetmanager.flip.Flips;
 import com.assetmanager.keep.Holdings;
 import com.assetmanager.keep.KeepRules;
 import com.assetmanager.shop.Shop;
+import com.assetmanager.shop.ShopOffer;
 import com.assetmanager.shop.ShopPerks;
 import com.assetmanager.shop.ShopStock;
 import com.assetmanager.shop.ShopTimes;
+import com.assetmanager.value.Patience;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -37,6 +40,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -54,7 +58,8 @@ import net.runelite.client.util.QuantityFormatter;
 
 /**
  * The side panel, in two tabs. Liquidate: a summary of your coffer and death costs, then where your spare items should
- * go. Flipping: things worth buying to sell on or put in the coffer. Each destination
+ * go. Flipping: things worth buying in one place to cash out in another, how long the player will wait for GE offers
+ * set above them. Each destination
  * is one row (Death's coffer, high alching, the GE, each shop, kept items) with how many items and what they're worth;
  * clicking it shows those items in the bank, where the tooltips have the per-item detail.
  * <p>
@@ -97,6 +102,20 @@ public class AssetManagerPanel extends PluginPanel
 	private Tab tab = Tab.LIQUIDATE;
 	/** Where each tab was scrolled to, so switching back doesn't lose your place. */
 	private final int[] scrollPositions = new int[Tab.values().length];
+	// The Flipping tab's choices sit outside the content, so a refresh doesn't close one while it's open
+	/** Where flips cash out. */
+	private final JPanel destRow = new JPanel(new BorderLayout(4, 0));
+	private final JComboBox<Flip.Dest> destBox = new JComboBox<>();
+	/** The places the account can cash out, as the dest box lists them. */
+	private List<Flip.Dest> destChoices = new ArrayList<>();
+	/** What the player just picked, until the flips have been worked out for it; null when they have. */
+	private Flip.Dest pickedDest;
+	/** Set while the dest box is being refilled, which isn't the player choosing. */
+	private boolean fillingDests;
+	/** How long the player will wait for GE offers. */
+	private final JPanel patienceRow = new JPanel(new BorderLayout(4, 0));
+	/** How flips are ordered. */
+	private final JPanel sortRow = new JPanel(new BorderLayout(4, 0));
 	private final LongConsumer onManualBalance;
 	/** (item id, keep amount); 0 removes the rule. */
 	private final BiConsumer<Integer, Integer> onKeepChange;
@@ -112,7 +131,8 @@ public class AssetManagerPanel extends PluginPanel
 	private int warnDeaths = 2;
 
 	public AssetManagerPanel(LongConsumer onManualBalance, BiConsumer<Integer, Integer> onKeepChange, Consumer<Destination> onShowInBank,
-		Consumer<Destination> onFind, Consumer<Shop> onFindShop)
+		Consumer<Destination> onFind, Consumer<Shop> onFindShop, Patience patience, Consumer<Patience> onPatience,
+		Consumer<Flip.Dest> onDest, FlipSort sort, Consumer<FlipSort> onSort)
 	{
 		super(false);
 		this.onFindShop = onFindShop;
@@ -146,6 +166,55 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		tabs.select(tabs.getTab(tab.ordinal()));
 		header.add(tabs, BorderLayout.CENTER);
+
+		destRow.setOpaque(false);
+		destRow.setBorder(new EmptyBorder(0, 0, 2, 0));
+		destBox.setFont(FontManager.getRunescapeSmallFont());
+		destBox.setFocusable(false);
+		destBox.setToolTipText("Where to cash out what you buy: alch it, sell it on the GE or to a shop, or put it in Death's coffer");
+		destBox.addActionListener(e ->
+		{
+			if (!fillingDests && destBox.getSelectedItem() != null)
+			{
+				pickedDest = (Flip.Dest) destBox.getSelectedItem();
+				onDest.accept(pickedDest);
+			}
+		});
+		destRow.add(controlLabel("Cash out:"), BorderLayout.WEST);
+		destRow.add(destBox, BorderLayout.CENTER);
+		destRow.setVisible(false);
+
+		patienceRow.setOpaque(false);
+		patienceRow.setBorder(new EmptyBorder(0, 0, 2, 0));
+		JLabel waitLabel = controlLabel("GE offers:");
+		JComboBox<Patience> wait = new JComboBox<>(Patience.values());
+		wait.setSelectedItem(patience);
+		wait.setFont(FontManager.getRunescapeSmallFont());
+		wait.setFocusable(false);
+		wait.setToolTipText("How long you'll wait for GE offers to fill. Waiting gets better prices and lets more trade.");
+		wait.addActionListener(e -> onPatience.accept((Patience) wait.getSelectedItem()));
+		patienceRow.add(waitLabel, BorderLayout.WEST);
+		patienceRow.add(wait, BorderLayout.CENTER);
+		patienceRow.setVisible(false);
+		JPanel controls = new JPanel();
+		controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
+		controls.setOpaque(false);
+		controls.add(destRow);
+		controls.add(patienceRow);
+		sortRow.setOpaque(false);
+		sortRow.setBorder(new EmptyBorder(0, 0, 4, 0));
+		JComboBox<FlipSort> sortBox = new JComboBox<>(FlipSort.values());
+		sortBox.setSelectedItem(sort);
+		sortBox.setFont(FontManager.getRunescapeSmallFont());
+		sortBox.setFocusable(false);
+		sortBox.setToolTipText("Total profit makes the most money. Return makes the most of each coin spent, which matters for"
+			+ " Death's coffer, where the coins are gone.");
+		sortBox.addActionListener(e -> onSort.accept((FlipSort) sortBox.getSelectedItem()));
+		sortRow.add(controlLabel("Sort by:"), BorderLayout.WEST);
+		sortRow.add(sortBox, BorderLayout.CENTER);
+		sortRow.setVisible(false);
+		controls.add(sortRow);
+		header.add(controls, BorderLayout.SOUTH);
 		add(header, BorderLayout.NORTH);
 
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -187,6 +256,15 @@ public class AssetManagerPanel extends PluginPanel
 		this.lastState = state;
 		this.warnDeaths = warnDeaths;
 		content.removeAll();
+		boolean flipping = tab == Tab.FLIPPING && state != null;
+		if (state != null)
+		{
+			fillDests(state);
+		}
+		destRow.setVisible(flipping && destChoices.size() > 1);
+		sortRow.setVisible(flipping);
+		// Patience only matters for the GE
+		patienceRow.setVisible(flipping && state.getAccountMode().canUseGrandExchange());
 
 		if (state == null)
 		{
@@ -208,7 +286,7 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		else
 		{
-			addBestBuysSection(state);
+			addFlipsSection(state);
 		}
 
 		content.revalidate();
@@ -369,107 +447,218 @@ public class AssetManagerPanel extends PluginPanel
 		destinationRow(dests.get(Destination.Kind.KEPT), state);
 	}
 
-	private void addBestBuysSection(PanelState state)
+	/** Lists the places the account can cash out, when they change, with the one in use selected. */
+	private void fillDests(PanelState state)
 	{
-		List<BestBuys.Deal> coffer = state.getCofferBuys();
-		List<BestBuys.Deal> ge = state.getGeBuys();
-		if (coffer.isEmpty() && ge.isEmpty())
+		List<Flip.Dest> can = Flips.destinations(state.getAccountMode());
+		if (pickedDest != null && (state.getFlipDest() == pickedDest || !can.contains(pickedDest)))
 		{
-			addGap(10);
-			addRow(text("No shop deals right now. Turn on Show best shop buys in the settings if it's off; otherwise"
-				+ " nothing you can buy from a shop is worth more than it costs" + (state.isCoinsKnown() ? "" : ", or you need to"
-				+ " open your bank so this counts your banked coins") + ".", Color.LIGHT_GRAY));
-			return;
+			pickedDest = null;
 		}
-		if (!header("Best shop buys"))
+		// Until the flips catch up with the player's pick, a refresh shouldn't put the old choice back
+		Flip.Dest show = pickedDest != null ? pickedDest : state.getFlipDest();
+		if (can.equals(destChoices) && show == destBox.getSelectedItem())
 		{
 			return;
 		}
-		addRow(text("From shops whose requirements you meet, that you have the coins for"
-			+ (state.isCoinsKnown() ? "" : " (open your bank so this counts your banked coins)") + ".", MUTED));
-		if (!coffer.isEmpty())
-		{
-			subheader("For Death's coffer");
-			coffer.forEach(this::dealRow);
-		}
-		if (!ge.isEmpty())
-		{
-			subheader("To sell on the GE");
-			if (ge.stream().anyMatch(d -> d.getTradesPerHour() == Long.MAX_VALUE))
-			{
-				addRow(wrapped("Turn on Live GE prices in the settings to leave out items that rarely sell and only buy"
-					+ " as many as sell in an hour.", DETAIL_WIDTH, WARN));
-			}
-			ge.forEach(this::dealRow);
-		}
+		fillingDests = true;
+		destBox.removeAllItems();
+		can.forEach(destBox::addItem);
+		destBox.setSelectedItem(show);
+		fillingDests = false;
+		destChoices = can;
 	}
 
-	/** A shop item worth buying: what it gains, where, how many, and a Find button. */
-	private void dealRow(BestBuys.Deal deal)
+	private static JLabel controlLabel(String text)
 	{
-		ShopFlip f = deal.getFlip();
+		JLabel l = new JLabel(text);
+		l.setFont(FontManager.getRunescapeSmallFont());
+		l.setForeground(Color.LIGHT_GRAY);
+		l.setPreferredSize(new Dimension(52, l.getPreferredSize().height));
+		return l;
+	}
+
+	private void addFlipsSection(PanelState state)
+	{
+		addGap(6);
+		if (!state.isFlipsEnabled())
+		{
+			addRow(text("Turn on Show flips in the settings to list things worth buying in one place and cashing out in another.",
+				Color.LIGHT_GRAY));
+			return;
+		}
+		List<String> notes = new ArrayList<>();
+		Flip.Dest flipDest = state.getFlipDest();
+		if (state.getAccountMode().canUseGrandExchange() && flipDest != Flip.Dest.GE && !state.isGeFlips())
+		{
+			notes.add("<font color='#FF9800'>" + (flipDest == Flip.Dest.SHOP ? "Selling to shops is for what you buy on the GE, so it"
+				: "Including what you could buy on the GE") + " needs Live GE prices on in the settings (if they're on, prices are"
+				+ " still loading).</font>");
+		}
+		if (flipDest == Flip.Dest.GE)
+		{
+			notes.add("Things to buy from shops and sell on the GE.");
+		}
+		List<Flip> flips = state.getFlips();
+		if (state.getFlipCoins() <= 0)
+		{
+			addRow(text("Carry some coins to see flips. They only spend the coins in your inventory, so take out as much as you"
+				+ " want to flip with.", Color.LIGHT_GRAY));
+		}
+		else if (flips.isEmpty())
+		{
+			addRow(text("Nothing is worth flipping right now with the " + gp(state.getFlipCoins()) + " in your inventory.",
+				Color.LIGHT_GRAY));
+		}
+		else
+		{
+			addRow(text((state.getFlipSort() == FlipSort.RETURN ? "Best return first" : "Most profitable first")
+				+ ", spending up to the " + gp(state.getFlipCoins()) + " in your inventory and using"
+				+ " shops whose requirements you meet. Each is one go: a shop visit, or one round of GE offers.", MUTED));
+		}
+		for (String note : notes)
+		{
+			addRow(text(note, MUTED));
+		}
+		addGap(4);
+		flips.forEach(f -> flipRow(f, state.getFlipSort()));
+	}
+
+	/** One flip: the route, what it makes, how many and why no more, and a Find button for a shop. */
+	private void flipRow(Flip flip, FlipSort sort)
+	{
 		JPanel row = new JPanel(new BorderLayout(4, 0));
 		row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		row.setBorder(new EmptyBorder(4, 6, 4, 6));
 
 		JPanel top = new JPanel(new BorderLayout(4, 0));
 		top.setOpaque(false);
-		top.add(wrapped(capitalise(deal.getItem()), NAME_WIDTH, Color.WHITE), BorderLayout.CENTER);
-		JLabel gain = new JLabel("+" + gp(deal.getProfitEach()) + " ea");
-		gain.setToolTipText(percent(deal.getPercent()) + " profit on the shop's price");
-		gain.setFont(FontManager.getRunescapeSmallFont());
-		gain.setForeground(GOOD);
-		gain.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		top.add(wrapped(capitalise(flip.getItem()) + "<br><font color='#FF9800'>" + flip.getSource().getLabel() + " &rarr; "
+			+ flip.getDest().getLabel() + "</font>", NAME_WIDTH, Color.WHITE), BorderLayout.CENTER);
 		JPanel east = new JPanel();
 		east.setLayout(new BoxLayout(east, BoxLayout.Y_AXIS));
 		east.setOpaque(false);
-		east.add(gain);
-		JLabel pct = new JLabel(percent(deal.getPercent()));
-		pct.setFont(FontManager.getRunescapeSmallFont());
-		pct.setForeground(GOOD);
-		pct.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		east.add(pct);
-		Shop shop = deal.getShop();
-		boolean finding = shop.getName().equals(findingShop);
-		JButton find = smallButton(finding ? "Stop" : "Find",
-			finding ? "Stop pointing the way to this shop" : "Centre the world map on this shop and point the hint arrow at it");
-		find.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		find.addActionListener(e -> onFindShop.accept(shop));
-		east.add(Box.createVerticalStrut(2));
-		east.add(find);
+		// What it's sorted by goes first, in green
+		JLabel profit = new JLabel("+" + gp(flip.getProfit()));
+		profit.setToolTipText("What this flip makes in all");
+		JLabel ret = new JLabel("+" + percent(flip.getReturnPercent()));
+		ret.setToolTipText("Return: what it makes for each coin spent, " + gp(flip.getCost()) + " in all");
+		JLabel second = sort == FlipSort.RETURN ? profit : new JLabel("+" + gp(flip.getProfitEach()) + " ea");
+		if (second != profit)
+		{
+			second.setToolTipText(percent(flip.getPercent()) + " profit on what the first one costs");
+		}
+		JLabel first = sort == FlipSort.RETURN ? ret : profit;
+		for (JLabel l : new JLabel[]{first, second})
+		{
+			l.setFont(FontManager.getRunescapeSmallFont());
+			l.setForeground(l == first ? GOOD : MUTED);
+			l.setAlignmentX(Component.RIGHT_ALIGNMENT);
+			east.add(l);
+		}
+		Shop shop = flip.getShop();
+		if (shop != null)
+		{
+			boolean finding = shop.getName().equals(findingShop);
+			JButton find = smallButton(finding ? "Stop" : "Find",
+				finding ? "Stop pointing the way to this shop" : "Centre the world map on this shop and point the hint arrow at it");
+			find.setAlignmentX(Component.RIGHT_ALIGNMENT);
+			find.addActionListener(e -> onFindShop.accept(shop));
+			east.add(Box.createVerticalStrut(2));
+			east.add(find);
+		}
 		top.add(east, BorderLayout.EAST);
 		row.add(top, BorderLayout.CENTER);
-
-		String where = shop.getName() + (shop.getLocation() == null || shop.getLocation().isEmpty() ? "" : ", " + shop.getLocation());
-		String worth = deal.getKind() == BestBuys.Kind.COFFER ? "adds " + gp(f.getGeUnit()) + " to the coffer"
-			: "sells for " + gp(f.getGeUnit()) + " after tax";
-		StringBuilder detail = new StringBuilder()
-			.append(where).append(". Costs ").append(gp(f.getFirstPrice())).append("; ").append(worth).append('.');
-		Shop.Item item = shop.getItems().get(deal.getItem());
-		int[] bundle = item == null ? null : item.getB();
-		if (bundle != null && bundle.length == 2)
-		{
-			detail.append(" Offer ").append(gp(bundle[1])).append(" for ").append(bundle[0]).append(" to get that price.");
-		}
-		if (deal.getKind() == BestBuys.Kind.GE && deal.getTradesPerHour() != Long.MAX_VALUE)
-		{
-			detail.append(" About ").append(QuantityFormatter.formatNumber(deal.getTradesPerHour())).append(" trade an hour on the GE");
-			detail.append(f.getLimit() == ShopFlip.Limit.VOLUME ? ", so buy " + QuantityFormatter.formatNumber(f.getQuantity()) + "." : ".");
-		}
-		if (shop.getTalk() != null)
-		{
-			detail.append(" Bought by talking to ").append(shop.getTalk()).append(", sometimes one at a time.");
-		}
-		if (deal.isPriceRises())
-		{
-			detail.append(" The price rises with each one bought.");
-		}
-		if (!deal.getUnchecked().isEmpty())
-		{
-			detail.append(" <font color='#FF9800'>Also needs: ").append(String.join("; ", deal.getUnchecked())).append(".</font>");
-		}
-		row.add(wrapped(detail.toString(), DETAIL_WIDTH, MUTED), BorderLayout.SOUTH);
+		row.add(wrapped(flipDetail(flip), DETAIL_WIDTH, MUTED), BorderLayout.SOUTH);
 		addRow(row);
+	}
+
+	private static String flipDetail(Flip flip)
+	{
+		String qty = QuantityFormatter.formatNumber(flip.getQuantity());
+		StringBuilder d = new StringBuilder();
+		Shop buyShop = flip.getBuyShop();
+		if (buyShop != null)
+		{
+			d.append("Buy ").append(qty).append(" from ").append(where(buyShop)).append(" from ").append(gp(flip.getFirstCost()))
+				.append(flip.isPriceRises() ? ", rising with each one" : " each");
+			if (flip.getBuyWorlds() > 1)
+			{
+				// Each world's shop starts full, so a few on each keeps the price down
+				d.append(", ").append(QuantityFormatter.formatNumber(flip.getPerWorld())).append(" a world, hopping over ")
+					.append(flip.getBuyWorlds()).append(" worlds");
+			}
+		}
+		else
+		{
+			d.append("Buy ").append(qty).append(" on the GE at about ").append(gp(flip.getFirstCost())).append(" each");
+		}
+		d.append(" (").append(gp(flip.getCost())).append(" in all), then ");
+		switch (flip.getDest())
+		{
+			case GE:
+				d.append("sell them on the GE for ").append(gp(flip.getFirstValue())).append(" each after tax.");
+				break;
+			case COFFER:
+				d.append("put them in Death's coffer for ").append(gp(flip.getFirstValue())).append(" each.");
+				break;
+			case ALCH:
+				d.append("alch them for ").append(gp(flip.getFirstValue())).append(" each after the nature rune.");
+				break;
+			case SHOP:
+				ShopOffer o = flip.getSellOffer();
+				d.append("sell them to ").append(where(o.getShop()));
+				if (o.getEqualShops() > 0)
+				{
+					d.append(" (or any of ").append(o.getEqualShops()).append(" others paying the same)");
+				}
+				d.append(" from ").append(gp(o.getFirstUnit())).append(" each");
+				if (o.getWorlds() > 1)
+				{
+					d.append(", ").append(QuantityFormatter.formatNumber(o.getPerWorld())).append(" a world over ")
+						.append(o.getWorlds()).append(" worlds");
+				}
+				if (o.isUsesKaramjaGloves())
+				{
+					d.append(", wearing Karamja gloves");
+				}
+				if (o.isUsesCharos())
+				{
+					d.append(", wearing your Ring of Charos (a)");
+				}
+				d.append(o.getShop().getTalk() != null ? ". " + o.getShop().getTalk() + " only takes unnoted ones, so it's an"
+					+ " inventory a trip." : ". The shop takes noted ones.");
+				break;
+		}
+		d.append(" Limited by ").append(flip.getLimit().getDescription());
+		if (flip.getGeTrades() != Long.MAX_VALUE)
+		{
+			d.append("; about ").append(QuantityFormatter.formatNumber(flip.getGeTrades())).append(" trade on the GE in that time");
+		}
+		d.append('.');
+		if (buyShop != null)
+		{
+			Shop.Item item = buyShop.getItems().get(flip.getItem());
+			int[] bundle = item == null ? null : item.getB();
+			if (bundle != null && bundle.length == 2)
+			{
+				d.append(" Offer ").append(gp(bundle[1])).append(" for ").append(bundle[0]).append(" to get that price.");
+			}
+			if (buyShop.getTalk() != null)
+			{
+				d.append(" Bought by talking to ").append(buyShop.getTalk()).append(", sometimes one at a time.");
+			}
+		}
+		if (!flip.getUnchecked().isEmpty())
+		{
+			d.append(" <font color='#FF9800'>Also needs: ").append(String.join("; ", flip.getUnchecked())).append(".</font>");
+		}
+		return d.toString();
+	}
+
+	private static String where(Shop shop)
+	{
+		return shop.getName() + (shop.getLocation() == null || shop.getLocation().isEmpty() ? "" : " (" + shop.getLocation() + ")");
 	}
 
 	/** 23.4 -> "23%", 0.42 -> "0.4%", 1234 -> "1,234%" */

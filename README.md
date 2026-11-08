@@ -46,16 +46,24 @@ Asset Manager only reads what the game shows you and never acts for you: it adds
   - Each shop or group gets its own row in the panel, most profitable first; click it to see just that shop's items in your bank, so you can grab them and go. Hover an item for how many to sell per world, how many worlds, and what to do with the rest.
 - **High alch** – items worth more alched than sold on the GE (mains only; ironmen alch by default).
 - **Sell on the GE** (mains only) – spare stacks worth at least 10k on the GE after tax (configurable) where the GE beats alching and shops, sorted by value. Everything you aren't keeping counts as spare, so use Keep on the gear and supplies you use.
-- **Side panel** – a summary of your coffer, target and death costs, then **Your spare items**: one row per destination (Everything, Death's coffer, High alch, Grand Exchange, every shop that's worth a trip, and Kept), each with how many items and what they're worth. Shops are listed by how much they gain you, with where they are and anything to wear.
+- **Side panel** – two tabs. **Liquidate** has a summary of your coffer, target and death costs, then **Your spare items**: one row per destination (Everything, Death's coffer, High alch, Grand Exchange, every shop that's worth a trip, and Kept), each with how many items and what they're worth. Shops are listed by how much they gain you, with where they are and anything to wear.
 - **Bank views** – click a row to see its items in your bank, most valuable first (Everything has a blank row between destinations). Nothing is added to your tab list; switch tabs to leave. Clicking with the bank closed opens the view next time you open it. While a view is open, items with a keep rule are labelled "keep 1", "keep all", etc. Hover an item for its price comparison.
 - **Icons** – suggested items get a small coffer, High Alchemy, shop or GE icon in the bank, inventory and seed vault.
 - **Coffer target** – your target deaths times the cost of your most expensive setup in the last 14 days (so it still works while you're standing in the bank), and never less than the minimum target (500k by default, the most a gravestone reclaim can cost).
 
-## Shop flipping
+## Flipping
 
-- **Best shop buys** – the side panel lists the five best things to buy from any shop for Death's coffer (items whose GE guide price is high enough that the coffer adds more than the shop charges), and, on accounts that can use the GE, the five best to resell there. Each is one visit to the shop: how many to buy before the price rises too far, the shop runs out or your inventory is full, what it costs, and what you gain. Hop worlds to buy more. **Find** points you to the shop.
-  - Only shops whose requirements you meet are listed: skill levels, quests (finished, or just started where that's enough), achievement diaries, quest points and membership are checked against your account. Requirements that can't be checked (like the Warriors' Guild's combined Attack and Strength, or a Seal of Passage) are shown in orange on the row instead.
+- **Flipping tab** – the side panel's second tab lists the 10 best things to buy in one place and cash out in another. Three choices at the top, remembered between sessions:
+  - **Cash out** – **Alching**, **The GE** (bought from shops), **Shops** (bought on the GE, like rune cannonballs for the Port Roberts stall) or **Death's coffer** (bought from shops or the GE). Ironmen flip to Death's coffer; ultimate ironmen to alching.
+  - **GE offers** – how long you'll wait for GE offers: **Instantly**, **Within an hour**, **A few hours** or **Overnight**. Waiting buys lower and sells higher, and lets more trade.
+  - **Sort by** – **Total profit**, or **Return (%)**: what each coin spent makes, which is what matters for Death's coffer, where the coins are gone.
+- Flips only spend the coins in your inventory, so take out as much as you want to flip with.
+- Each row says what to buy and where, how many, what it costs, what it makes, and what stops it buying more: shop stock, the price rising, inventory space, coins, the GE buy limit, how many trade on the GE in the time you'll wait, worlds to hop, or an hour of alching. **Find** points you to the shop.
+  - From a shop, it buys a few on each world while the price is low, then hops, up to **Max worlds to hop**: every world's shop starts with its full stock.
+  - Shops take noted items, except traders you talk to (Baraek, the silk merchant), which only take an inventory of unnoted ones a trip. Items that can't be alched (event rewards and the like) aren't sold to shops: their store value only protects them on death.
+  - Only shops whose requirements you meet are used: skill levels, quests (finished, or just started where that's enough), achievement diaries, quest points and membership are checked against your account. Requirements that can't be checked (like the Warriors' Guild's combined Attack and Strength, or a Seal of Passage) are shown in orange on the row instead.
   - Shops that charge a set price rather than their usual % of an item's value (like Diango's Toy Store) are priced at what they actually charge.
+  - Buying on the GE needs **Live GE prices** on. Prices that can't be relied on (nothing traded in the last hour, or buyers paying more than twice what sellers accept) are left out.
 - When a shop is open, items it sells that can be resold on the GE for a profit get a small Grand Exchange icon.
 - Hover one to see how many to buy, the shop price (it rises as the shop's stock drops), what the GE pays after the 2% tax, the profit, and what limits the amount (the price rise, shop stock, inventory space, coins in your inventory, or, with live prices, how many the GE trades in an hour).
 - **Live GE prices (OSRS Wiki)** is an opt-in setting. RuneLite's own prices are a single 30-minute average; the Wiki's real-time data has separate buy and sell prices and how many sold on the GE in the last hour. It's off by default because it contacts a third-party server.
@@ -63,7 +71,7 @@ Asset Manager only reads what the game shows you and never acts for you: it adds
 
 ## Network use and privacy
 
-Asset Manager makes no network requests unless you turn on **Live GE prices (OSRS Wiki)**, which fetches prices from prices.runescape.wiki every 5 minutes. Nothing about you or your account is sent anywhere. Your coffer balance, bank snapshot, keep rules and shop timers are saved in your RuneLite profile.
+Asset Manager makes no network requests unless you turn on **Live GE prices (OSRS Wiki)**, which fetches prices from prices.runescape.wiki every 5 minutes, and item names, values and GE buy limits once a day. Nothing about you or your account is sent anywhere. Your coffer balance, bank snapshot, keep rules and shop timers are saved in your RuneLite profile.
 
 ## Data
 

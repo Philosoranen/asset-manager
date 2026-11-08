@@ -41,6 +41,17 @@ public final class ShopFlipAdvisor
 	public static ShopFlip plan(int value, int stock, int normalStock, int sellRate, int delta, long geUnit,
 		int minProfitEach, int maxSpace, long coins, long geVolume)
 	{
+		return plan(value, stock, normalStock, sellRate, delta, geUnit, minProfitEach, maxSpace, coins, geVolume,
+			ShopFlip.Limit.VOLUME);
+	}
+
+	/**
+	 * As above, buying no more than {@code cap} (Long.MAX_VALUE for no cap), which is reported as {@code capLimit}
+	 * when it's what stops the buying: what the GE trades, room in the coffer, or alchs in an hour.
+	 */
+	public static ShopFlip plan(int value, int stock, int normalStock, int sellRate, int delta, long geUnit,
+		int minProfitEach, int maxSpace, long coins, long cap, ShopFlip.Limit capLimit)
+	{
 		boolean infinite = normalStock < 0;
 		int bought = 0;
 		long cost = 0;
@@ -59,9 +70,9 @@ public final class ShopFlipAdvisor
 				limit = ShopFlip.Limit.SPACE;
 				break;
 			}
-			if (bought >= geVolume)
+			if (bought >= cap)
 			{
-				limit = ShopFlip.Limit.VOLUME;
+				limit = capLimit;
 				break;
 			}
 			long price = price(value, infinite ? sellRate : sellRate + delta * (normalStock - (stock - bought)));
@@ -87,7 +98,70 @@ public final class ShopFlipAdvisor
 		{
 			return null;
 		}
-		return new ShopFlip(bought, cost, geUnit * bought, first, last, geUnit, limit);
+		return new ShopFlip(bought, cost, geUnit * bought, first, last, geUnit, limit, 1);
+	}
+
+	/**
+	 * As above, hopping worlds: every world's shop starts at its normal stock, so buying a few on each, while the price
+	 * is still low, then hopping beats buying deep on one. Items are bought round the worlds in turn, the cheapest
+	 * next one each time, on no more than {@code maxWorlds} (ShopCatalog.NO_WORLD_LIMIT, 0, for no limit).
+	 */
+	public static ShopFlip planHopping(int value, int normalStock, int sellRate, int delta, long geUnit, int minProfitEach,
+		int maxSpace, long coins, long cap, ShopFlip.Limit capLimit, int maxWorlds)
+	{
+		boolean infinite = normalStock < 0;
+		// The price never rises in a shop that never runs out, so there's nothing to hop for
+		long worlds = infinite ? 1 : maxWorlds <= 0 ? Long.MAX_VALUE : maxWorlds;
+		long bought = 0;
+		long cost = 0;
+		long first = 0;
+		long last = 0;
+		ShopFlip.Limit limit;
+		while (true)
+		{
+			// How many have already been bought on the world this one comes from
+			long depth = bought / worlds;
+			if (!infinite && depth >= normalStock)
+			{
+				// Every world's stock is bought: more worlds would mean more
+				limit = worlds == 1 || worlds == Long.MAX_VALUE ? ShopFlip.Limit.STOCK : ShopFlip.Limit.WORLDS;
+				break;
+			}
+			if (bought >= maxSpace)
+			{
+				limit = ShopFlip.Limit.SPACE;
+				break;
+			}
+			if (bought >= cap)
+			{
+				limit = capLimit;
+				break;
+			}
+			long price = price(value, infinite ? sellRate : (int) Math.min(Integer.MAX_VALUE, sellRate + delta * depth));
+			if (geUnit - price < Math.max(1, minProfitEach))
+			{
+				limit = ShopFlip.Limit.PRICE;
+				break;
+			}
+			if (cost + price > coins)
+			{
+				limit = ShopFlip.Limit.COINS;
+				break;
+			}
+			if (bought == 0)
+			{
+				first = price;
+			}
+			last = Math.max(last, price);
+			cost += price;
+			bought++;
+		}
+		if (bought == 0)
+		{
+			return null;
+		}
+		int used = (int) Math.min(worlds, bought);
+		return new ShopFlip((int) bought, cost, geUnit * bought, first, last, geUnit, limit, used);
 	}
 
 	static long price(int value, int rate)
