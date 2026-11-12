@@ -234,6 +234,12 @@ public class LivePrices
 		return tradesPerHour(volumes.get(itemId), !volumes.isEmpty(), dayVolumes, itemId);
 	}
 
+	/** Whether trade volumes have loaded, so {@link #tradesPerHour} knows. */
+	public boolean hasVolumes()
+	{
+		return dayVolumes != null || !volumes.isEmpty();
+	}
+
 	static long tradesPerHour(Volume hour, boolean hourLoaded, Map<Integer, Long> day, int itemId)
 	{
 		if (day != null)

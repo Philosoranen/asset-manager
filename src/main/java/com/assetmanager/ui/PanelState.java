@@ -4,6 +4,7 @@ import com.assetmanager.AccountMode;
 import com.assetmanager.coffer.CofferPlan;
 import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.dest.Destinations;
+import com.assetmanager.dest.GeOrder;
 import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipRun;
 import com.assetmanager.flip.FlipSort;
@@ -68,6 +69,10 @@ public class PanelState
 	FlipSort flipSort;
 	/** Coins in the inventory, which is what the flips spend. */
 	long flipCoins;
+	/** How the Grand Exchange bank view is ordered. */
+	GeOrder geOrder;
+	/** Whether GE trade volumes are loaded (live prices on), which ordering by quickest to sell needs. */
+	boolean geVolumes;
 
 	/** Deaths the coffer covers at the selected scenario; -1 if unknown, Long.MAX_VALUE if free. */
 	public long getDeathsCovered()

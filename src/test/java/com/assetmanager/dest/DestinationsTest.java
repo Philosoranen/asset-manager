@@ -17,9 +17,14 @@ public class DestinationsTest
 {
 	private static SaleSuggestion sale(int id, SaleSuggestion.Type type, long total, long alternative, Shop shop)
 	{
+		return sale(id, 1, type, total, alternative, shop);
+	}
+
+	private static SaleSuggestion sale(int id, int quantity, SaleSuggestion.Type type, long total, long alternative, Shop shop)
+	{
 		ItemValues v = new ItemValues(id, "Item " + id, 1, 1, 1, 1, true);
 		ShopOffer offer = shop == null ? null : new ShopOffer(shop, 1, total, total, 600, false, 1, 1, false, false, 0);
-		return new SaleSuggestion(v, 1, type, total, alternative, "GE sell", offer);
+		return new SaleSuggestion(v, quantity, type, total, alternative, "GE sell", offer);
 	}
 
 	private static Shop shop(String name)
@@ -63,5 +68,31 @@ public class DestinationsTest
 		assertEquals(Arrays.asList(2, 1, 3, 6, 4, 5), d.get(Destination.Kind.ALL).getItemIds());
 		assertEquals(Arrays.asList(8, 7), d.get(Destination.Kind.KEPT).getItemIds());
 		assertEquals(0, d.get(Destination.Kind.COFFER).getCount());
+	}
+
+	@Test
+	public void geQuickestToSellFirst()
+	{
+		List<SaleSuggestion> sales = Arrays.asList(
+			sale(1, 1, SaleSuggestion.Type.GE, 50_000, 0, null), // 1 of 10 an hour: 0.1h
+			sale(2, 1_000, SaleSuggestion.Type.GE, 40_000, 0, null), // 1000 of 100 an hour: 10h
+			sale(3, 5, SaleSuggestion.Type.GE, 30_000, 0, null), // didn't trade
+			sale(4, 5, SaleSuggestion.Type.GE, 20_000, 0, null), // unknown
+			sale(5, 2, SaleSuggestion.Type.GE, 10_000, 0, null), // 2 of 1000 an hour: 0.002h
+			sale(6, 1, SaleSuggestion.Type.GE, 60_000, 0, null)); // didn't trade, worth more than 3
+		Map<Integer, Long> perHour = new HashMap<>();
+		perHour.put(1, 10L);
+		perHour.put(2, 100L);
+		perHour.put(3, 0L);
+		perHour.put(5, 1_000L);
+		perHour.put(6, 0L);
+		Destinations quickest = Destinations.build(null, CofferSuggestionMode.PLAN, sales, Collections.emptyMap(), Collections.emptyMap(),
+			Collections.emptyMap(), GeOrder.QUICKEST, id -> perHour.getOrDefault(id, -1L));
+		assertEquals(Arrays.asList(5, 1, 2, 6, 3, 4), quickest.get(Destination.Kind.GE).getItemIds());
+		assertEquals(Arrays.asList(5, 1, 2, 6, 3, 4), quickest.get(Destination.Kind.ALL).getItemIds());
+
+		Destinations byValue = Destinations.build(null, CofferSuggestionMode.PLAN, sales, Collections.emptyMap(), Collections.emptyMap(),
+			Collections.emptyMap(), GeOrder.VALUE, id -> perHour.getOrDefault(id, -1L));
+		assertEquals(Arrays.asList(6, 1, 2, 3, 4, 5), byValue.get(Destination.Kind.GE).getItemIds());
 	}
 }

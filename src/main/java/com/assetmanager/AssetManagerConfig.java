@@ -1,5 +1,6 @@
 package com.assetmanager;
 
+import com.assetmanager.dest.GeOrder;
 import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.value.GePrice;
@@ -216,7 +217,7 @@ public interface AssetManagerConfig extends Config
 		keyName = "avoidWilderness",
 		name = "Avoid Wilderness shops",
 		description = "Never suggest selling to shops in the Wilderness, like Bandit Duty Free."
-			+ " Ferox Enclave is a safe zone and still counts.",
+			+ " Ferox Enclave is a safe zone and still counts. Also on the side panel, under Shops.",
 		section = shopSection,
 		position = 0
 	)
@@ -538,5 +539,17 @@ public interface AssetManagerConfig extends Config
 	default FlipSort flipSort()
 	{
 		return FlipSort.GP_PER_HOUR;
+	}
+
+	@ConfigItem(
+		keyName = "geOrder",
+		name = "Order GE items",
+		description = "Order the Grand Exchange bank view most valuable first, or quickest to sell first (to free bank"
+			+ " spaces; needs live GE prices); set on the side panel's Grand Exchange row",
+		hidden = true
+	)
+	default GeOrder geOrder()
+	{
+		return GeOrder.VALUE;
 	}
 }

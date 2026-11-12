@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntToLongFunction;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import lombok.Value;
@@ -57,6 +58,18 @@ public class Destinations
 	 */
 	public static Destinations build(CofferPlan plan, CofferSuggestionMode cofferMode, List<SaleSuggestion> sales,
 		Map<String, ShopTrip> trips, Map<Integer, Long> kept, Map<Integer, Holdings.Place> outsideBank)
+	{
+		return build(plan, cofferMode, sales, trips, kept, outsideBank, GeOrder.VALUE, id -> -1);
+	}
+
+	/**
+	 * @param geOrder        how to order the GE items
+	 * @param tradesPerHour  about how many of an item trade on the GE an hour, or -1 if unknown; for
+	 *                       {@link GeOrder#QUICKEST}
+	 */
+	public static Destinations build(CofferPlan plan, CofferSuggestionMode cofferMode, List<SaleSuggestion> sales,
+		Map<String, ShopTrip> trips, Map<Integer, Long> kept, Map<Integer, Holdings.Place> outsideBank,
+		GeOrder geOrder, IntToLongFunction tradesPerHour)
 	{
 		// Coffer: the planned top-up, or everything worth sacrificing
 		Map<Integer, long[]> coffer = new LinkedHashMap<>();
@@ -96,7 +109,13 @@ public class Destinations
 		};
 		list.add(simple(Destination.Kind.COFFER, "Death's coffer", new ArrayList<>(s.getCoffer()), cofferValue, cofferGain, elsewhere));
 		list.add(fromSales(Destination.Kind.ALCH, "High alch", byValue, SaleSuggestion.Type.ALCH, s.getAlch(), elsewhere));
-		list.add(fromSales(Destination.Kind.GE, "Grand Exchange", byValue, SaleSuggestion.Type.GE, s.getGe(), elsewhere));
+		List<SaleSuggestion> geSales = byValue;
+		if (geOrder == GeOrder.QUICKEST)
+		{
+			geSales = new ArrayList<>(byValue);
+			geSales.sort(quickestFirst(tradesPerHour));
+		}
+		list.add(fromSales(Destination.Kind.GE, "Grand Exchange", geSales, SaleSuggestion.Type.GE, s.getGe(), elsewhere));
 
 		// One destination per shop, or group of shops paying the same, the most gained first
 		Map<String, List<SaleSuggestion>> byShop = new LinkedHashMap<>();
@@ -157,6 +176,20 @@ public class Destinations
 		return simple(kind, name, here.stream().map(x -> x.getValues().getItemId()).collect(Collectors.toList()),
 			here.stream().mapToLong(SaleSuggestion::getTotal).sum(),
 			kind == Destination.Kind.GE ? 0 : here.stream().mapToLong(SaleSuggestion::getGain).sum(), elsewhere);
+	}
+
+	/**
+	 * The stacks that sell soonest first: the fewest hours of normal GE trading to sell the whole quantity. Items that
+	 * didn't trade in the last day come after them, then items with unknown volumes; each most valuable first. The
+	 * sort is stable, so ties keep their value order.
+	 */
+	static Comparator<SaleSuggestion> quickestFirst(IntToLongFunction tradesPerHour)
+	{
+		return Comparator.comparingDouble(x ->
+		{
+			long perHour = tradesPerHour.applyAsLong(x.getValues().getItemId());
+			return perHour < 0 ? Double.MAX_VALUE : perHour == 0 ? Double.MAX_VALUE / 2 : (double) x.getQuantity() / perHour;
+		});
 	}
 
 	private static List<Integer> ids(List<SaleSuggestion> sales, SaleSuggestion.Type type)

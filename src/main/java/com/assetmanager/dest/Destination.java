@@ -22,7 +22,7 @@ public class Destination
 
 	Kind kind;
 	String name;
-	/** Item ids, most valuable first. */
+	/** Item ids, most valuable first (for GE, possibly quickest to sell first: see {@link GeOrder}). */
 	List<Integer> itemIds;
 	/** Coins from sending them all here (for KEPT, what they're worth). */
 	long value;

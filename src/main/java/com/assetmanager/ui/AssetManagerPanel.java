@@ -5,6 +5,7 @@ import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.death.DeathScenario;
 import com.assetmanager.dest.Destination;
 import com.assetmanager.dest.Destinations;
+import com.assetmanager.dest.GeOrder;
 import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipRun;
 import com.assetmanager.flip.FlipTime;
@@ -43,6 +44,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -123,6 +125,8 @@ public class AssetManagerPanel extends PluginPanel
 	/** (item id, keep amount); 0 removes the rule. */
 	private final BiConsumer<Integer, Integer> onKeepChange;
 	private final Consumer<Destination> onShowInBank;
+	private final Consumer<GeOrder> onGeOrder;
+	private final Consumer<Boolean> onAvoidWilderness;
 	/** Find a shop: centre the map on it and point the hint arrow at it; again to stop. */
 	private final Consumer<Destination> onFind;
 	/** Find a shop to buy from, the same way. */
@@ -135,9 +139,12 @@ public class AssetManagerPanel extends PluginPanel
 
 	public AssetManagerPanel(LongConsumer onManualBalance, BiConsumer<Integer, Integer> onKeepChange, Consumer<Destination> onShowInBank,
 		Consumer<Destination> onFind, Consumer<Shop> onFindShop, Patience patience, Consumer<Patience> onPatience,
-		Consumer<Flip.Dest> onDest, FlipSort sort, Consumer<FlipSort> onSort)
+		Consumer<Flip.Dest> onDest, FlipSort sort, Consumer<FlipSort> onSort, Consumer<GeOrder> onGeOrder,
+		Consumer<Boolean> onAvoidWilderness)
 	{
 		super(false);
+		this.onGeOrder = onGeOrder;
+		this.onAvoidWilderness = onAvoidWilderness;
 		this.onFindShop = onFindShop;
 		this.onManualBalance = onManualBalance;
 		this.onKeepChange = onKeepChange;
@@ -422,6 +429,8 @@ public class AssetManagerPanel extends PluginPanel
 		}
 
 		subheader("Shops");
+		ShopPerks perks = state.getPerks();
+		addRow(wildernessToggle(perks.isAvoidWilderness()));
 		List<Destination> shops = dests.getShops();
 		if (shops.isEmpty())
 		{
@@ -441,10 +450,8 @@ public class AssetManagerPanel extends PluginPanel
 				+ " until about " + ShopTimes.clock(b.getUntil()) + ": others overstocked it on " + b.getWorlds()
 				+ " worlds you checked.", DETAIL_WIDTH, WARN));
 		}
-		ShopPerks perks = state.getPerks();
 		addRow(text("Karamja gloves: " + (perks.getGlovesTier() >= 3 ? "3 or 4" : perks.getGlovesTier() >= 1 ? "1 or 2" : "none")
-			+ " · Ring of Charos (a): " + (perks.isCharos() ? "yes" : "no")
-			+ (perks.isAvoidWilderness() ? " · Wilderness shops skipped" : ""), MUTED));
+			+ " · Ring of Charos (a): " + (perks.isCharos() ? "yes" : "no"), MUTED));
 
 		subheader("Other");
 		destinationRow(dests.get(Destination.Kind.KEPT), state);
@@ -732,6 +739,13 @@ public class AssetManagerPanel extends PluginPanel
 				east.add(Box.createVerticalStrut(2));
 				east.add(find);
 			}
+			if (d.getKind() == Destination.Kind.GE)
+			{
+				JButton order = geOrderButton(state);
+				order.setAlignmentX(Component.RIGHT_ALIGNMENT);
+				east.add(Box.createVerticalStrut(2));
+				east.add(order);
+			}
 			top.add(east, BorderLayout.EAST);
 		}
 		row.add(top, BorderLayout.CENTER);
@@ -766,6 +780,39 @@ public class AssetManagerPanel extends PluginPanel
 		addRow(row);
 	}
 
+	/** The same setting as "Avoid Wilderness shops" in the plugin's settings, here so players see they can turn them off. */
+	private JCheckBox wildernessToggle(boolean avoid)
+	{
+		JCheckBox box = new JCheckBox("Avoid Wilderness shops", avoid);
+		box.setFont(FontManager.getRunescapeSmallFont());
+		box.setForeground(Color.LIGHT_GRAY);
+		box.setOpaque(false);
+		box.setFocusPainted(false);
+		box.setBorder(new EmptyBorder(1, 0, 1, 0));
+		box.setToolTipText("Never suggest selling to shops in the Wilderness, like Bandit Duty Free, where other players can"
+			+ " attack you. Ferox Enclave is a safe zone and still counts. Also in the plugin's settings.");
+		box.addActionListener(e -> onAvoidWilderness.accept(box.isSelected()));
+		return box;
+	}
+
+	/** Switches the GE bank view between most valuable and quickest to sell first. */
+	private JButton geOrderButton(PanelState state)
+	{
+		boolean quickest = state.getGeOrder() == GeOrder.QUICKEST;
+		GeOrder next = quickest ? GeOrder.VALUE : GeOrder.QUICKEST;
+		JButton b = smallButton(state.getGeOrder().getLabel(), quickest
+			? "Shown quickest to sell first, to free the most bank spaces: click to show the most valuable first"
+			: "Shown most valuable first: click to show what sells quickest first, to free the most bank spaces");
+		if (!quickest && !state.isGeVolumes())
+		{
+			// Without trade volumes there's nothing to order by
+			b.setEnabled(false);
+			b.setToolTipText("Turn on Live GE prices in the settings to order these by how quickly they sell");
+		}
+		b.addActionListener(e -> onGeOrder.accept(next));
+		return b;
+	}
+
 	private static String detail(Destination d, PanelState state)
 	{
 		List<String> parts = new ArrayList<>();
@@ -793,6 +840,10 @@ public class AssetManagerPanel extends PluginPanel
 				break;
 			case GE:
 				parts.add("after tax");
+				if (state.getGeOrder() == GeOrder.QUICKEST)
+				{
+					parts.add(state.isGeVolumes() ? "quickest to sell first" : "quickest to sell first once live prices load");
+				}
 				break;
 			case KEPT:
 				parts.add("in your bank");

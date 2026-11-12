@@ -13,6 +13,7 @@ import com.assetmanager.death.DeathScenario;
 import com.assetmanager.death.RiskItem;
 import com.assetmanager.dest.Destination;
 import com.assetmanager.dest.Destinations;
+import com.assetmanager.dest.GeOrder;
 import com.assetmanager.flip.BestBuys;
 import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipRun;
@@ -270,7 +271,9 @@ public class AssetManagerPlugin extends Plugin
 			patience -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipPatience", patience),
 			dest -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipDest", dest),
 			config.flipSort(),
-			sort -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipSort", sort));
+			sort -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipSort", sort),
+			order -> configManager.setConfiguration(AssetManagerConfig.GROUP, "geOrder", order),
+			avoid -> configManager.setConfiguration(AssetManagerConfig.GROUP, "avoidWilderness", avoid));
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
 			.tooltip("Asset Manager")
@@ -826,6 +829,8 @@ public class AssetManagerPlugin extends Plugin
 			int minAlchGain = config.minAlchGain();
 			long minGeSale = config.minGeSale();
 			CofferSuggestionMode cofferMode = config.cofferSuggestions();
+			// Trade volumes come from the live prices already being fetched: ordering by them asks the wiki for nothing more
+			GeOrder geOrder = config.geOrder();
 			long coins = bankCoins;
 			ShopCatalog catalog = shopCatalog;
 			planner.execute(() ->
@@ -842,7 +847,8 @@ public class AssetManagerPlugin extends Plugin
 				}
 				SaleAdvisor.Result r = SaleAdvisor.suggest(values, spare, canUseGe, natureRuneCost, minAlchGain, minGeSale, catalog,
 					perks, sellRules, avoid);
-				Destinations d = Destinations.build(p, cofferMode, r.getSales(), r.getTrips(), keptValues, outsideBank);
+				Destinations d = Destinations.build(p, cofferMode, r.getSales(), r.getTrips(), keptValues, outsideBank,
+					geOrder, livePrices::tradesPerHour);
 				CofferPlan planned = p;
 				clientThread.invokeLater(() ->
 				{
@@ -905,7 +911,8 @@ public class AssetManagerPlugin extends Plugin
 		publish(new PanelState(mode, in.balance, cofferTracker.isKnown(), cofferTracker.getSource(), cofferTracker.getUpdatedAt(),
 			in.skulled, in.protectItem, in.estimate, plan, in.target, in.peakFee, config.minCofferTarget(), kept, perks,
 			bankCoins, config.targetDeaths(), bankItems == null ? null : destinations, restockedBy(shopStock, destinations, now),
-			shopStock.busy(now), flips, config.bestBuys(), geFlips, Flips.destination(mode, config.flipDest()), config.flipSort(), inventoryCoins()));
+			shopStock.busy(now), flips, config.bestBuys(), geFlips, Flips.destination(mode, config.flipDest()), config.flipSort(), inventoryCoins(),
+			config.geOrder(), livePrices.hasVolumes()));
 	}
 
 	private long inventoryCoins()
