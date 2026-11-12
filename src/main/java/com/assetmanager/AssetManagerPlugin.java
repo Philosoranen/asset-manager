@@ -760,7 +760,7 @@ public class AssetManagerPlugin extends Plugin
 		{
 			configManager.setRSProfileConfiguration(AssetManagerConfig.GROUP, KEY_KEEP, keepRules.encode());
 		}
-		SellRules sellRules = new SellRules(config.minShopGain(), config.shopMaxWorlds(), config.minGainPerTrip());
+		SellRules sellRules = new SellRules(config.minShopGain(), config.shopMaxWorlds(), config.minGainPerWorld());
 		List<ShopStock.Busy> busy = shopStockTracker.get().busy(System.currentTimeMillis());
 		Inputs in = new Inputs(mode, perks, holdings, sellRules, location, balance, target, peakFee, skulled, protectItem, estimate);
 		// A newer recalculation makes this one's results stale

@@ -10,6 +10,9 @@ public class SellRules
 	int minGainPerItem;
 	/** The most worlds to hop at one shop, or ShopCatalog.NO_WORLD_LIMIT. */
 	int maxWorlds;
-	/** A shop is only suggested if everything to sell there gains at least this much together. */
-	int minGainPerTrip;
+	/**
+	 * A shop is only suggested if everything to sell there gains at least this much for each world visited: hopping
+	 * takes time, and alching or the GE doesn't need it.
+	 */
+	int minGainPerWorld;
 }
