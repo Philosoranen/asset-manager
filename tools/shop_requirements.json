@@ -3440,5 +3440,12 @@
    "Sell Uglug Nar a Relicym's balm to unlock the shop"
   ],
   "evidence": "To unlock his store, players are required to sell him a Relicym's balm after starting Zogre Flesh Eaters."
+ },
+ "Bea's Hunting Gear": {
+  "other": [
+   "The Birds and the Wasps quest"
+  ],
+  "note": "Released 11 November 2026; RuneLite's Quest list doesn't have it yet, so it can't be checked. Move it to quests once it does.",
+  "evidence": "'Completion of The Birds and the Wasps quest is required to access this shop.'"
  }
 }
