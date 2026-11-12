@@ -52,7 +52,6 @@ public class ShopRatesOverlay extends Overlay
 		this.config = config;
 		setPosition(OverlayPosition.DYNAMIC);
 		setLayer(OverlayLayer.ABOVE_WIDGETS);
-		panel.setPreferredSize(new Dimension(WIDTH, 0));
 		panel.setBackgroundColor(PriceTooltip.SOLID_BACKGROUND);
 	}
 
@@ -66,6 +65,9 @@ public class ShopRatesOverlay extends Overlay
 			return null;
 		}
 		panel.getChildren().clear();
+		Rectangle b = frame.getBounds();
+		// As wide as the shop so notes wrap less and the panel stays short
+		panel.setPreferredSize(new Dimension(Math.max(WIDTH, b.width), 0));
 		if (config.shopRates())
 		{
 			addRates(shop);
@@ -76,12 +78,17 @@ public class ShopRatesOverlay extends Overlay
 			return null;
 		}
 
-		// Just below the shop window, or above it if there's no room
-		Rectangle b = frame.getBounds();
+		// Just below the shop window, or above it if there's no room. If neither fits, sit at the bottom of the
+		// screen so it only covers the bottom of the shop, never the items at the top.
+		int canvasHeight = client.getCanvasHeight();
 		int y = b.y + b.height + 4;
-		if (y + lastHeight > client.getCanvasHeight())
+		if (y + lastHeight > canvasHeight)
 		{
-			y = Math.max(0, b.y - lastHeight - 4);
+			y = b.y - lastHeight - 4;
+			if (y < 0)
+			{
+				y = Math.max(0, canvasHeight - lastHeight);
+			}
 		}
 		panel.setPreferredLocation(new Point(b.x, y));
 		Dimension d = panel.render(g);
@@ -115,13 +122,18 @@ public class ShopRatesOverlay extends Overlay
 		{
 			panel.getChildren().add(note("Time until back to normal stock. It's exact once you've seen one restock here."));
 		}
+		StringBuilder busyItems = new StringBuilder();
 		for (ShopStock.Busy busy : stock.busy(now))
 		{
 			if (busy.getShop().equals(shop.getName()))
 			{
-				panel.getChildren().add(note(ShopTimes.itemName(busy.getItem()) + ": others overstocked it on "
-					+ busy.getWorlds() + " worlds you checked"));
+				busyItems.append(busyItems.length() == 0 ? "" : ", ")
+					.append(ShopTimes.itemName(busy.getItem())).append(" (").append(busy.getWorlds()).append(")");
 			}
+		}
+		if (busyItems.length() > 0)
+		{
+			panel.getChildren().add(note("Others overstocked on worlds you checked: " + busyItems));
 		}
 	}
 
