@@ -8,6 +8,7 @@ import com.assetmanager.dest.Destinations;
 import com.assetmanager.dest.GeOrder;
 import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipRun;
+import com.assetmanager.flip.ShopRates;
 import com.assetmanager.flip.FlipTime;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.flip.Flips;
@@ -24,31 +25,35 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
@@ -74,20 +79,33 @@ import net.runelite.client.util.QuantityFormatter;
 public class AssetManagerPanel extends PluginPanel
 {
 	// Widths for wrapped HTML text, in CSS pixels. Swing renders these about 1.3x wider, so they're sized to fit
-	// the 225px panel after its padding and scrollbar.
+	// a section card in the 225px panel, after the padding, the card's edge and the scrollbar.
 	/** Full-width text. */
-	private static final int TEXT_WIDTH = 150;
+	private static final int TEXT_WIDTH = 138;
 	/** A name with a value to its right. */
 	private static final int NAME_WIDTH = 100;
 	/** The grey detail line under a row's name. */
-	private static final int DETAIL_WIDTH = 140;
+	private static final int DETAIL_WIDTH = 128;
 	private static final Color GOOD = new Color(0x4CAF50);
 	private static final Color WARN = new Color(0xFF9800);
 	private static final Color BAD = new Color(0xF44336);
 	private static final Color MUTED = new Color(0x9E9E9E);
+	/** A section's card, darker than the panel so sections stand apart. */
+	private static final Color CARD = ColorScheme.DARKER_GRAY_COLOR;
+	/** A card's title bar. */
+	private static final Color CARD_HEADER = new Color(0x171717);
+	/** A row inside a card, lighter than the card. */
+	private static final Color ROW = new Color(0x2C2C2C);
+	private static final Color ROW_HOVER = new Color(0x3A3A3A);
+	private static final Color LINE = new Color(0x3C3C3C);
+	/** An inventory slot, as wide as the game's, and how many fit across a flip row, as in the inventory. */
+	private static final int SLOT_WIDTH = 36;
+	private static final int SLOT_HEIGHT = 32;
+	private static final int SLOTS_ACROSS = 4;
+	private static final Color SLOT = new Color(0x3E3529);
 	private static final String GOOD_HTML = "#4CAF50";
 
-	private static final String SECTION_KEPT = "Manage kept items";
+	private static final String SECTION_KEPT = "Kept items";
 
 	public enum Tab
 	{
@@ -121,12 +139,15 @@ public class AssetManagerPanel extends PluginPanel
 	private final JPanel patienceRow = new JPanel(new BorderLayout(4, 0));
 	/** How flips are ordered. */
 	private final JPanel sortRow = new JPanel(new BorderLayout(4, 0));
-	private final LongConsumer onManualBalance;
+	/** Asks for the coffer balance, in the chatbox. */
+	private final Runnable onSetBalance;
 	/** (item id, keep amount); 0 removes the rule. */
-	private final BiConsumer<Integer, Integer> onKeepChange;
 	private final Consumer<Destination> onShowInBank;
 	private final Consumer<GeOrder> onGeOrder;
 	private final Consumer<Boolean> onAvoidWilderness;
+	private final Consumer<Boolean> onEvenHops;
+	/** Puts an item's icon, with a stack size, on a label. */
+	private final ItemIcons itemIcons;
 	/** Find a shop: centre the map on it and point the hint arrow at it; again to stop. */
 	private final Consumer<Destination> onFind;
 	/** Find a shop to buy from, the same way. */
@@ -134,23 +155,27 @@ public class AssetManagerPanel extends PluginPanel
 	/** The shop being found, or null. */
 	private String findingShop;
 	private final Set<String> collapsed = new HashSet<>();
+	/** Whether the content is behind the last state, having changed while the panel was hidden. */
+	private boolean stale = true;
+	/** Where rows are added: the content, or the body of the card being built. */
+	private JPanel target = content;
 	private PanelState lastState;
 	private int warnDeaths = 2;
 
-	public AssetManagerPanel(LongConsumer onManualBalance, BiConsumer<Integer, Integer> onKeepChange, Consumer<Destination> onShowInBank,
+	public AssetManagerPanel(Runnable onSetBalance, Consumer<Destination> onShowInBank,
 		Consumer<Destination> onFind, Consumer<Shop> onFindShop, Patience patience, Consumer<Patience> onPatience,
 		Consumer<Flip.Dest> onDest, FlipSort sort, Consumer<FlipSort> onSort, Consumer<GeOrder> onGeOrder,
-		Consumer<Boolean> onAvoidWilderness)
+		Consumer<Boolean> onAvoidWilderness, Consumer<Boolean> onEvenHops, ItemIcons itemIcons)
 	{
 		super(false);
+		this.itemIcons = itemIcons;
+		this.onEvenHops = onEvenHops;
 		this.onGeOrder = onGeOrder;
 		this.onAvoidWilderness = onAvoidWilderness;
 		this.onFindShop = onFindShop;
-		this.onManualBalance = onManualBalance;
-		this.onKeepChange = onKeepChange;
+		this.onSetBalance = onSetBalance;
 		this.onShowInBank = onShowInBank;
 		this.onFind = onFind;
-		collapsed.add(SECTION_KEPT);
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -261,8 +286,36 @@ public class AssetManagerPanel extends PluginPanel
 		SwingUtilities.invokeLater(() -> scroll.getVerticalScrollBar().setValue(position));
 	}
 
-	public void update(PanelState state, int warnDeaths)
+	/**
+	 * Shows new state. The panel is only rebuilt while it's on screen and when something on it changed: rebuilding
+	 * is slow (all its text is HTML), and the state is published on every inventory change.
+	 */
+	public void setState(PanelState state, int warnDeaths)
 	{
+		if (stale || !Objects.equals(state, lastState) || warnDeaths != this.warnDeaths)
+		{
+			lastState = state;
+			this.warnDeaths = warnDeaths;
+			stale = true;
+			if (isShowing())
+			{
+				update(state, warnDeaths);
+			}
+		}
+	}
+
+	@Override
+	public void onActivate()
+	{
+		if (stale)
+		{
+			update(lastState, warnDeaths);
+		}
+	}
+
+	private void update(PanelState state, int warnDeaths)
+	{
+		stale = false;
 		this.lastState = state;
 		this.warnDeaths = warnDeaths;
 		content.removeAll();
@@ -282,17 +335,11 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		else if (tab == Tab.LIQUIDATE)
 		{
-			if (state.getAccountMode().canUseCoffer())
-			{
-				addCofferSection(state);
-			}
-			else
-			{
-				addRow(text("Ultimate ironmen can't use Death's coffer.", Color.LIGHT_GRAY));
-			}
-			addRiskSection(state);
-			addDestinationsSection(state);
-			addKeptSection(state);
+			addGap(8);
+			addDeathCard(state);
+			addSpareCard(state);
+			addShopsCard(state);
+			addKeptCard(state);
 		}
 		else
 		{
@@ -305,24 +352,41 @@ public class AssetManagerPanel extends PluginPanel
 
 	// --- Sections ---
 
-	private void addCofferSection(PanelState state)
+	/** The coffer, its target and what dying now would cost, together: the coffer is there to pay for deaths. */
+	private void addDeathCard(PanelState state)
 	{
-		if (!header("Death's coffer"))
+		boolean coffer = state.getAccountMode().canUseCoffer();
+		card(coffer ? "Death's coffer" : "If you die now", () ->
 		{
-			return;
-		}
-		if (state.isCofferKnown())
-		{
-			JLabel balance = new JLabel(QuantityFormatter.formatNumber(state.getCofferBalance()) + " gp");
-			balance.setFont(FontManager.getRunescapeBoldFont());
-			balance.setForeground(Color.WHITE);
-			addRow(balance);
-			addRow(text("From " + state.getCofferSource() + ", " + ago(state.getCofferUpdatedAt()), MUTED));
-		}
-		else
-		{
-			addRow(text("Balance unknown. Open the coffer at Death's Office, or set it below.", WARN));
-		}
+			if (coffer)
+			{
+				addCofferSummary(state);
+				divider();
+				minorHeading("If you die now");
+			}
+			else
+			{
+				addRow(text("Ultimate ironmen can't use Death's coffer.", MUTED));
+			}
+			addRiskSummary(state);
+		});
+	}
+
+	private void addCofferSummary(PanelState state)
+	{
+		boolean known = state.isCofferKnown();
+		JPanel top = new JPanel(new BorderLayout(4, 0));
+		top.setOpaque(false);
+		JLabel balance = new JLabel(known ? QuantityFormatter.formatNumber(state.getCofferBalance()) + " gp" : "Balance unknown");
+		balance.setFont(FontManager.getRunescapeBoldFont());
+		balance.setForeground(known ? Color.WHITE : WARN);
+		top.add(balance, BorderLayout.CENTER);
+		JButton set = smallButton(known ? "Edit" : "Set", "Enter your coffer balance by hand");
+		set.addActionListener(e -> onSetBalance.run());
+		top.add(set, BorderLayout.EAST);
+		addRow(top);
+		addRow(text(known ? "From " + state.getCofferSource() + ", " + ago(state.getCofferUpdatedAt())
+			: "Open the coffer at Death's Office, or click Set.", MUTED));
 
 		long deaths = state.getDeathsCovered();
 		DeathCostEstimate est = state.getEstimate();
@@ -333,13 +397,23 @@ public class AssetManagerPanel extends PluginPanel
 			addRow(text(covered, deaths < warnDeaths ? BAD : GOOD));
 		}
 
-		addGap(4);
-		addRow(valueRow("Target", gp(state.getCofferTarget()), Color.WHITE));
-		addRow(text(targetBasis(state), MUTED));
+		addGap(6);
+		long target = state.getCofferTarget();
 		CofferPlan plan = state.getPlan();
+		boolean met = plan != null && plan.getShortfall() <= 0;
+		if (known && target > 0)
+		{
+			Meter meter = new Meter((double) state.getCofferBalance() / target, met ? GOOD : WARN);
+			meter.setToolTipText(QuantityFormatter.formatNumber(state.getCofferBalance()) + " of a "
+				+ QuantityFormatter.formatNumber(target) + " gp target");
+			addRow(meter);
+			addGap(3);
+		}
+		addRow(valueRow("Target", gp(target), Color.WHITE));
+		addRow(text(targetBasis(state), MUTED));
 		if (plan != null)
 		{
-			if (plan.getShortfall() <= 0)
+			if (met)
 			{
 				addRow(text("Your coffer meets the target.", GOOD));
 			}
@@ -348,7 +422,7 @@ public class AssetManagerPanel extends PluginPanel
 				addRow(valueRow("Short by", gp(plan.getShortfall()), WARN));
 				if (!plan.getSteps().isEmpty())
 				{
-					addRow(text("Sacrifice the items under Death's coffer below"
+					addRow(text("Sacrifice the items under Death's coffer in Your spare items"
 						+ (plan.getCoinsToDeposit() > 0 ? ", then deposit " + gp(plan.getCoinsToDeposit()) : "") + ".", MUTED));
 				}
 				else if (plan.getCoinsToDeposit() > 0)
@@ -361,19 +435,10 @@ public class AssetManagerPanel extends PluginPanel
 				}
 			}
 		}
-
-		JButton set = smallButton("Set balance", "Enter your coffer balance by hand");
-		set.addActionListener(e -> promptBalance());
-		addGap(4);
-		addRow(set);
 	}
 
-	private void addRiskSection(PanelState state)
+	private void addRiskSummary(PanelState state)
 	{
-		if (!header("If you die now"))
-		{
-			return;
-		}
 		DeathCostEstimate est = state.getEstimate();
 		if (est == null)
 		{
@@ -401,60 +466,77 @@ public class AssetManagerPanel extends PluginPanel
 		}
 	}
 
-	private void addDestinationsSection(PanelState state)
+	/** Where spare items go other than shops: the coffer, alching and the GE, and what's kept. */
+	private void addSpareCard(PanelState state)
 	{
-		if (!header("Your spare items"))
+		card("Your spare items", () ->
 		{
-			return;
-		}
+			Destinations dests = state.getDestinations();
+			if (dests == null)
+			{
+				addRow(text("Open your bank once so it can be scanned.", WARN));
+				return;
+			}
+			addRow(text("Click one to see its items in your bank, most valuable first.", MUTED));
+			addGap(2);
+
+			destinationRow(dests.get(Destination.Kind.ALL), state);
+			if (state.getAccountMode().canUseCoffer())
+			{
+				destinationRow(dests.get(Destination.Kind.COFFER), state);
+			}
+			if (state.getAccountMode().canUseGrandExchange())
+			{
+				destinationRow(dests.get(Destination.Kind.ALCH), state);
+				destinationRow(dests.get(Destination.Kind.GE), state);
+			}
+		});
+	}
+
+	/** One line per shop whose items others have overstocked everywhere, with the items in its tooltip. */
+	private void addBusyShops(List<ShopStock.Busy> busy)
+	{
+		Map<String, List<ShopStock.Busy>> byShop = new LinkedHashMap<>();
+		busy.forEach(b -> byShop.computeIfAbsent(b.getShop(), k -> new ArrayList<>()).add(b));
+		byShop.forEach((shop, list) ->
+		{
+			long until = list.stream().mapToLong(ShopStock.Busy::getUntil).max().orElse(0);
+			JLabel l = text("Skipping " + shop + " for " + items(list.size()) + " until about " + ShopTimes.clock(until)
+				+ ": others overstocked " + (list.size() == 1 ? "it" : "them") + ".", WARN);
+			StringBuilder tip = new StringBuilder("<html>Overstocked by other players on the worlds you checked:");
+			list.forEach(b -> tip.append("<br>").append(b.getItem()).append(" (").append(b.getWorlds()).append(" worlds, until about ")
+				.append(ShopTimes.clock(b.getUntil())).append(')'));
+			l.setToolTipText(tip.append("</html>").toString());
+			addRow(l);
+		});
+	}
+
+	/** The shops worth a trip with spare items, best first. */
+	private void addShopsCard(PanelState state)
+	{
 		Destinations dests = state.getDestinations();
 		if (dests == null)
 		{
-			addRow(text("Open your bank once so it can be scanned.", WARN));
 			return;
 		}
-		addRow(text("Click one to see its items in your bank, most valuable first.", MUTED));
-		addGap(2);
-
-		boolean ge = state.getAccountMode().canUseGrandExchange();
-		destinationRow(dests.get(Destination.Kind.ALL), state);
-		if (state.getAccountMode().canUseCoffer())
+		card("Shops", () ->
 		{
-			destinationRow(dests.get(Destination.Kind.COFFER), state);
-		}
-		if (ge)
-		{
-			destinationRow(dests.get(Destination.Kind.ALCH), state);
-			destinationRow(dests.get(Destination.Kind.GE), state);
-		}
-
-		subheader("Shops");
-		ShopPerks perks = state.getPerks();
-		addRow(wildernessToggle(perks.isAvoidWilderness()));
-		List<Destination> shops = dests.getShops();
-		if (shops.isEmpty())
-		{
-			addRow(text("No shop pays more than " + (ge ? "the GE or alching" : "alching") + " for your spare items.", MUTED));
-		}
-		for (Destination shop : shops)
-		{
-			destinationRow(shop, state);
-		}
-		if (!shops.isEmpty())
-		{
-			addRow(text("These shops are marked on your world map.", MUTED));
-		}
-		for (ShopStock.Busy b : state.getBusyShops())
-		{
-			addRow(wrapped("Not suggesting " + b.getShop() + " for " + b.getItem()
-				+ " until about " + ShopTimes.clock(b.getUntil()) + ": others overstocked it on " + b.getWorlds()
-				+ " worlds you checked.", DETAIL_WIDTH, WARN));
-		}
-		addRow(text("Karamja gloves: " + (perks.getGlovesTier() >= 3 ? "3 or 4" : perks.getGlovesTier() >= 1 ? "1 or 2" : "none")
-			+ " · Ring of Charos (a): " + (perks.isCharos() ? "yes" : "no"), MUTED));
-
-		subheader("Other");
-		destinationRow(dests.get(Destination.Kind.KEPT), state);
+			boolean ge = state.getAccountMode().canUseGrandExchange();
+			ShopPerks perks = state.getPerks();
+			List<Destination> shops = dests.getShops();
+			addRow(text(shops.isEmpty() ? "No shop pays more than " + (ge ? "the GE or alching" : "alching") + " for your spare items."
+				: "Worth a trip with your spare items, most gained first. They're marked on your world map.", MUTED));
+			addRow(wildernessToggle(perks.isAvoidWilderness()));
+			addGap(2);
+			for (Destination shop : shops)
+			{
+				destinationRow(shop, state);
+			}
+			addBusyShops(state.getBusyShops());
+			addGap(2);
+			addRow(text("Karamja gloves: " + (perks.getGlovesTier() >= 3 ? "3 or 4" : perks.getGlovesTier() >= 1 ? "1 or 2" : "none")
+				+ " · Ring of Charos (a): " + (perks.isCharos() ? "yes" : "no"), MUTED));
+		});
 	}
 
 	/** Lists the places the account can cash out, when they change, with the one in use selected. */
@@ -509,6 +591,10 @@ public class AssetManagerPanel extends PluginPanel
 		{
 			notes.add("Things to buy from shops and sell on the GE.");
 		}
+		if (flipDest == Flip.Dest.SHOP)
+		{
+			addRow(evenHopsToggle(state.isEvenHops()));
+		}
 		List<FlipRun> flips = state.getFlips();
 		if (state.getFlipCoins() <= 0)
 		{
@@ -522,12 +608,11 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		else
 		{
-			FlipSort sort = state.getFlipSort();
-			addRow(text((sort == FlipSort.RETURN ? "Best return first" : sort == FlipSort.PROFIT ? "Most profitable first"
-				: "Most an hour first") + ", spending up to the " + gp(state.getFlipCoins()) + " in your inventory and using"
-				+ " shops whose requirements you meet. Each is one go: a shop visit with everything worth it there, or one round"
-				+ " of GE offers." + (sort == FlipSort.GP_PER_HOUR ? " Times are rough: hops, trips, conversations, alchs and the"
-				+ " GE's wait." : ""), MUTED));
+			JLabel intro = text("Spending up to the " + gp(state.getFlipCoins()) + " in your inventory, in shops you can use."
+				+ " Hover an item for its prices.", MUTED);
+			intro.setToolTipText("<html>Each row is one go: a shop visit with everything worth it there, or one round of GE"
+				+ " offers.<br>Times are rough: hops, trips, conversations, alchs and the GE's wait.</html>");
+			addRow(intro);
 		}
 		for (String note : notes)
 		{
@@ -537,17 +622,22 @@ public class AssetManagerPanel extends PluginPanel
 		flips.forEach(f -> flipRow(f, state.getFlipSort()));
 	}
 
-	/** One go: where, what it makes, what to buy and how long it takes, and a Find button for a shop. */
+	/**
+	 * One go: where, what it makes, its items as they'd sit in the inventory (hover one for its prices), a line of
+	 * the shop's rates and the go's time, and a button showing the shop on the map.
+	 */
 	private void flipRow(FlipRun run, FlipSort sort)
 	{
-		JPanel row = new JPanel(new BorderLayout(4, 0));
+		JPanel row = new JPanel();
+		row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
 		row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		row.setBorder(new EmptyBorder(4, 6, 4, 6));
+		row.setBorder(new EmptyBorder(5, 6, 6, 6));
 
 		JPanel top = new JPanel(new BorderLayout(4, 0));
 		top.setOpaque(false);
-		String route = run.getSource().getLabel() + " &rarr; " + run.getDest().getLabel()
-			+ (run.getFlips().size() > 1 ? " &middot; " + run.getFlips().size() + " items" : "");
+		Shop at = run.getShop();
+		String route = run.getSource().getLabel() + " to " + run.getDest().getLabel()
+			+ (at != null && at.getLocation() != null && !at.getLocation().isEmpty() ? " &middot; " + at.getLocation() : "");
 		top.add(wrapped(capitalise(run.getName()) + "<br><font color='#FF9800'>" + route + "</font>", NAME_WIDTH, Color.WHITE),
 			BorderLayout.CENTER);
 		JPanel east = new JPanel();
@@ -569,125 +659,163 @@ public class AssetManagerPanel extends PluginPanel
 			l.setAlignmentX(Component.RIGHT_ALIGNMENT);
 			east.add(l);
 		}
+		top.add(east, BorderLayout.EAST);
+		top.setAlignmentX(Component.LEFT_ALIGNMENT);
+		row.add(top);
+
+		row.add(Box.createVerticalStrut(4));
+		JPanel slots = itemSlots(run);
+		slots.setAlignmentX(Component.LEFT_ALIGNMENT);
+		row.add(slots);
+		row.add(Box.createVerticalStrut(4));
+
+		JLabel stats = wrapped(runStats(run), DETAIL_WIDTH, MUTED);
+		stats.setAlignmentX(Component.LEFT_ALIGNMENT);
+		row.add(stats);
+		Set<String> unchecked = new LinkedHashSet<>();
+		run.getFlips().forEach(f -> unchecked.addAll(f.getUnchecked()));
+		if (!unchecked.isEmpty())
+		{
+			JLabel needs = wrapped("Also needs: " + String.join("; ", unchecked), DETAIL_WIDTH, WARN);
+			needs.setAlignmentX(Component.LEFT_ALIGNMENT);
+			row.add(needs);
+		}
+
 		Shop shop = run.getShop();
 		if (shop != null)
 		{
-			boolean finding = shop.getName().equals(findingShop);
-			JButton find = smallButton(finding ? "Stop" : "Find",
-				finding ? "Stop pointing the way to this shop" : "Centre the world map on this shop and point the hint arrow at it");
-			find.setAlignmentX(Component.RIGHT_ALIGNMENT);
-			find.addActionListener(e -> onFindShop.accept(shop));
-			east.add(Box.createVerticalStrut(2));
-			east.add(find);
+			JButton map = mapButton(shop.getName().equals(findingShop), () -> onFindShop.accept(shop));
+			JPanel buttons = new JPanel(new BorderLayout());
+			buttons.setOpaque(false);
+			buttons.setBorder(new EmptyBorder(4, 0, 0, 0));
+			buttons.add(map, BorderLayout.EAST);
+			buttons.setAlignmentX(Component.LEFT_ALIGNMENT);
+			row.add(buttons);
 		}
-		top.add(east, BorderLayout.EAST);
-		row.add(top, BorderLayout.CENTER);
-		row.add(wrapped(runDetail(run), DETAIL_WIDTH, MUTED), BorderLayout.SOUTH);
 		addRow(row);
 	}
 
-	private static String runDetail(FlipRun run)
+	/** The go's items as inventory slots, with how many on each; hover one for what it costs and fetches. */
+	private JPanel itemSlots(FlipRun run)
 	{
-		StringBuilder d = new StringBuilder();
-		Shop shop = run.getShop();
-		String others = run.getEqualShops() > 0 ? " (or any of " + run.getEqualShops() + " others the same)" : "";
-		String hop = run.getWorlds() > 1 ? ", a few on each of " + run.getWorlds() + " worlds" : "";
-		if (run.getSource() == Flip.Source.SHOP)
+		JPanel grid = new JPanel(new GridLayout(0, SLOTS_ACROSS, 2, 2));
+		grid.setOpaque(false);
+		for (Flip f : run.getFlips())
 		{
-			d.append("Buy at ").append(where(shop)).append(others).append(hop).append(':');
+			JLabel slot = new StackLabel(f.getQuantity());
+			slot.setHorizontalAlignment(JLabel.CENTER);
+			slot.setOpaque(true);
+			slot.setBackground(SLOT);
+			slot.setPreferredSize(new Dimension(SLOT_WIDTH, SLOT_HEIGHT));
+			slot.setToolTipText(itemTip(f));
+			// One icon per item, whatever the quantity, so the game isn't asked to draw a new one each time it changes
+			itemIcons.addTo(slot, f.getItemId());
+			grid.add(slot);
 		}
-		else if (run.getDest() == Flip.Dest.SHOP)
+		// Keeps the slots their size when there are fewer than a row
+		for (int n = run.getFlips().size(); n < SLOTS_ACROSS; n++)
 		{
-			d.append("Buy on the GE, then sell to ").append(where(shop)).append(others).append(hop);
+			grid.add(Box.createRigidArea(new Dimension(SLOT_WIDTH, SLOT_HEIGHT)));
+		}
+		JPanel wrap = new JPanel(new BorderLayout());
+		wrap.setOpaque(false);
+		wrap.add(grid, BorderLayout.WEST);
+		return wrap;
+	}
+
+	private static String itemTip(Flip f)
+	{
+		StringBuilder t = new StringBuilder("<html><b>").append(QuantityFormatter.formatNumber(f.getQuantity())).append(" x ")
+			.append(f.getItem()).append("</b><br>Buy for ").append(gp(f.getFirstCost())).append(f.isPriceRises() ? ", rising" : "")
+			.append("<br>").append(sellVerb(f.getDest())).append(' ').append(gp(f.getFirstValue()))
+			.append(f.getSellOffer() != null && f.getSellOffer().getWorlds() > 1 ? ", falling" : "")
+			.append("<br>Profit +").append(gp(f.getProfit()))
+			.append("<br>Stopped by ").append(f.getLimit().getDescription());
+		if (f.getGeTrades() != Long.MAX_VALUE)
+		{
+			t.append(" (").append(QuantityFormatter.formatNumber(f.getGeTrades())).append(" trade on the GE in that time)");
+		}
+		Shop.Item item = f.getBuyShop() == null ? null : f.getBuyShop().getItems().get(f.getItem());
+		int[] bundle = item == null ? null : item.getB();
+		if (bundle != null && bundle.length == 2)
+		{
+			t.append("<br>Offer ").append(gp(bundle[1])).append(" for ").append(bundle[0]).append(" to get that price");
+		}
+		return t.append("</html>").toString();
+	}
+
+	private static String sellVerb(Flip.Dest dest)
+	{
+		switch (dest)
+		{
+			case COFFER:
+				return "Coffer adds";
+			case ALCH:
+				return "Alchs for";
+			case GE:
+				return "Sells on the GE for";
+			default:
+				return "Shop pays";
+		}
+	}
+
+	/** One line about the shop and the go: its rates, what to wear, hops and time. */
+	private static String runStats(FlipRun run)
+	{
+		List<String> parts = new ArrayList<>();
+		Shop shop = run.getShop();
+		boolean talk = shop != null && shop.getTalk() != null;
+		if (run.getDest() == Flip.Dest.SHOP && shop != null)
+		{
 			ShopOffer o = run.getFlips().get(0).getSellOffer();
+			if (talk || o.isFixedPrice())
+			{
+				parts.add(talk ? "Unnoted only, 28 a trip" : "Fixed price");
+			}
+			else
+			{
+				parts.add("Pays " + tenths(o.getRate()) + (shop.getDelta() > 0 ? ", " + tenths(shop.getDelta()) + " less each" : ""));
+			}
 			if (o.isUsesKaramjaGloves())
 			{
-				d.append(", wearing Karamja gloves");
+				parts.add("wear Karamja gloves");
 			}
 			if (o.isUsesCharos())
 			{
-				d.append(", wearing your Ring of Charos (a)");
+				parts.add("wear Ring of Charos (a)");
 			}
-			d.append(':');
 		}
-		else
+		else if (run.getSource() == Flip.Source.SHOP && shop != null)
 		{
-			d.append("Buy on the GE:");
-		}
-		Set<String> unchecked = new LinkedHashSet<>();
-		for (Flip f : run.getFlips())
-		{
-			d.append("<br>&middot; ").append(QuantityFormatter.formatNumber(f.getQuantity())).append(' ').append(f.getItem())
-				.append(": ").append(gp(f.getFirstCost())).append(f.isPriceRises() ? " up" : "").append(" &rarr; ")
-				.append(gp(f.getFirstValue())).append(f.getSellOffer() != null && f.getSellOffer().getWorlds() > 1 ? " down" : "")
-				.append(" each, +").append(gp(f.getProfit())).append(" (").append(f.getLimit().getDescription());
-			if (f.getGeTrades() != Long.MAX_VALUE)
-			{
-				d.append("; ").append(QuantityFormatter.formatNumber(f.getGeTrades())).append(" trade in that time");
-			}
-			d.append(')');
-			Shop.Item item = f.getBuyShop() == null ? null : f.getBuyShop().getItems().get(f.getItem());
-			int[] bundle = item == null ? null : item.getB();
-			if (bundle != null && bundle.length == 2)
-			{
-				d.append(". Offer ").append(gp(bundle[1])).append(" for ").append(bundle[0]).append(" to get that price");
-			}
-			unchecked.addAll(f.getUnchecked());
-		}
-		d.append("<br>");
-		switch (run.getDest())
-		{
-			case GE:
-				d.append("Then sell them on the GE (prices after tax).");
-				break;
-			case COFFER:
-				d.append("Then put them in Death's coffer.");
-				break;
-			case ALCH:
-				d.append("Then alch them (after the nature rune).");
-				break;
-			case SHOP:
-				d.append(shop.getTalk() != null ? shop.getTalk() + " only takes unnoted ones, so it's an inventory a trip."
-					: "The shop takes noted ones.");
-				break;
-		}
-		if (run.getSource() == Flip.Source.SHOP && shop.getTalk() != null)
-		{
-			d.append(" Bought by talking to ").append(shop.getTalk()).append(", sometimes one at a time.");
-		}
-		List<String> parts = new ArrayList<>();
-		if (shop != null || run.getDest() == Flip.Dest.COFFER)
-		{
-			parts.add("a trip");
+			ShopRates r = ShopRates.of(shop, false);
+			parts.add(talk ? "Bought by talking" : "Sells at " + tenths(r.getSell())
+				+ (r.getDelta() > 0 ? ", " + tenths(r.getDelta()) + " more each" : ""));
 		}
 		if (run.getWorlds() > 1)
 		{
-			parts.add(run.getWorlds() - 1 + " hops");
+			parts.add(run.getWorlds() + " worlds");
 		}
-		if (shop != null && shop.getTalk() != null && run.getSource() == Flip.Source.SHOP)
+		parts.add("~" + FlipTime.describe(run.getSeconds()));
+		if (run.getEqualShops() > 0)
 		{
-			parts.add("talking");
+			parts.add("or " + run.getEqualShops() + " shops like it");
 		}
-		if (run.getDest() == Flip.Dest.ALCH)
-		{
-			parts.add("alching");
-		}
-		if (run.getSource() == Flip.Source.GE || run.getDest() == Flip.Dest.GE)
-		{
-			parts.add("the GE's wait");
-		}
-		d.append(" About ").append(FlipTime.describe(run.getSeconds())).append(" a go (").append(String.join(", ", parts))
-			.append(").");
-		if (!unchecked.isEmpty())
-		{
-			d.append(" <font color='#FF9800'>Also needs: ").append(String.join("; ", unchecked)).append(".</font>");
-		}
-		return d.toString();
+		return String.join(" &middot; ", parts);
 	}
 
-	private static String where(Shop shop)
+	/** Tenths of a percent as a percentage: 25 -> "2.5%". */
+	private static String tenths(int t)
 	{
-		return shop.getName() + (shop.getLocation() == null || shop.getLocation().isEmpty() ? "" : " (" + shop.getLocation() + ")");
+		return t % 10 == 0 ? (t / 10) + "%" : (t / 10) + "." + Math.abs(t % 10) + "%";
+	}
+
+	/** Shows a shop on the world map and points the hint arrow at it; again to stop. */
+	private static JButton mapButton(boolean showing, Runnable onClick)
+	{
+		JButton b = smallButton(showing ? "Stop" : "Show on map", showing ? "Stop pointing the way to this shop"
+			: "Mark this shop on your world map (it's centred there when you open the map) and point the hint arrow at it");
+		b.addActionListener(e -> onClick.run());
+		return b;
 	}
 
 	/** 23.4 -> "23%", 0.42 -> "0.4%", 1234 -> "1,234%" */
@@ -711,7 +839,7 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		boolean empty = d.getCount() == 0;
 		JPanel row = new JPanel(new BorderLayout(4, 0));
-		row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		row.setBackground(ROW);
 		row.setBorder(new EmptyBorder(4, 6, 4, 6));
 
 		JPanel top = new JPanel(new BorderLayout(4, 0));
@@ -728,17 +856,6 @@ public class AssetManagerPanel extends PluginPanel
 			east.setLayout(new BoxLayout(east, BoxLayout.Y_AXIS));
 			east.setOpaque(false);
 			east.add(value);
-			if (d.getKind() == Destination.Kind.SHOP && d.getShop() != null)
-			{
-				boolean finding = d.getName().equals(findingShop);
-				JButton find = smallButton(finding ? "Stop" : "Find",
-					finding ? "Stop pointing the way to this shop"
-						: "Centre the world map on this shop and point the hint arrow at it");
-				find.setAlignmentX(Component.RIGHT_ALIGNMENT);
-				find.addActionListener(e -> onFind.accept(d));
-				east.add(Box.createVerticalStrut(2));
-				east.add(find);
-			}
 			if (d.getKind() == Destination.Kind.GE)
 			{
 				JButton order = geOrderButton(state);
@@ -749,7 +866,24 @@ public class AssetManagerPanel extends PluginPanel
 			top.add(east, BorderLayout.EAST);
 		}
 		row.add(top, BorderLayout.CENTER);
-		row.add(wrapped(empty ? emptyText(d) : detail(d, state), DETAIL_WIDTH, MUTED), BorderLayout.SOUTH);
+		JLabel detail = wrapped(empty ? emptyText(d) : detail(d, state), DETAIL_WIDTH, MUTED);
+		if (!empty && d.getKind() == Destination.Kind.SHOP && d.getShop() != null)
+		{
+			// Under the details, so the shop's name keeps the row's width
+			JPanel south = new JPanel(new BorderLayout());
+			south.setOpaque(false);
+			south.add(detail, BorderLayout.CENTER);
+			JPanel buttons = new JPanel(new BorderLayout());
+			buttons.setOpaque(false);
+			buttons.setBorder(new EmptyBorder(4, 0, 0, 0));
+			buttons.add(mapButton(d.getName().equals(findingShop), () -> onFind.accept(d)), BorderLayout.EAST);
+			south.add(buttons, BorderLayout.SOUTH);
+			row.add(south, BorderLayout.SOUTH);
+		}
+		else
+		{
+			row.add(detail, BorderLayout.SOUTH);
+		}
 
 		if (!empty)
 		{
@@ -767,13 +901,13 @@ public class AssetManagerPanel extends PluginPanel
 				@Override
 				public void mouseEntered(MouseEvent e)
 				{
-					row.setBackground(ColorScheme.DARKER_GRAY_HOVER_COLOR);
+					row.setBackground(ROW_HOVER);
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e)
 				{
-					row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+					row.setBackground(ROW);
 				}
 			});
 		}
@@ -792,6 +926,22 @@ public class AssetManagerPanel extends PluginPanel
 		box.setToolTipText("Never suggest selling to shops in the Wilderness, like Bandit Duty Free, where other players can"
 			+ " attack you. Ferox Enclave is a safe zone and still counts. Also in the plugin's settings.");
 		box.addActionListener(e -> onAvoidWilderness.accept(box.isSelected()));
+		return box;
+	}
+
+	/** Whether a go selling several items to a shop hops only as many worlds as its most profitable item takes. */
+	private JCheckBox evenHopsToggle(boolean even)
+	{
+		JCheckBox box = new JCheckBox("Even hops", even);
+		box.setFont(FontManager.getRunescapeSmallFont());
+		box.setForeground(Color.LIGHT_GRAY);
+		box.setOpaque(false);
+		box.setFocusPainted(false);
+		box.setBorder(new EmptyBorder(1, 0, 1, 0));
+		box.setToolTipText("<html>On: hop no more worlds than the most profitable item takes to sell, so you're never hopping"
+			+ "<br>just to sell one smaller item. Off: buy as many of each as any number of hops would sell"
+			+ "<br>(up to Shop: max worlds to hop in the settings), for more profit but longer goes.</html>");
+		box.addActionListener(e -> onEvenHops.accept(box.isSelected()));
 		return box;
 	}
 
@@ -893,55 +1043,21 @@ public class AssetManagerPanel extends PluginPanel
 		}
 	}
 
-	private void addKeptSection(PanelState state)
+	/**
+	 * What's kept, as a row to click to see it in the bank. Keep rules are changed in the bank (right-click, Keep), so
+	 * there's no list here: with hundreds of rules it was slow to build.
+	 */
+	private void addKeptCard(PanelState state)
 	{
-		if (!header(SECTION_KEPT))
+		card(SECTION_KEPT, () ->
 		{
-			return;
-		}
-		if (state.getKeptItems().isEmpty())
-		{
-			addRow(text("Right-click an item in your bank and choose Keep to set how many to leave alone.", MUTED));
-			return;
-		}
-		for (PanelState.KeptItem k : state.getKeptItems())
-		{
-			String what = k.getKeep() == KeepRules.KEEP_ALL ? "keep all" : "keep " + QuantityFormatter.formatNumber(k.getKeep());
-			String have = k.getOwned() < 0 ? null : "you have " + QuantityFormatter.formatNumber(k.getOwned());
-			JPanel row = new JPanel(new BorderLayout(4, 0));
-			row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-			row.setBorder(new EmptyBorder(3, 6, 3, 6));
-			JPanel top = new JPanel(new BorderLayout(4, 0));
-			top.setOpaque(false);
-			top.add(wrapped(k.getName(), NAME_WIDTH, Color.WHITE), BorderLayout.CENTER);
-			JLabel v = new JLabel(what);
-			v.setFont(FontManager.getRunescapeSmallFont());
-			v.setForeground(Color.LIGHT_GRAY);
-			v.setVerticalAlignment(JLabel.TOP);
-			top.add(v, BorderLayout.EAST);
-			row.add(top, BorderLayout.CENTER);
-
-			JButton edit = smallButton("Edit", "Change how many to keep");
-			edit.addActionListener(e -> promptKeep(k));
-			JButton remove = smallButton("×", "Stop keeping this item");
-			remove.addActionListener(e -> onKeepChange.accept(k.getItemId(), 0));
-			JPanel bottom = new JPanel();
-			bottom.setLayout(new BoxLayout(bottom, BoxLayout.X_AXIS));
-			bottom.setOpaque(false);
-			if (have != null)
-			{
-				JLabel h = new JLabel(have);
-				h.setFont(FontManager.getRunescapeSmallFont());
-				h.setForeground(MUTED);
-				bottom.add(h);
-			}
-			bottom.add(Box.createHorizontalGlue());
-			bottom.add(edit);
-			bottom.add(Box.createHorizontalStrut(4));
-			bottom.add(remove);
-			row.add(bottom, BorderLayout.SOUTH);
-			addRow(row);
-		}
+			Destinations dests = state.getDestinations();
+			// A row like every other view's: click it to see the items in the bank
+			destinationRow(dests == null ? null : dests.get(Destination.Kind.KEPT), state);
+			addRow(text(state.getKeepRuleCount() == 0
+				? "Right-click an item in your bank and choose Keep to set how many to leave alone."
+				: "To change one, right-click it in your bank and choose Keep.", MUTED));
+		});
 	}
 
 	private static String targetBasis(PanelState state)
@@ -960,58 +1076,32 @@ public class AssetManagerPanel extends PluginPanel
 
 	// --- Dialogs ---
 
-	private void promptKeep(PanelState.KeptItem k)
-	{
-		String current = k.getKeep() == KeepRules.KEEP_ALL ? "all" : String.valueOf(k.getKeep());
-		Object input = JOptionPane.showInputDialog(this, "How many " + k.getName() + " should Asset Manager leave alone?\n(a number like 5 or 10k, \"all\", or 0 to stop keeping it)",
-			"Keep " + k.getName(), JOptionPane.PLAIN_MESSAGE, null, null, current);
-		if (input == null)
-		{
-			return;
-		}
-		Integer keep = KeepRules.parseInput(input.toString());
-		if (keep == null)
-		{
-			JOptionPane.showMessageDialog(this, "Enter a number (like 5 or 10k) or \"all\".", "Keep " + k.getName(), JOptionPane.ERROR_MESSAGE);
-			return;
-		}
-		onKeepChange.accept(k.getItemId(), keep);
-	}
-
-	private void promptBalance()
-	{
-		String input = JOptionPane.showInputDialog(this, "Death's coffer balance (e.g. 2500000 or 2.5m):", "Set coffer balance", JOptionPane.PLAIN_MESSAGE);
-		if (input == null || input.trim().isEmpty())
-		{
-			return;
-		}
-		try
-		{
-			onManualBalance.accept(QuantityFormatter.parseQuantity(input.trim()));
-		}
-		catch (ParseException e)
-		{
-			JOptionPane.showMessageDialog(this, "That isn't a number.", "Set coffer balance", JOptionPane.ERROR_MESSAGE);
-		}
-	}
-
 	// --- Building blocks ---
 
 	/**
-	 * Adds a section header that collapses the section when clicked.
-	 *
-	 * @return whether the section is expanded and its contents should be added
+	 * Adds a section as a card: a title bar that collapses it when clicked, and, while it's open, whatever {@code body}
+	 * adds.
 	 */
-	private boolean header(String name)
+	private void card(String name, Runnable body)
 	{
 		boolean open = !collapsed.contains(name);
-		JLabel l = new JLabel((open ? "▾ " : "▸ ") + name);
-		l.setFont(FontManager.getRunescapeBoldFont());
-		l.setForeground(ColorScheme.BRAND_ORANGE);
-		l.setBorder(BorderFactory.createEmptyBorder(10, 0, 3, 0));
-		l.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		l.setToolTipText(open ? "Click to collapse" : "Click to expand");
-		l.addMouseListener(new MouseAdapter()
+		JPanel card = new JPanel();
+		card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+		card.setBackground(CARD);
+		card.setBorder(BorderFactory.createMatteBorder(0, 2, 0, 0, open ? ColorScheme.BRAND_ORANGE : LINE));
+
+		// Drawn rather than typed: the RuneScape font has no arrow characters, which some systems show as a stray glyph
+		JLabel title = new JLabel(name, new Triangle(open, ColorScheme.BRAND_ORANGE), JLabel.LEADING);
+		title.setIconTextGap(5);
+		title.setFont(FontManager.getRunescapeBoldFont());
+		title.setForeground(ColorScheme.BRAND_ORANGE);
+		JPanel bar = new JPanel(new BorderLayout());
+		bar.setBackground(CARD_HEADER);
+		bar.setBorder(new EmptyBorder(5, 6, 5, 6));
+		bar.add(title, BorderLayout.CENTER);
+		bar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		bar.setToolTipText(open ? "Click to collapse" : "Click to expand");
+		bar.addMouseListener(new MouseAdapter()
 		{
 			@Override
 			public void mouseClicked(MouseEvent e)
@@ -1023,8 +1113,53 @@ public class AssetManagerPanel extends PluginPanel
 				update(lastState, warnDeaths);
 			}
 		});
+		bar.setAlignmentX(Component.LEFT_ALIGNMENT);
+		card.add(bar);
+
+		if (open)
+		{
+			JPanel inner = new JPanel();
+			inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
+			inner.setOpaque(false);
+			inner.setBorder(new EmptyBorder(6, 6, 8, 6));
+			inner.setAlignmentX(Component.LEFT_ALIGNMENT);
+			card.add(inner);
+			JPanel outer = target;
+			target = inner;
+			try
+			{
+				body.run();
+			}
+			finally
+			{
+				target = outer;
+			}
+		}
+		addRow(card);
+		addGap(8);
+	}
+
+	/** A thin line between parts of a card. */
+	private void divider()
+	{
+		addGap(8);
+		JPanel line = new JPanel();
+		line.setBackground(LINE);
+		line.setPreferredSize(new Dimension(0, 1));
+		line.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+		line.setAlignmentX(Component.LEFT_ALIGNMENT);
+		target.add(line);
+		addGap(6);
+	}
+
+	/** A heading for a part of a card. */
+	private void minorHeading(String name)
+	{
+		JLabel l = new JLabel(name);
+		l.setFont(FontManager.getRunescapeBoldFont());
+		l.setForeground(Color.WHITE);
+		l.setBorder(BorderFactory.createEmptyBorder(0, 0, 3, 0));
 		addRow(l);
-		return open;
 	}
 
 	/** A small label grouping rows within a section. */
@@ -1087,13 +1222,13 @@ public class AssetManagerPanel extends PluginPanel
 	private void addRow(JComponent c)
 	{
 		c.setAlignmentX(Component.LEFT_ALIGNMENT);
-		content.add(c);
-		if (c instanceof JPanel && ((JPanel) c).isOpaque())
+		target.add(c);
+		// Space between rows; cards are followed by their own gap
+		if (c instanceof JPanel && c.isOpaque() && c.getBackground() != CARD)
 		{
-			// Space between rows
-			JComponent gap = (JComponent) Box.createVerticalStrut(2);
+			JComponent gap = (JComponent) Box.createVerticalStrut(target == content ? 2 : 3);
 			gap.setAlignmentX(Component.LEFT_ALIGNMENT);
-			content.add(gap);
+			target.add(gap);
 		}
 	}
 
@@ -1165,6 +1300,106 @@ public class AssetManagerPanel extends PluginPanel
 		public boolean getScrollableTracksViewportHeight()
 		{
 			return false;
+		}
+	}
+
+	/** Puts an item's icon (no stack size) on a label. */
+	public interface ItemIcons
+	{
+		void addTo(JLabel label, int itemId);
+	}
+
+	/** An item icon with its stack size in the top-left corner, coloured as the game does. */
+	private static class StackLabel extends JLabel
+	{
+		private final int quantity;
+
+		StackLabel(int quantity)
+		{
+			this.quantity = quantity;
+		}
+
+		@Override
+		protected void paintComponent(Graphics g)
+		{
+			super.paintComponent(g);
+			if (quantity <= 1)
+			{
+				return;
+			}
+			// As the game writes stacks: whole numbers up to 99,999, then thousands, then millions
+			String text = quantity < 100_000 ? String.valueOf(quantity) : quantity < 10_000_000 ? quantity / 1_000 + "K"
+				: quantity / 1_000_000 + "M";
+			g.setFont(FontManager.getRunescapeSmallFont());
+			int y = g.getFontMetrics().getAscent();
+			g.setColor(Color.BLACK);
+			g.drawString(text, 2, y + 1);
+			g.setColor(quantity >= 10_000_000 ? new Color(0x00FF80) : quantity >= 100_000 ? Color.WHITE : Color.YELLOW);
+			g.drawString(text, 1, y);
+		}
+	}
+
+	/** A bar filled to how far the coffer is to its target. */
+	private static class Meter extends JComponent
+	{
+		private static final int HEIGHT = 6;
+		private final double fraction;
+		private final Color color;
+
+		Meter(double fraction, Color color)
+		{
+			this.fraction = Math.max(0, Math.min(1, fraction));
+			this.color = color;
+			setPreferredSize(new Dimension(0, HEIGHT));
+			setMaximumSize(new Dimension(Integer.MAX_VALUE, HEIGHT));
+		}
+
+		@Override
+		protected void paintComponent(Graphics g)
+		{
+			g.setColor(LINE);
+			g.fillRect(0, 0, getWidth(), HEIGHT);
+			g.setColor(color);
+			g.fillRect(0, 0, (int) Math.round(getWidth() * fraction), HEIGHT);
+		}
+	}
+
+	/** A small triangle pointing down when a section is open, right when it's collapsed. */
+	private static class Triangle implements Icon
+	{
+		private static final int SIZE = 8;
+		private final boolean down;
+		private final Color color;
+
+		Triangle(boolean down, Color color)
+		{
+			this.down = down;
+			this.color = color;
+		}
+
+		@Override
+		public void paintIcon(Component c, Graphics g, int x, int y)
+		{
+			Graphics2D g2 = (Graphics2D) g.create();
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2.setColor(color);
+			Polygon p = down
+				? new Polygon(new int[]{x, x + SIZE, x + SIZE / 2}, new int[]{y + 2, y + 2, y + SIZE - 1}, 3)
+				: new Polygon(new int[]{x + 2, x + SIZE - 1, x + 2}, new int[]{y, y + SIZE / 2, y + SIZE}, 3);
+			g2.fill(p);
+			g2.dispose();
+		}
+
+		@Override
+		public int getIconWidth()
+		{
+			return SIZE;
+		}
+
+		@Override
+		public int getIconHeight()
+		{
+			return SIZE;
 		}
 	}
 }

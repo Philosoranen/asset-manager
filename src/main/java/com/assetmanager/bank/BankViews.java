@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -51,6 +53,8 @@ public class BankViews
 	private String pending;
 	private String open;
 	private List<Integer> openLayout;
+	/** Each view's items as a set, made when first asked for and dropped when the destinations change. */
+	private final Map<String, Set<Integer>> idSets = new ConcurrentHashMap<>();
 
 	@Inject
 	BankViews(Client client, TagManager tagManager, BankTagsService bankTags, ConfigManager configManager, ItemManager itemManager)
@@ -140,6 +144,7 @@ public class BankViews
 	public void update(Destinations destinations)
 	{
 		this.destinations = destinations;
+		idSets.clear();
 		// Refresh the open view when its contents change, e.g. after withdrawing everything in a section
 		if (open != null && tags.get(open).equals(bankTags.getActiveTag()) && !layout(open).equals(openLayout))
 		{
@@ -194,10 +199,20 @@ public class BankViews
 		return null;
 	}
 
+	/**
+	 * Bank Tags asks this for every item in the bank whenever it lays the bank out, so it's a set lookup: searching a
+	 * view's list of hundreds of kept items for each bank item was slow.
+	 */
 	private boolean contains(String key, int itemId)
 	{
-		Destination d = find(key);
-		return d != null && d.getItemIds().contains(itemId);
+		Set<Integer> ids = idSets.get(key);
+		if (ids == null)
+		{
+			Destination d = find(key);
+			ids = d == null ? Collections.emptySet() : new HashSet<>(d.getItemIds());
+			idSets.put(key, ids);
+		}
+		return ids.contains(itemId);
 	}
 
 	/** The Everything view is split into destinations; the rest are one list. */

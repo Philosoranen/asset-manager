@@ -269,7 +269,7 @@ public class ShopFlipper
 			p.getChildren().add(line("Buy", QuantityFormatter.formatNumber(f.getQuantity()), NORMAL));
 			String each = f.getFirstPrice() == f.getLastPrice()
 				? QuantityFormatter.formatNumber(f.getFirstPrice())
-				: QuantityFormatter.formatNumber(f.getFirstPrice()) + " – " + QuantityFormatter.formatNumber(f.getLastPrice());
+				: QuantityFormatter.formatNumber(f.getFirstPrice()) + " to " + QuantityFormatter.formatNumber(f.getLastPrice());
 			p.getChildren().add(line("Shop price each", each, NORMAL));
 			p.getChildren().add(line(coffer ? "Coffer adds each" : "GE sells for each", QuantityFormatter.formatNumber(f.getGeUnit()),
 				NORMAL));

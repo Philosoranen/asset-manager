@@ -7,6 +7,9 @@ import com.assetmanager.dest.Destination;
 import com.assetmanager.keep.Holdings;
 import com.assetmanager.keep.KeepRules;
 import java.awt.Color;
+import java.awt.Stroke;
+import java.awt.RenderingHints;
+import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
@@ -32,6 +35,8 @@ import net.runelite.client.util.ImageUtil;
 public class SuggestionOverlay extends WidgetItemOverlay
 {
 	private static final int ICON_SIZE = 12;
+	/** How far down the item the icon goes: below the stack size's line of text. */
+	public static final int ICON_TOP = 10;
 	private static final Color KEEP_COLOR = new Color(0xFF9800);
 
 	private final ItemManager itemManager;
@@ -89,21 +94,52 @@ public class SuggestionOverlay extends WidgetItemOverlay
 			: icon(iconKind(suggestions, id, place == Holdings.Place.BANK ? bankViews.showingKind() : null));
 		if (icon != null)
 		{
-			// Top-right corner, clear of the quantity text in the top-left.
-			g.drawImage(icon, b.x + b.width - ICON_SIZE, b.y, null);
+			// Right edge, below the quantity text (which can run the whole width) and above any label at the bottom
+			g.drawImage(icon, b.x + b.width - ICON_SIZE, b.y + ICON_TOP, null);
 		}
 
-		int keep = rules.get(id);
-		if (keep != 0 && widgetItem.getWidget().getId() == InterfaceID.Bankmain.ITEMS && bankViews.isShowing())
+		// A small padlock rather than "keep N", which ran into the next item; hovering shows how many are kept. In the Kept
+		// view every item is kept, so there it's left off.
+		if (rules.has(id) && widgetItem.getWidget().getId() == InterfaceID.Bankmain.ITEMS && bankViews.isShowing()
+			&& bankViews.showingKind() != Destination.Kind.KEPT)
 		{
-			String text = keep == KeepRules.KEEP_ALL ? "keep all" : "keep " + keep;
-			g.setFont(FontManager.getRunescapeSmallFont());
-			int y = b.y + b.height;
-			g.setColor(Color.BLACK);
-			g.drawString(text, b.x + 1, y + 1);
-			g.setColor(KEEP_COLOR);
-			g.drawString(text, b.x, y);
+			g.drawImage(LOCK, b.x, b.y + b.height - LOCK.getHeight(), null);
 		}
+	}
+
+	private static final int LOCK_WIDTH = 7;
+	private static final int LOCK_HEIGHT = 9;
+	/** Drawn once: this runs for every item on every frame. */
+	private static final BufferedImage LOCK = lockImage();
+
+	private static BufferedImage lockImage()
+	{
+		BufferedImage img = new BufferedImage(LOCK_WIDTH + 2, LOCK_HEIGHT + 2, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = img.createGraphics();
+		drawLock(g, 1, 1);
+		g.dispose();
+		return img;
+	}
+
+	/** A padlock {@code LOCK_WIDTH} by {@code LOCK_HEIGHT}, outlined so it shows on any item. */
+	static void drawLock(Graphics2D g, int x, int y)
+	{
+		Object aa = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+		Stroke stroke = g.getStroke();
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		// Shackle, then body, each with a dark outline
+		g.setStroke(new BasicStroke(3f));
+		g.setColor(Color.BLACK);
+		g.drawArc(x + 1, y, LOCK_WIDTH - 2, 7, 0, 180);
+		g.setStroke(new BasicStroke(1.4f));
+		g.setColor(KEEP_COLOR);
+		g.drawArc(x + 1, y, LOCK_WIDTH - 2, 7, 0, 180);
+		g.setStroke(stroke);
+		g.setColor(Color.BLACK);
+		g.fillRect(x - 1, y + 3, LOCK_WIDTH + 2, LOCK_HEIGHT - 2);
+		g.setColor(KEEP_COLOR);
+		g.fillRect(x, y + 4, LOCK_WIDTH, LOCK_HEIGHT - 4);
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, aa);
 	}
 
 	/** Which icon an item gets: its suggestion, or in a bank view for one destination, only that one. */

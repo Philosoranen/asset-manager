@@ -164,6 +164,30 @@ public class FlipsTest
 	}
 
 	@Test
+	public void evenHopsStopWhenTheMainItemIsSold()
+	{
+		// The bar makes the most but only 9 trade, a world's worth; the widget alone would take all 10 worlds
+		Shop dropper = buyer("Dropper", 500, 10, "widget");
+		Shop.Item bar = new Shop.Item();
+		bar.setS(0);
+		dropper.setItems(Map.of("widget", dropper.getItems().get("widget"), "bar", bar));
+		FakeMarket m = new FakeMarket().add(1, "widget", 410, 1_000, 0, 1_000).add(2, "bar", 4_000, 9, 0, 10_000);
+
+		FlipRun uneven = Flips.fromGe(m, Flip.Dest.SHOP, catalog(dropper), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE,
+			0, 8, false).get(0);
+		assertEquals(10, uneven.getWorlds());
+
+		FlipRun even = Flips.fromGe(m, Flip.Dest.SHOP, catalog(dropper), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE,
+			0, 8, true).get(0);
+		assertEquals("bar", even.getFlips().get(0).getItem());
+		int barWorlds = even.getFlips().get(0).getSellOffer().getWorlds();
+		assertEquals(barWorlds, even.getWorlds());
+		Flip widget = even.getFlips().get(1);
+		assertEquals(ShopFlip.Limit.EVEN_HOPS, widget.getLimit());
+		assertEquals(9 * barWorlds, widget.getQuantity());
+	}
+
+	@Test
 	public void shopsThePlayerCantUseAreSkipped()
 	{
 		Shop stall = buyer("Cannonball Stall", 500, 0, "rune cannonball");

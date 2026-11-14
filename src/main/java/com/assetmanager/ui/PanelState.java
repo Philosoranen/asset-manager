@@ -19,17 +19,6 @@ import lombok.Value;
 @Value
 public class PanelState
 {
-	@Value
-	public static class KeptItem
-	{
-		int itemId;
-		String name;
-		/** How many to keep, or KeepRules.KEEP_ALL. */
-		int keep;
-		/** How many the player has (worn, carried, banked and in the seed vault), or -1 if the bank hasn't been seen. */
-		int owned;
-	}
-
 	AccountMode accountMode;
 	long cofferBalance;
 	boolean cofferKnown;
@@ -46,7 +35,8 @@ public class PanelState
 	/** Most expensive death cost seen for the planned scenario in the last 14 days. */
 	long peakFee;
 	long minCofferTarget;
-	List<KeptItem> keptItems;
+	/** How many keep rules the player has. */
+	int keepRuleCount;
 	/** Karamja gloves, Ring of Charos and Wilderness choice used for shop suggestions. */
 	ShopPerks perks;
 	long bankCoins;
@@ -73,6 +63,8 @@ public class PanelState
 	GeOrder geOrder;
 	/** Whether GE trade volumes are loaded (live prices on), which ordering by quickest to sell needs. */
 	boolean geVolumes;
+	/** Whether selling to a shop hops no more worlds than the go's most profitable item takes. */
+	boolean evenHops;
 
 	/** Deaths the coffer covers at the selected scenario; -1 if unknown, Long.MAX_VALUE if free. */
 	public long getDeathsCovered()

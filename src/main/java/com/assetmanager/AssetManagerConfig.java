@@ -542,6 +542,18 @@ public interface AssetManagerConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "shopEvenHops",
+		name = "Even hops selling to shops",
+		description = "When a flip sells several items to a shop, hop no more worlds than its most profitable item takes,"
+			+ " so you're never hopping just to sell one smaller item; set on the side panel's Flipping tab",
+		hidden = true
+	)
+	default boolean shopEvenHops()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "geOrder",
 		name = "Order GE items",
 		description = "Order the Grand Exchange bank view most valuable first, or quickest to sell first (to free bank"

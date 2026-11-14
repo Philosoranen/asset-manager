@@ -1,5 +1,6 @@
 package com.assetmanager.flip;
 
+import com.assetmanager.ui.SuggestionOverlay;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -80,7 +81,8 @@ public class ShopFlipOverlay extends Overlay
 			Image img = buy.isCofferBest() ? cofferIcon : geIcon;
 			if (img != null)
 			{
-				g.drawImage(img, b.x + b.width - ICON_SIZE, b.y, null);
+				// Below the shop's stock count, like the icons on items elsewhere
+				g.drawImage(img, b.x + b.width - ICON_SIZE, b.y + SuggestionOverlay.ICON_TOP, null);
 			}
 			String count = "buy " + QuantityFormatter.quantityToStackSize(buy.best().getQuantity());
 			g.setFont(FontManager.getRunescapeSmallFont());

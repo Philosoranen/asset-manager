@@ -29,7 +29,9 @@ public class ShopFlip
 		/** Enough to fill Death's coffer to the target. */
 		COFFER("room in your coffer"),
 		/** As many different items as the player will flip through the GE at once. */
-		GE_SLOTS("items per GE flip");
+		GE_SLOTS("items per GE flip"),
+		/** Hopping more worlds would only be for this item: the go's main item is sold out by then. */
+		EVEN_HOPS("worlds the main item takes");
 
 		private final String description;
 

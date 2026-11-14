@@ -53,6 +53,7 @@ import com.google.gson.Gson;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.time.Duration;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -262,8 +263,7 @@ public class AssetManagerPlugin extends Plugin
 			return t;
 		});
 		panel = new AssetManagerPanel(
-			value -> clientThread.invokeLater(() -> cofferTracker.setBalance(value, "manual entry")),
-			(itemId, keep) -> clientThread.invokeLater(() -> setKeep(itemId, keep)),
+			() -> clientThread.invokeLater(this::promptBalance),
 			destination -> clientThread.invokeLater(() -> showInBank(destination)),
 			destination -> clientThread.invokeLater(() -> findShop(destination.getName(), destination.getShop())),
 			shop -> clientThread.invokeLater(() -> findShop(shop.getName(), shop)),
@@ -273,7 +273,9 @@ public class AssetManagerPlugin extends Plugin
 			config.flipSort(),
 			sort -> configManager.setConfiguration(AssetManagerConfig.GROUP, "flipSort", sort),
 			order -> configManager.setConfiguration(AssetManagerConfig.GROUP, "geOrder", order),
-			avoid -> configManager.setConfiguration(AssetManagerConfig.GROUP, "avoidWilderness", avoid));
+			avoid -> configManager.setConfiguration(AssetManagerConfig.GROUP, "avoidWilderness", avoid),
+			even -> configManager.setConfiguration(AssetManagerConfig.GROUP, "shopEvenHops", even),
+			(label, id) -> itemManager.getImage(id).addTo(label));
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
 			.tooltip("Asset Manager")
@@ -626,6 +628,26 @@ public class AssetManagerPlugin extends Plugin
 			.build();
 	}
 
+	/** Asks for the coffer balance in the chatbox, as the game asks for amounts. Client thread. */
+	private void promptBalance()
+	{
+		chatboxPanelManager.openTextInput("Your Death's coffer balance (like 2500000 or 2.5m):")
+			.onDone((Consumer<String>) input -> clientThread.invokeLater(() ->
+			{
+				try
+				{
+					long balance = QuantityFormatter.parseQuantity(input.trim());
+					cofferTracker.setBalance(balance, "manual entry");
+					chat("Asset Manager: coffer balance set to " + QuantityFormatter.formatNumber(balance) + " gp.");
+				}
+				catch (ParseException e)
+				{
+					chat("Asset Manager: \"" + input + "\" isn't a number (like 2500000 or 2.5m).");
+				}
+			}))
+			.build();
+	}
+
 	private void showInBank(Destination d)
 	{
 		if (!bankViews.show(d))
@@ -877,14 +899,6 @@ public class AssetManagerPlugin extends Plugin
 		Holdings holdings = in.holdings;
 		long now = System.currentTimeMillis();
 		ShopStock shopStock = shopStockTracker.get();
-		List<PanelState.KeptItem> kept = new ArrayList<>();
-		for (Map.Entry<Integer, Integer> rule : keepRules.asMap().entrySet())
-		{
-			String name = itemValuator.get(rule.getKey()).getName();
-			kept.add(new PanelState.KeptItem(rule.getKey(), keepRules.members(rule.getKey()).size() > 1 ? Variants.base(name) : name,
-				rule.getValue(), bankItems == null ? -1 : holdings.total(rule.getKey(), keepRules)));
-		}
-
 		suggestionOverlay.setSuggestions(destinations.getSuggestions());
 		if (bankItems != null)
 		{
@@ -909,10 +923,10 @@ public class AssetManagerPlugin extends Plugin
 		shopMapMarkers.update(config.shopMapMarkers() ? destinations.getShops() : Collections.emptyList(), in.location);
 
 		publish(new PanelState(mode, in.balance, cofferTracker.isKnown(), cofferTracker.getSource(), cofferTracker.getUpdatedAt(),
-			in.skulled, in.protectItem, in.estimate, plan, in.target, in.peakFee, config.minCofferTarget(), kept, perks,
+			in.skulled, in.protectItem, in.estimate, plan, in.target, in.peakFee, config.minCofferTarget(), keepRules.asMap().size(), perks,
 			bankCoins, config.targetDeaths(), bankItems == null ? null : destinations, restockedBy(shopStock, destinations, now),
 			shopStock.busy(now), flips, config.bestBuys(), geFlips, Flips.destination(mode, config.flipDest()), config.flipSort(), inventoryCoins(),
-			config.geOrder(), livePrices.hasVolumes()));
+			config.geOrder(), livePrices.hasVolumes(), config.shopEvenHops()));
 	}
 
 	private long inventoryCoins()
@@ -1039,6 +1053,7 @@ public class AssetManagerPlugin extends Plugin
 		FlipSort sort = config.flipSort();
 		int maxWorlds = config.shopMaxWorlds();
 		int geItems = config.geFlipItems();
+		boolean evenHops = config.shopEvenHops();
 		ShopCatalog catalog = shopCatalog;
 		planner.execute(() ->
 		{
@@ -1052,7 +1067,8 @@ public class AssetManagerPlugin extends Plugin
 			}
 			if (market != null)
 			{
-				all.addAll(Flips.fromGe(market, dest, catalog, have, perks, maxWorlds, coins, Flips.ALCHS_PER_HOUR, geItems));
+				all.addAll(Flips.fromGe(market, dest, catalog, have, perks, maxWorlds, coins, Flips.ALCHS_PER_HOUR, geItems,
+					evenHops));
 			}
 			List<FlipRun> best = Flips.rank(all, minGain, FLIPS_SHOWN, sort);
 			clientThread.invokeLater(() ->
@@ -1279,7 +1295,7 @@ public class AssetManagerPlugin extends Plugin
 		{
 			if (panel != null)
 			{
-				panel.update(state, warn);
+				panel.setState(state, warn);
 			}
 		});
 	}

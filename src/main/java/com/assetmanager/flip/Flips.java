@@ -114,9 +114,11 @@ public final class Flips
 	 * @param coins     coins to spend
 	 * @param alchCasts how many alchs to plan for
 	 * @param maxItems  the most different items to buy on the GE for one shop go (it has 8 offer slots)
+	 * @param evenHops  selling to a shop, hop no more worlds than its most profitable item takes, so no hops are just
+	 *                  for a smaller one
 	 */
 	public static List<FlipRun> fromGe(GeMarket m, Flip.Dest dest, ShopCatalog catalog, Unlocks unlocks, ShopPerks perks,
-		int maxWorlds, long coins, long alchCasts, int maxItems)
+		int maxWorlds, long coins, long alchCasts, int maxItems, boolean evenHops)
 	{
 		if (dest == Flip.Dest.GE)
 		{
@@ -200,13 +202,22 @@ public final class Flips
 		for (Shop shop : catalog.getShops())
 		{
 			List<Sale> list = sales.get(shop);
-			FlipRun run = list == null ? null : sellRun(shop, list, catalog, perks, coins, geHours, missing.get(shop), maxItems);
+			FlipRun run = list == null ? null : sellRun(shop, list, catalog, perks, coins, geHours, missing.get(shop), maxItems,
+				evenHops);
 			if (run != null)
 			{
 				out.add(run);
 			}
 		}
 		return mergeEqual(out, perks.getLocation());
+	}
+
+	/** {@link #fromGe(GeMarket, Flip.Dest, ShopCatalog, Unlocks, ShopPerks, int, long, long, int, boolean)}, each item
+	 * hopping as many worlds as it takes. */
+	public static List<FlipRun> fromGe(GeMarket m, Flip.Dest dest, ShopCatalog catalog, Unlocks unlocks, ShopPerks perks,
+		int maxWorlds, long coins, long alchCasts, int maxItems)
+	{
+		return fromGe(m, dest, catalog, unlocks, perks, maxWorlds, coins, alchCasts, maxItems, false);
 	}
 
 	/** An item bought on the GE to sell to a shop. */
@@ -266,10 +277,11 @@ public final class Flips
 
 	/**
 	 * A go selling to one shop: the {@code maxItems} items making the most that the coins reach, then the best returns
-	 * first while the coins last (and, for a trader taking only unnoted items, the inventory). Null if nothing's worth it.
+	 * first while the coins last (and, for a trader taking only unnoted items, the inventory). With {@code evenHops}, no
+	 * item is sold on more worlds than the most profitable one, so the go ends when that's sold. Null if nothing's worth it.
 	 */
 	private static FlipRun sellRun(Shop shop, List<Sale> sales, ShopCatalog catalog, ShopPerks perks, long coins, double geHours,
-		Unlocks.Missing missing, int maxItems)
+		Unlocks.Missing missing, int maxItems, boolean evenHops)
 	{
 		// The GE has only so many offer slots, so it's the items making the most
 		sales.sort(Comparator.comparingLong(Flips::saleProfit).reversed().thenComparing(Sale::getName));
@@ -285,8 +297,21 @@ public final class Flips
 				chosen.add(sale);
 			}
 		}
-		sales = chosen;
-		sales.sort(Comparator.comparingDouble(Flips::saleReturn).reversed().thenComparing(Sale::getName));
+		chosen.sort(Comparator.comparingDouble(Flips::saleReturn).reversed().thenComparing(Sale::getName));
+		FlipRun run = sellRun(shop, chosen, catalog, perks, coins, geHours, missing, Integer.MAX_VALUE);
+		if (!evenHops || run == null)
+		{
+			return run;
+		}
+		// Flips are most profitable first
+		int mainWorlds = run.getFlips().get(0).getSellOffer().getWorlds();
+		return run.getWorlds() > mainWorlds ? sellRun(shop, chosen, catalog, perks, coins, geHours, missing, mainWorlds) : run;
+	}
+
+	/** {@code sales}, best first, sold on no more than {@code maxWorlds} worlds each. */
+	private static FlipRun sellRun(Shop shop, List<Sale> sales, ShopCatalog catalog, ShopPerks perks, long coins, double geHours,
+		Unlocks.Missing missing, int maxWorlds)
+	{
 		boolean talk = shop.getTalk() != null;
 		long coinsLeft = coins;
 		long slotsLeft = talk ? BestBuys.INVENTORY_SIZE : Long.MAX_VALUE;
@@ -298,6 +323,15 @@ public final class Flips
 		{
 			ShopOffer offer = sale.getOffer();
 			ShopFlip.Limit limit = sale.getLimit();
+			if (offer.getWorlds() > maxWorlds)
+			{
+				offer = offerAt(catalog, perks, sale, shop, (long) offer.getPerWorld() * maxWorlds);
+				limit = ShopFlip.Limit.EVEN_HOPS;
+				if (offer == null || offer.getQuantity() == 0)
+				{
+					continue;
+				}
+			}
 			long fit = Math.min(offer.getQuantity(), Math.min(coinsLeft / sale.getCost(), slotsLeft));
 			if (fit < 1)
 			{
