@@ -65,7 +65,7 @@ public interface AssetManagerConfig extends Config
 	@ConfigItem(
 		keyName = "warnDeaths",
 		name = "Warn below deaths",
-		description = "The infobox turns red when the coffer covers fewer deaths than this",
+		description = "The infobox turns red, and the panel warns, when the coffer covers fewer deaths than this",
 		section = cofferSection,
 		position = 2
 	)
@@ -75,15 +75,16 @@ public interface AssetManagerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "showInfoBox",
+		keyName = "infoBox",
 		name = "Show infobox",
-		description = "Show an infobox with how many deaths your coffer covers",
+		description = "When to show an infobox with how many deaths your coffer covers: always, only when it covers fewer"
+			+ " than Warn below deaths, or never",
 		section = cofferSection,
 		position = 3
 	)
-	default boolean showInfoBox()
+	default InfoBoxMode infoBox()
 	{
-		return true;
+		return InfoBoxMode.ALWAYS;
 	}
 
 	@ConfigItem(
@@ -305,22 +306,23 @@ public interface AssetManagerConfig extends Config
 
 	@ConfigSection(
 		name = "Bank & inventory",
-		description = "Icons, the price tooltip and keeping items",
+		description = "Icons, tooltips and keeping items",
 		position = 4
 	)
 	String bankSection = "bank";
 
 	@ConfigItem(
-		keyName = "priceTooltip",
-		name = "Price comparison tooltip",
-		description = "When hovering an item in your bank or inventory, compare what it's worth on the GE, high alched,"
-			+ " in Death's coffer and at the best shop",
+		keyName = "tooltipPlaces",
+		name = "Tooltips",
+		description = "Where to show Asset Manager's tooltips when hovering an item. In the bank and inventory they compare"
+			+ " what it's worth on the GE, high alched, in Death's coffer and at the best shop; in a shop they show"
+			+ " what buying it to flip would make",
 		section = bankSection,
 		position = 0
 	)
-	default boolean priceTooltip()
+	default TooltipPlaces tooltipPlaces()
 	{
-		return true;
+		return TooltipPlaces.BOTH;
 	}
 
 	@ConfigItem(

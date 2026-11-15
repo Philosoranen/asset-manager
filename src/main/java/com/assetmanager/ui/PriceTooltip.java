@@ -2,6 +2,7 @@ package com.assetmanager.ui;
 
 import com.assetmanager.AccountMode;
 import com.assetmanager.AssetManagerConfig;
+import com.assetmanager.TooltipPlaces;
 import com.assetmanager.keep.Holdings;
 import com.assetmanager.keep.KeepRules;
 import com.assetmanager.shop.SellRules;
@@ -33,7 +34,6 @@ import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
-import net.runelite.client.ui.overlay.tooltip.Tooltip;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.QuantityFormatter;
@@ -100,7 +100,8 @@ public class PriceTooltip
 	public void onBeforeRender(BeforeRender event)
 	{
 		Context ctx = context;
-		if (ctx == null || !config.priceTooltip() || client.isMenuOpen())
+		TooltipPlaces places = config.tooltipPlaces();
+		if (ctx == null || places == TooltipPlaces.NONE || client.isMenuOpen())
 		{
 			return;
 		}
@@ -111,8 +112,9 @@ public class PriceTooltip
 		}
 		MenuEntry entry = entries[entries.length - 1];
 		int component = entry.getParam1();
-		if (component != InterfaceID.Bankmain.ITEMS && component != InterfaceID.Bankside.ITEMS
-			&& component != InterfaceID.Inventory.ITEMS && component >>> 16 != InterfaceID.SEED_VAULT)
+		boolean inventory = component == InterfaceID.Bankside.ITEMS || component == InterfaceID.Inventory.ITEMS;
+		boolean bank = component == InterfaceID.Bankmain.ITEMS || component >>> 16 == InterfaceID.SEED_VAULT;
+		if (inventory ? !places.isInventory() : !bank || !places.isBankAndShops())
 		{
 			return;
 		}
@@ -140,7 +142,7 @@ public class PriceTooltip
 		PanelComponent panel = cache.computeIfAbsent(key, k -> build(ctx, w.getItemId(), shown, shown < stack));
 		if (panel != null)
 		{
-			tooltipManager.add(new Tooltip(panel));
+			tooltipManager.add(SolidTooltip.of(panel));
 		}
 	}
 

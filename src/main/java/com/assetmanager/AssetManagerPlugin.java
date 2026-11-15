@@ -41,6 +41,7 @@ import com.assetmanager.shop.UnlockReader;
 import com.assetmanager.shop.Unlocks;
 import com.assetmanager.ui.AssetManagerPanel;
 import com.assetmanager.ui.CofferInfoBox;
+import com.assetmanager.ui.CofferSettings;
 import com.assetmanager.ui.PanelState;
 import com.assetmanager.ui.PriceTooltip;
 import com.assetmanager.ui.SuggestionOverlay;
@@ -53,7 +54,6 @@ import com.google.gson.Gson;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.time.Duration;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,6 +93,7 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOpened;
+import net.runelite.api.events.PostMenuSort;
 import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.InterfaceID;
@@ -255,6 +256,18 @@ public class AssetManagerPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		// The tooltip setting used to be on or off
+		if ("false".equals(configManager.getConfiguration(AssetManagerConfig.GROUP, "priceTooltip")))
+		{
+			configManager.setConfiguration(AssetManagerConfig.GROUP, "tooltipPlaces", TooltipPlaces.NONE);
+		}
+		configManager.unsetConfiguration(AssetManagerConfig.GROUP, "priceTooltip");
+		// The infobox setting used to be on or off
+		if ("false".equals(configManager.getConfiguration(AssetManagerConfig.GROUP, "showInfoBox")))
+		{
+			configManager.setConfiguration(AssetManagerConfig.GROUP, "infoBox", InfoBoxMode.NEVER);
+		}
+		configManager.unsetConfiguration(AssetManagerConfig.GROUP, "showInfoBox");
 		shopCatalog = ShopCatalog.load(gson);
 		planner = Executors.newSingleThreadExecutor(r ->
 		{
@@ -263,7 +276,7 @@ public class AssetManagerPlugin extends Plugin
 			return t;
 		});
 		panel = new AssetManagerPanel(
-			() -> clientThread.invokeLater(this::promptBalance),
+			(key, value) -> configManager.setConfiguration(AssetManagerConfig.GROUP, key, value),
 			destination -> clientThread.invokeLater(() -> showInBank(destination)),
 			destination -> clientThread.invokeLater(() -> findShop(destination.getName(), destination.getShop())),
 			shop -> clientThread.invokeLater(() -> findShop(shop.getName(), shop)),
@@ -275,6 +288,7 @@ public class AssetManagerPlugin extends Plugin
 			order -> configManager.setConfiguration(AssetManagerConfig.GROUP, "geOrder", order),
 			avoid -> configManager.setConfiguration(AssetManagerConfig.GROUP, "avoidWilderness", avoid),
 			even -> configManager.setConfiguration(AssetManagerConfig.GROUP, "shopEvenHops", even),
+			() -> clientThread.invokeLater(this::startKeepMode),
 			(label, id) -> itemManager.getImage(id).addTo(label));
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
@@ -528,9 +542,96 @@ public class AssetManagerPlugin extends Plugin
 		}
 	}
 
+	/** Opens the Everything view in keep mode. Client thread. */
+	private void startKeepMode()
+	{
+		if (bankViews.everything() == null)
+		{
+			chat("Asset Manager: open your bank once so it can be scanned.");
+			return;
+		}
+		if (!bankViews.showKeepMode())
+		{
+			chat("Asset Manager: open your bank to choose what to keep.");
+		}
+	}
+
+	private boolean isKeepModeShowing()
+	{
+		return bankViews.isKeepModeShowing();
+	}
+
+	/**
+	 * How many a keep mode click keeps: what the bank's quantity buttons are set to, using its X amount. 0 when X is
+	 * chosen but no amount has been set yet, so each click asks.
+	 */
+	private int keepModeAmount()
+	{
+		switch (client.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE))
+		{
+			case 0:
+				return 1;
+			case 1:
+				return 5;
+			case 2:
+				return 10;
+			case 3:
+				return client.getVarbitValue(VarbitID.BANK_REQUESTEDQUANTITY);
+			default:
+				return KeepRules.KEEP_ALL;
+		}
+	}
+
+	private static String keepOptionName(int amount)
+	{
+		return amount == KeepRules.KEEP_ALL ? "Keep all" : amount == 0 ? "Keep X" : "Keep " + QuantityFormatter.formatNumber(amount);
+	}
+
+	/** Keeps the amount, or asks how many for 0. */
+	private void keepInKeepMode(int itemId, int amount)
+	{
+		if (amount == 0)
+		{
+			promptKeep(itemId);
+		}
+		else
+		{
+			setKeep(itemId, amount);
+		}
+	}
+
+	/**
+	 * In keep mode, left-clicking a bank item keeps the chosen amount instead of withdrawing it. No chat message, as
+	 * many items are clicked in a row: kept items leave the view, or get the keep label if some are still spare.
+	 */
+	@Subscribe
+	public void onPostMenuSort(PostMenuSort event)
+	{
+		if (client.isMenuOpen() || !isKeepModeShowing())
+		{
+			return;
+		}
+		MenuEntry[] entries = client.getMenu().getMenuEntries();
+		if (entries.length == 0)
+		{
+			return;
+		}
+		MenuEntry top = entries[entries.length - 1];
+		if (top.getParam1() == InterfaceID.Bankmain.ITEMS && itemIdOf(top) > 0)
+		{
+			int canonical = itemManager.canonicalize(itemIdOf(top));
+			int amount = keepModeAmount();
+			keepOption(client.getMenu(), keepOptionName(amount), top.getTarget(), e -> keepInKeepMode(canonical, amount));
+		}
+	}
+
 	@Subscribe
 	public void onMenuOpened(MenuOpened event)
 	{
+		if (isKeepModeShowing() && keepModeMenu(event.getMenuEntries()))
+		{
+			return;
+		}
 		if (!config.keepMenu())
 		{
 			return;
@@ -576,6 +677,57 @@ public class AssetManagerPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Keep mode's right-click menu: the chosen amount at the top, with the other amounts right under it rather than
+	 * in a submenu.
+	 *
+	 * @return whether it was a bank item
+	 */
+	private boolean keepModeMenu(MenuEntry[] entries)
+	{
+		MenuEntry item = null;
+		for (MenuEntry e : entries)
+		{
+			if (e.getParam1() == InterfaceID.Bankmain.ITEMS && itemIdOf(e) > 0)
+			{
+				item = e;
+				break;
+			}
+		}
+		if (item == null)
+		{
+			return false;
+		}
+		String target = item.getTarget();
+		int canonical = itemManager.canonicalize(itemIdOf(item));
+		int current = keepRules.get(canonical);
+		Menu menu = client.getMenu();
+		MenuEntry top = entries[entries.length - 1];
+		int chosen = keepModeAmount();
+		if (!(top.getType() == MenuAction.RUNELITE && keepOptionName(chosen).equals(top.getOption())))
+		{
+			keepOption(menu, keepOptionName(chosen), target, e -> keepInKeepMode(canonical, chosen));
+		}
+		// Each goes in just under the chosen amount, pushing the earlier ones up
+		int under = menu.getMenuEntries().length - 1;
+		for (int n : new int[]{1, 5, 10, KeepRules.KEEP_ALL})
+		{
+			if (n != chosen)
+			{
+				keepOption(menu, under, n == KeepRules.KEEP_ALL ? "Keep all" : "Keep " + n, target, e -> keepFromMenu(canonical, n));
+			}
+		}
+		if (chosen != 0)
+		{
+			keepOption(menu, under, "Keep X", target, e -> promptKeep(canonical));
+		}
+		if (current != 0)
+		{
+			keepOption(menu, under, "Stop keeping", target, e -> keepFromMenu(canonical, 0));
+		}
+		return true;
+	}
+
 	private static int itemIdOf(MenuEntry e)
 	{
 		if (e.getItemId() > 0)
@@ -587,7 +739,12 @@ public class AssetManagerPlugin extends Plugin
 
 	private static void keepOption(Menu menu, String option, String target, Consumer<MenuEntry> onClick)
 	{
-		menu.createMenuEntry(-1)
+		keepOption(menu, -1, option, target, onClick);
+	}
+
+	private static void keepOption(Menu menu, int index, String option, String target, Consumer<MenuEntry> onClick)
+	{
+		menu.createMenuEntry(index)
 			.setOption(option)
 			.setTarget(target)
 			.setType(MenuAction.RUNELITE)
@@ -624,26 +781,6 @@ public class AssetManagerPlugin extends Plugin
 				}
 				setKeep(itemId, keep);
 				chat(keepMessage(name, keep));
-			}))
-			.build();
-	}
-
-	/** Asks for the coffer balance in the chatbox, as the game asks for amounts. Client thread. */
-	private void promptBalance()
-	{
-		chatboxPanelManager.openTextInput("Your Death's coffer balance (like 2500000 or 2.5m):")
-			.onDone((Consumer<String>) input -> clientThread.invokeLater(() ->
-			{
-				try
-				{
-					long balance = QuantityFormatter.parseQuantity(input.trim());
-					cofferTracker.setBalance(balance, "manual entry");
-					chat("Asset Manager: coffer balance set to " + QuantityFormatter.formatNumber(balance) + " gp.");
-				}
-				catch (ParseException e)
-				{
-					chat("Asset Manager: \"" + input + "\" isn't a number (like 2500000 or 2.5m).");
-				}
 			}))
 			.build();
 	}
@@ -1290,12 +1427,13 @@ public class AssetManagerPlugin extends Plugin
 		{
 			infoBox.setState(state);
 		}
-		int warn = config.warnDeaths();
+		CofferSettings settings = new CofferSettings(config.targetDeaths(), config.minCofferTarget(), config.warnDeaths(),
+			config.infoBox());
 		SwingUtilities.invokeLater(() ->
 		{
 			if (panel != null)
 			{
-				panel.setState(state, warn);
+				panel.setState(state, settings);
 			}
 		});
 	}
@@ -1303,7 +1441,8 @@ public class AssetManagerPlugin extends Plugin
 	private void updateInfoBox()
 	{
 		infoBoxManager.removeInfoBox(infoBox);
-		if (config.showInfoBox())
+		infoBox.setOnlyBelowWarning(config.infoBox() == InfoBoxMode.BELOW_WARNING);
+		if (config.infoBox() != InfoBoxMode.NEVER)
 		{
 			infoBoxManager.addInfoBox(infoBox);
 		}

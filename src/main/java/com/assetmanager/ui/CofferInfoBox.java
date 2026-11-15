@@ -14,6 +14,9 @@ public class CofferInfoBox extends InfoBox
 	private PanelState state;
 	@Setter
 	private int warnDeaths;
+	/** Only show while the coffer covers fewer deaths than {@link #warnDeaths}, or its balance is unknown. */
+	@Setter
+	private boolean onlyBelowWarning;
 
 	public CofferInfoBox(BufferedImage image, Plugin plugin)
 	{
@@ -47,7 +50,7 @@ public class CofferInfoBox extends InfoBox
 	{
 		if (state == null || !state.isCofferKnown())
 		{
-			return "Death's coffer balance unknown</br>Check your coffer at Death's Office or set it in the Asset Manager panel";
+			return "Death's coffer balance unknown</br>Check your coffer at Death's Office";
 		}
 		String tip = "Death's coffer: " + QuantityFormatter.formatNumber(state.getCofferBalance()) + " gp";
 		if (state.getEstimate() != null)
@@ -61,6 +64,11 @@ public class CofferInfoBox extends InfoBox
 	@Override
 	public boolean render()
 	{
-		return state != null && state.getAccountMode().canUseCoffer();
+		if (state == null || !state.getAccountMode().canUseCoffer())
+		{
+			return false;
+		}
+		long deaths = state.getDeathsCovered();
+		return !onlyBelowWarning || deaths < 0 || deaths < warnDeaths;
 	}
 }

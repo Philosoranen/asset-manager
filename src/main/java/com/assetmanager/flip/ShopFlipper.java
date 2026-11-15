@@ -4,6 +4,7 @@ import com.assetmanager.AssetManagerConfig;
 import com.assetmanager.shop.Shop;
 import com.assetmanager.shop.ShopCatalog;
 import com.assetmanager.ui.PriceTooltip;
+import com.assetmanager.ui.SolidTooltip;
 import com.assetmanager.value.ItemValuator;
 import com.assetmanager.value.ItemValues;
 import com.assetmanager.value.LivePrices;
@@ -33,7 +34,6 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
-import net.runelite.client.ui.overlay.tooltip.Tooltip;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 import net.runelite.client.util.QuantityFormatter;
 import net.runelite.client.util.Text;
@@ -225,7 +225,7 @@ public class ShopFlipper
 	public void onBeforeRender(BeforeRender event)
 	{
 		Map<Integer, Buy> current = flips;
-		if (current.isEmpty() || client.isMenuOpen())
+		if (current.isEmpty() || !config.tooltipPlaces().isBankAndShops() || client.isMenuOpen())
 		{
 			return;
 		}
@@ -243,7 +243,7 @@ public class ShopFlipper
 		Buy buy = current.get(w.getItemId());
 		if (buy != null)
 		{
-			tooltipManager.add(new Tooltip(tooltip(w.getItemId(), buy)));
+			tooltipManager.add(SolidTooltip.of(tooltip(w.getItemId(), buy)));
 		}
 	}
 

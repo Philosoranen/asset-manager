@@ -1,5 +1,6 @@
 package com.assetmanager.ui;
 
+import com.assetmanager.InfoBoxMode;
 import com.assetmanager.coffer.CofferPlan;
 import com.assetmanager.death.DeathCostEstimate;
 import com.assetmanager.death.DeathScenario;
@@ -23,6 +24,7 @@ import com.assetmanager.value.Patience;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.KeyboardFocusManager;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -32,6 +34,8 @@ import java.awt.Insets;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Duration;
@@ -44,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -51,6 +56,10 @@ import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFormattedTextField;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -139,13 +148,15 @@ public class AssetManagerPanel extends PluginPanel
 	private final JPanel patienceRow = new JPanel(new BorderLayout(4, 0));
 	/** How flips are ordered. */
 	private final JPanel sortRow = new JPanel(new BorderLayout(4, 0));
-	/** Asks for the coffer balance, in the chatbox. */
-	private final Runnable onSetBalance;
+	/** Changes a setting: (config key, value). */
+	private final BiConsumer<String, Object> onSetting;
 	/** (item id, keep amount); 0 removes the rule. */
 	private final Consumer<Destination> onShowInBank;
 	private final Consumer<GeOrder> onGeOrder;
 	private final Consumer<Boolean> onAvoidWilderness;
 	private final Consumer<Boolean> onEvenHops;
+	/** Opens Everything in the bank in keep mode, where clicking an item keeps it. */
+	private final Runnable onKeepMode;
 	/** Puts an item's icon, with a stack size, on a label. */
 	private final ItemIcons itemIcons;
 	/** Find a shop: centre the map on it and point the hint arrow at it; again to stop. */
@@ -160,20 +171,21 @@ public class AssetManagerPanel extends PluginPanel
 	/** Where rows are added: the content, or the body of the card being built. */
 	private JPanel target = content;
 	private PanelState lastState;
-	private int warnDeaths = 2;
+	private CofferSettings settings = CofferSettings.DEFAULT;
 
-	public AssetManagerPanel(Runnable onSetBalance, Consumer<Destination> onShowInBank,
+	public AssetManagerPanel(BiConsumer<String, Object> onSetting, Consumer<Destination> onShowInBank,
 		Consumer<Destination> onFind, Consumer<Shop> onFindShop, Patience patience, Consumer<Patience> onPatience,
 		Consumer<Flip.Dest> onDest, FlipSort sort, Consumer<FlipSort> onSort, Consumer<GeOrder> onGeOrder,
-		Consumer<Boolean> onAvoidWilderness, Consumer<Boolean> onEvenHops, ItemIcons itemIcons)
+		Consumer<Boolean> onAvoidWilderness, Consumer<Boolean> onEvenHops, Runnable onKeepMode, ItemIcons itemIcons)
 	{
 		super(false);
+		this.onKeepMode = onKeepMode;
 		this.itemIcons = itemIcons;
 		this.onEvenHops = onEvenHops;
 		this.onGeOrder = onGeOrder;
 		this.onAvoidWilderness = onAvoidWilderness;
 		this.onFindShop = onFindShop;
-		this.onSetBalance = onSetBalance;
+		this.onSetting = onSetting;
 		this.onShowInBank = onShowInBank;
 		this.onFind = onFind;
 
@@ -262,14 +274,14 @@ public class AssetManagerPanel extends PluginPanel
 		scroll.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
 		add(scroll, BorderLayout.CENTER);
 
-		update(null, warnDeaths);
+		update(null, settings);
 	}
 
 	/** Which shop is being found, to show on its row. */
 	public void setFindingShop(String shop)
 	{
 		findingShop = shop;
-		update(lastState, warnDeaths);
+		update(lastState, settings);
 	}
 
 	private void selectTab(Tab t)
@@ -280,7 +292,7 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		scrollPositions[tab.ordinal()] = scroll.getVerticalScrollBar().getValue();
 		tab = t;
-		update(lastState, warnDeaths);
+		update(lastState, settings);
 		int position = scrollPositions[t.ordinal()];
 		// Restore after the new content has been laid out, or the scroll bar's range is still the old tab's
 		SwingUtilities.invokeLater(() -> scroll.getVerticalScrollBar().setValue(position));
@@ -290,18 +302,26 @@ public class AssetManagerPanel extends PluginPanel
 	 * Shows new state. The panel is only rebuilt while it's on screen and when something on it changed: rebuilding
 	 * is slow (all its text is HTML), and the state is published on every inventory change.
 	 */
-	public void setState(PanelState state, int warnDeaths)
+	public void setState(PanelState state, CofferSettings settings)
 	{
-		if (stale || !Objects.equals(state, lastState) || warnDeaths != this.warnDeaths)
+		if (stale || !Objects.equals(state, lastState) || !settings.equals(this.settings))
 		{
 			lastState = state;
-			this.warnDeaths = warnDeaths;
+			this.settings = settings;
 			stale = true;
-			if (isShowing())
+			// Not while a setting is being typed in, which rebuilding would throw away; it's done when that ends
+			if (isShowing() && !isTypingSetting())
 			{
-				update(state, warnDeaths);
+				update(state, settings);
 			}
 		}
+	}
+
+	/** Whether a coffer setting's number is being typed in. */
+	private boolean isTypingSetting()
+	{
+		Component focused = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+		return focused instanceof JFormattedTextField && SwingUtilities.isDescendingFrom(focused, content);
 	}
 
 	@Override
@@ -309,15 +329,15 @@ public class AssetManagerPanel extends PluginPanel
 	{
 		if (stale)
 		{
-			update(lastState, warnDeaths);
+			update(lastState, settings);
 		}
 	}
 
-	private void update(PanelState state, int warnDeaths)
+	private void update(PanelState state, CofferSettings settings)
 	{
 		stale = false;
 		this.lastState = state;
-		this.warnDeaths = warnDeaths;
+		this.settings = settings;
 		content.removeAll();
 		boolean flipping = tab == Tab.FLIPPING && state != null;
 		if (state != null)
@@ -361,6 +381,7 @@ public class AssetManagerPanel extends PluginPanel
 			if (coffer)
 			{
 				addCofferSummary(state);
+				addCofferSettings();
 				divider();
 				minorHeading("If you die now");
 			}
@@ -381,12 +402,9 @@ public class AssetManagerPanel extends PluginPanel
 		balance.setFont(FontManager.getRunescapeBoldFont());
 		balance.setForeground(known ? Color.WHITE : WARN);
 		top.add(balance, BorderLayout.CENTER);
-		JButton set = smallButton(known ? "Edit" : "Set", "Enter your coffer balance by hand");
-		set.addActionListener(e -> onSetBalance.run());
-		top.add(set, BorderLayout.EAST);
 		addRow(top);
 		addRow(text(known ? "From " + state.getCofferSource() + ", " + ago(state.getCofferUpdatedAt())
-			: "Open the coffer at Death's Office, or click Set.", MUTED));
+			: "Check your coffer at Death's Office to read it.", MUTED));
 
 		long deaths = state.getDeathsCovered();
 		DeathCostEstimate est = state.getEstimate();
@@ -394,7 +412,7 @@ public class AssetManagerPanel extends PluginPanel
 		{
 			String covered = deaths == Long.MAX_VALUE ? "Dying is free in your current gear"
 				: "Covers <b>" + deaths + "</b> death" + (deaths == 1 ? "" : "s") + " at " + gp(est.getScenarioFee()) + " each";
-			addRow(text(covered, deaths < warnDeaths ? BAD : GOOD));
+			addRow(text(covered, deaths < settings.getWarnDeaths() ? BAD : GOOD));
 		}
 
 		addGap(6);
@@ -435,6 +453,68 @@ public class AssetManagerPanel extends PluginPanel
 				}
 			}
 		}
+	}
+
+	/** The coffer settings, here rather than only in the plugin's settings, as they're what players change most. */
+	private void addCofferSettings()
+	{
+		subheader("Settings");
+		addRow(settingRow("Target deaths", "Aim to cover this many deaths in your current gear",
+			spinner(settings.getTargetDeaths(), 1, 100, 1, "targetDeaths")));
+		addRow(settingRow("Minimum target", "Always aim for at least this much. 500k is the most a gravestone reclaim can cost.",
+			spinner(settings.getMinCofferTarget(), 0, 100_000_000, 100_000, "minCofferTarget")));
+		addRow(settingRow("Warn below deaths", "Warn when the coffer covers fewer deaths than this",
+			spinner(settings.getWarnDeaths(), 0, 100, 1, "warnDeaths")));
+		JComboBox<InfoBoxMode> infoBox = new JComboBox<>(InfoBoxMode.values());
+		infoBox.setSelectedItem(settings.getInfoBox());
+		infoBox.setFont(FontManager.getRunescapeSmallFont());
+		infoBox.setFocusable(false);
+		infoBox.addActionListener(e -> onSetting.accept("infoBox", infoBox.getSelectedItem()));
+		addRow(settingRow("Infobox", "When to show the deaths covered infobox: always, only below your warning, or never",
+			infoBox));
+	}
+
+	private JSpinner spinner(int value, int min, int max, int step, String key)
+	{
+		JSpinner spinner = new JSpinner(new SpinnerNumberModel(Math.max(min, Math.min(max, value)), min, max, step));
+		spinner.setFont(FontManager.getRunescapeSmallFont());
+		spinner.setEditor(new JSpinner.NumberEditor(spinner, "#,##0"));
+		JFormattedTextField field = ((JSpinner.DefaultEditor) spinner.getEditor()).getTextField();
+		field.setFont(FontManager.getRunescapeSmallFont());
+		field.setColumns(max >= 1_000_000 ? 7 : 3);
+		field.setHorizontalAlignment(JTextField.RIGHT);
+		spinner.addChangeListener(e -> onSetting.accept(key, spinner.getValue()));
+		// Rebuilding waits while a number is typed in; catch up when typing ends
+		field.addFocusListener(new FocusAdapter()
+		{
+			@Override
+			public void focusLost(FocusEvent e)
+			{
+				SwingUtilities.invokeLater(() ->
+				{
+					if (stale && isShowing())
+					{
+						update(lastState, settings);
+					}
+				});
+			}
+		});
+		return spinner;
+	}
+
+	private static JPanel settingRow(String label, String tooltip, JComponent control)
+	{
+		JPanel row = new JPanel(new BorderLayout(4, 0));
+		row.setOpaque(false);
+		row.setBorder(new EmptyBorder(1, 0, 1, 0));
+		JLabel l = new JLabel(label);
+		l.setFont(FontManager.getRunescapeSmallFont());
+		l.setForeground(Color.LIGHT_GRAY);
+		l.setToolTipText(tooltip);
+		control.setToolTipText(tooltip);
+		row.add(l, BorderLayout.CENTER);
+		row.add(control, BorderLayout.EAST);
+		return row;
 	}
 
 	private void addRiskSummary(PanelState state)
@@ -863,6 +943,15 @@ public class AssetManagerPanel extends PluginPanel
 				east.add(Box.createVerticalStrut(2));
 				east.add(order);
 			}
+			else if (d.getKind() == Destination.Kind.ALL)
+			{
+				JButton keep = smallButton("Keep mode", "Show these in your bank, where clicking an item keeps as many as the"
+					+ " bank's quantity buttons say (1, 5, 10, X or All), so Asset Manager leaves them alone");
+				keep.addActionListener(e -> onKeepMode.run());
+				keep.setAlignmentX(Component.RIGHT_ALIGNMENT);
+				east.add(Box.createVerticalStrut(2));
+				east.add(keep);
+			}
 			top.add(east, BorderLayout.EAST);
 		}
 		row.add(top, BorderLayout.CENTER);
@@ -1055,7 +1144,7 @@ public class AssetManagerPanel extends PluginPanel
 			// A row like every other view's: click it to see the items in the bank
 			destinationRow(dests == null ? null : dests.get(Destination.Kind.KEPT), state);
 			addRow(text(state.getKeepRuleCount() == 0
-				? "Right-click an item in your bank and choose Keep to set how many to leave alone."
+				? "Click Keep mode on Everything to pick what to keep, or right-click an item in your bank and choose Keep."
 				: "To change one, right-click it in your bank and choose Keep.", MUTED));
 		});
 	}
@@ -1110,7 +1199,7 @@ public class AssetManagerPanel extends PluginPanel
 				{
 					collapsed.add(name);
 				}
-				update(lastState, warnDeaths);
+				update(lastState, settings);
 			}
 		});
 		bar.setAlignmentX(Component.LEFT_ALIGNMENT);

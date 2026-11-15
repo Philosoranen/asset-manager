@@ -39,6 +39,8 @@ public class BankViews
 	private static final String TAG_PREFIX = "asset manager - ";
 	/** The permanent tab older versions added to the tab list. */
 	private static final String LEGACY_TAG = "asset manager";
+	/** Keep mode: the Everything view under its own name, so the bank's title says clicks keep items. */
+	private static final String KEEP_MODE = "KEEP_MODE";
 
 	private final Client client;
 	private final TagManager tagManager;
@@ -96,10 +98,30 @@ public class BankViews
 	 */
 	public boolean show(Destination d)
 	{
-		String key = key(d);
+		return show(key(d), d.getName());
+	}
+
+	/**
+	 * Shows the Everything view in keep mode, titled "keep mode", now or the next time the bank opens.
+	 *
+	 * @return whether the bank was open
+	 */
+	public boolean showKeepMode()
+	{
+		return show(KEEP_MODE, "keep mode");
+	}
+
+	/** Whether keep mode is on screen. */
+	public boolean isKeepModeShowing()
+	{
+		return KEEP_MODE.equals(open) && isShowing();
+	}
+
+	private boolean show(String key, String name)
+	{
 		tags.computeIfAbsent(key, k ->
 		{
-			String tag = Text.standardize(TAG_PREFIX + d.getName());
+			String tag = Text.standardize(TAG_PREFIX + name);
 			tagManager.registerTag(tag, itemId -> contains(k, itemManager.canonicalize(itemId)));
 			return tag;
 		});
@@ -110,6 +132,12 @@ public class BankViews
 		}
 		open(key);
 		return true;
+	}
+
+	/** The Everything view, or null before the bank has been scanned. */
+	public Destination everything()
+	{
+		return find(Destination.Kind.ALL.name());
 	}
 
 	public void close()
@@ -166,7 +194,8 @@ public class BankViews
 		{
 			return null;
 		}
-		return key.startsWith("shop:") ? Destination.Kind.SHOP : Destination.Kind.valueOf(key);
+		return key.startsWith("shop:") ? Destination.Kind.SHOP
+			: key.equals(KEEP_MODE) ? Destination.Kind.ALL : Destination.Kind.valueOf(key);
 	}
 
 	private void open(String key)
@@ -189,6 +218,10 @@ public class BankViews
 
 	private Destination find(String key)
 	{
+		if (key.equals(KEEP_MODE))
+		{
+			key = Destination.Kind.ALL.name();
+		}
 		for (Destination d : destinations.getList())
 		{
 			if (key(d).equals(key))
