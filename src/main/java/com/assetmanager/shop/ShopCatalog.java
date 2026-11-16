@@ -243,6 +243,23 @@ public class ShopCatalog
 		return null;
 	}
 
+	/**
+	 * What the named shop pays for one of an item at its normal stock, with no perks; 0 if the shop's unknown or
+	 * doesn't buy it.
+	 *
+	 * @param item the item's name, lowercased
+	 */
+	public long buyPrice(String shopName, String item, int storeValue)
+	{
+		Shop shop = findByName(shopName);
+		Rate r = shop == null ? null : rateFor(shop, item, true, ShopPerks.NONE);
+		if (r == null)
+		{
+			return 0;
+		}
+		return r.getFixedPrice() != null ? r.getFixedPrice() : price(storeValue, r.getRate());
+	}
+
 	static String normalize(String name)
 	{
 		return name == null ? "" : name.toLowerCase().replaceAll("[^a-z0-9]", "");

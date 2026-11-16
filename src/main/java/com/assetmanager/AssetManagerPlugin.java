@@ -1000,7 +1000,7 @@ public class AssetManagerPlugin extends Plugin
 				// Members items can't be sold, alched or sacrificed on a free-to-play world
 				spare.keySet().removeIf(id -> itemManager.getItemComposition(id).isMembers());
 			}
-			int natureRuneCost = itemValuator.getNatureRuneCost();
+			int natureRuneCost = natureRuneCost(mode);
 			// Shops others are overstocking an item at on every world aren't worth a trip for it until they restock
 			Map<String, Set<String>> busyShops = new HashMap<>();
 			for (ShopStock.Busy b : busy)
@@ -1106,14 +1106,14 @@ public class AssetManagerPlugin extends Plugin
 		keepGuard.setRules(keepRules);
 		keepGuard.setHoldings(holdings);
 		shopSellOverlay.setContext(config.shopSellCounts() ? new ShopSellOverlay.Context(perks, config.minShopGain(),
-			itemValuator.getNatureRuneCost(), mode.canUseGrandExchange(), keepRules, holdings) : null);
+			natureRuneCost(mode), mode.canUseGrandExchange(), keepRules, holdings) : null);
 		geCofferOverlay.setShortfall(mode.canUseCoffer() ? Math.max(0, in.target - in.balance) : 0);
 		geCofferOverlay.setCofferKnown(cofferTracker.isKnown());
 		shopFlipper.setCanUseGe(mode.canUseGrandExchange());
 		// The top-up plan buys what reaches the target; "all worth sacrificing" has no limit
 		shopFlipper.setCofferRoom(!mode.canUseCoffer() ? 0 : config.cofferSuggestions() == CofferSuggestionMode.ALL ? Long.MAX_VALUE
 			: Math.max(0, in.target - in.balance));
-		priceTooltip.setContext(new PriceTooltip.Context(mode, itemValuator.getNatureRuneCost(), perks, in.sellRules,
+		priceTooltip.setContext(new PriceTooltip.Context(mode, natureRuneCost(mode), perks, in.sellRules,
 			saleResult.getSkippedShops(), destinations.getSuggestions().getShop(), shopCatalog, keepRules, holdings));
 		bankViews.update(destinations);
 		shopMapMarkers.update(config.shopMapMarkers() ? destinations.getShops() : Collections.emptyList(), in.location);
@@ -1205,7 +1205,7 @@ public class AssetManagerPlugin extends Plugin
 			unlocks = unlockReader.read();
 		}
 		Patience patience = config.flipPatience();
-		int natureRuneCost = itemValuator.getNatureRuneCost();
+		int natureRuneCost = natureRuneCost(mode);
 		Map<Integer, ItemValues> values = new HashMap<>();
 		Map<Integer, Long> volumes = new HashMap<>();
 		Map<Integer, Long> geSells = new HashMap<>();
@@ -1623,6 +1623,26 @@ public class AssetManagerPlugin extends Plugin
 		{
 			infoBoxManager.addInfoBox(infoBox);
 		}
+	}
+
+	/** The ironman rune shop that buys nature runes back, at a flat rate. */
+	private static final String IRON_NATURE_SHOP = "Ali's Discount Wares (Catalytic runes)";
+
+	/**
+	 * What casting high alchemy costs in nature runes. On the GE that's their buy price; an ironman can't buy there, so
+	 * it's what Ali Morrisane would pay for the rune instead.
+	 */
+	private int natureRuneCost(AccountMode mode)
+	{
+		if (!mode.canUseGrandExchange())
+		{
+			long ali = shopCatalog.buyPrice(IRON_NATURE_SHOP, "nature rune", itemValuator.get(ItemID.NATURERUNE).getStorePrice());
+			if (ali > 0)
+			{
+				return (int) ali;
+			}
+		}
+		return itemValuator.getNatureRuneCost();
 	}
 
 	private AccountMode resolveAccountMode()

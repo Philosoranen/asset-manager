@@ -38,6 +38,15 @@ public class ShopCatalogTest
 	}
 
 	@Test
+	public void aliBuysNatureRunesAtHalfTheirValue()
+	{
+		// The ironman's cost of a nature rune for alching: Ali's flat 50%, from the bundled shop data
+		ShopCatalog c = ShopCatalog.load(new Gson());
+		assertEquals(90, c.buyPrice("Ali's Discount Wares (Catalytic runes)", "nature rune", 180));
+		assertEquals(0, c.buyPrice("No such shop", "nature rune", 180));
+	}
+
+	@Test
 	public void priceDropsAsShopFillsUpAndStopsAtTenPercent()
 	{
 		// 60% dropping 3% per item: 600, 570, ... 120, then 100 (the floor) for the rest
