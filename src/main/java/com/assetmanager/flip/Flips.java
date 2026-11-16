@@ -87,6 +87,18 @@ public final class Flips
 		/** Coins from alching one, less the nature rune. */
 		long alch(int itemId);
 
+		/** Coins from selling one on the GE after tax, as held items are valued; 0 if unknown. */
+		default long geSell(int itemId)
+		{
+			return 0;
+		}
+
+		/** What each shop sale must beat selling on the GE and alching by, as for items the player holds. */
+		default int minShopGain()
+		{
+			return 1;
+		}
+
 		/** Whether it can be alched; shops won't buy items that can't. */
 		boolean alchable(int itemId);
 
@@ -116,6 +128,10 @@ public final class Flips
 	 * Whatever's worth buying on the GE to cash out at {@code dest}. Selling back on the GE isn't a flip this finds.
 	 * Alching and the coffer are a go per item; selling to shops is a go per shop, with everything it pays more for
 	 * than the GE charges sold together, on the same hops.
+	 * <p>
+	 * Items are only sold to a shop as the player would be told to once holding them: while each sale beats selling on
+	 * the GE and alching (by {@link GeMarket#minShopGain}), and only at the shop gaining the most over those for the
+	 * stack. Otherwise buying them would leave the player with items better alched or sold elsewhere.
 	 *
 	 * @param dest      where the player wants to cash out: a shop, the coffer or alching
 	 * @param unlocks   what the player has unlocked, for the shops they can sell to
@@ -142,6 +158,7 @@ public final class Flips
 		Predicate<Shop> noted = shop -> missing.get(shop).isMet() && shop.getTalk() == null;
 		Predicate<Shop> unnoted = shop -> missing.get(shop).isMet() && shop.getTalk() != null;
 		double geHours = m.geHours();
+		SellRules held = new SellRules(m.minShopGain(), maxWorlds, 0);
 		List<FlipRun> out = new ArrayList<>();
 		// What each shop pays more for than the GE charges
 		Map<Shop, List<Sale>> sales = new IdentityHashMap<>();
@@ -194,25 +211,29 @@ public final class Flips
 			// Shops won't buy items that can't be alched, though some have a store value to protect them on death
 			if (dest == Flip.Dest.SHOP && name != null && value > 0 && m.alchable(id))
 			{
-				// Most items no shop pays more for than the GE charges, which one sale finds out
-				ShopOffer probe = catalog.bestOffer(name, value, 1, true, perks, cost, UNLIMITED, usable);
+				// Once bought, they're worth selling on the GE or alching, so each sale has to beat those as well as the cost
+				long alt = Math.max(m.geSell(id), alch);
+				long floor = Math.max(cost, alt + Math.max(1, m.minShopGain()) - 1);
+				// Most items no shop pays more for than that, which one sale finds out
+				ShopOffer probe = catalog.bestOffer(name, value, 1, true, perks, floor, UNLIMITED, usable);
 				if (probe == null || probe.getQuantity() == 0)
 				{
 					continue;
 				}
-				Sale sale = new Sale(id, name, value, cost, why, trades, m.members(id), null, why, 0);
-				addSales(m, sales, catalog, perks, noted, sale, cap, why, maxWorlds);
+				Sale sale = new Sale(id, name, value, cost, floor, alt, why, trades, m.members(id), null, why, 0);
+				addSales(m, sales, catalog, perks, noted, usable, held, sale, cap, why, maxWorlds);
 				// Traders bought from by talking only take unnoted items, so it's an inventory a trip
 				long trip = Math.min(cap, BestBuys.INVENTORY_SIZE);
-				addSales(m, sales, catalog, perks, unnoted, sale, trip, trip < cap ? ShopFlip.Limit.SPACE : why, maxWorlds);
+				addSales(m, sales, catalog, perks, unnoted, usable, held, sale, trip, trip < cap ? ShopFlip.Limit.SPACE : why,
+					maxWorlds);
 			}
 		}
 		// In the catalog's order, so the result is the same every time
 		for (Shop shop : catalog.getShops())
 		{
 			List<Sale> list = sales.get(shop);
-			FlipRun run = list == null ? null : sellRun(shop, list, catalog, perks, coins, geHours, missing.get(shop), maxItems,
-				evenHops);
+			FlipRun run = list == null ? null : sellRun(shop, list, catalog, perks, usable, held, coins, geHours, missing.get(shop),
+				maxItems, evenHops);
 			if (run != null)
 			{
 				out.add(run);
@@ -238,6 +259,10 @@ public final class Flips
 		int value;
 		/** What one costs on the GE. */
 		long cost;
+		/** What each shop sale must beat: the cost, and what the GE or alching would give for one. */
+		long floor;
+		/** Coins for one from the GE or alching, whichever is more. */
+		long alt;
 		/** What stopped the GE buying going higher. */
 		ShopFlip.Limit geLimit;
 		long trades;
@@ -255,14 +280,14 @@ public final class Flips
 	}
 
 	/**
-	 * Adds a sale of up to {@code qty} to each of the {@code usable} shops paying more than the GE charges, hopping no
-	 * more than {@code maxWorlds}.
+	 * Adds a sale of up to {@code qty} to each of the {@code usable} shops paying more than its floor, hopping no more
+	 * than {@code maxWorlds}, where it's the best of the {@code all} shops to sell that many to.
 	 */
 	private static void addSales(GeMarket m, Map<Shop, List<Sale>> sales, ShopCatalog catalog, ShopPerks perks,
-		Predicate<Shop> usable, Sale sale, long qty, ShopFlip.Limit why, int maxWorlds)
+		Predicate<Shop> usable, Predicate<Shop> all, SellRules held, Sale sale, long qty, ShopFlip.Limit why, int maxWorlds)
 	{
 		int n = (int) Math.min(qty, Integer.MAX_VALUE);
-		for (ShopOffer offer : catalog.offers(sale.getName(), sale.getValue(), n, true, perks, sale.getCost(), UNLIMITED, usable))
+		for (ShopOffer offer : catalog.offers(sale.getName(), sale.getValue(), n, true, perks, sale.getFloor(), UNLIMITED, usable))
 		{
 			if (offer.getQuantity() == 0)
 			{
@@ -283,7 +308,7 @@ public final class Flips
 				offer = offerAt(catalog, perks, sale, offer.getShop(), (long) offer.getPerWorld() * most);
 				limit = mostLimit;
 			}
-			if (offer != null && offer.getQuantity() > 0)
+			if (offer != null && offer.getQuantity() > 0 && bestShop(catalog, perks, all, held, sale, offer))
 			{
 				sales.computeIfAbsent(offer.getShop(), s -> new ArrayList<>()).add(sale.withOffer(offer).withLimit(limit)
 					.withWorlds(worlds));
@@ -295,8 +320,34 @@ public final class Flips
 	private static ShopOffer offerAt(ShopCatalog catalog, ShopPerks perks, Sale sale, Shop shop, long qty)
 	{
 		List<ShopOffer> offers = catalog.offers(sale.getName(), sale.getValue(), (int) Math.min(qty, Integer.MAX_VALUE), true,
-			perks, sale.getCost(), UNLIMITED, s -> s == shop);
+			perks, sale.getFloor(), UNLIMITED, s -> s == shop);
 		return offers.isEmpty() ? null : offers.get(0);
+	}
+
+	/**
+	 * Whether, holding the offer's quantity, the player would be told to sell them to its shop: none of the {@code all}
+	 * shops gains more over selling on the GE or alching. Shops gaining the same all count.
+	 */
+	private static boolean bestShop(ShopCatalog catalog, ShopPerks perks, Predicate<Shop> all, SellRules held, Sale sale, ShopOffer offer)
+	{
+		int qty = offer.getQuantity();
+		long altTotal = sale.getAlt() * qty;
+		Long mine = null;
+		long top = Long.MIN_VALUE;
+		for (ShopOffer o : catalog.offers(sale.getName(), sale.getValue(), qty, true, perks, sale.getAlt(), held, all))
+		{
+			if (o.getQuantity() == 0)
+			{
+				continue;
+			}
+			long gain = o.getTotal() - altTotal;
+			top = Math.max(top, gain);
+			if (o.getShop() == offer.getShop())
+			{
+				mine = gain;
+			}
+		}
+		return mine != null && mine >= top;
 	}
 
 	/**
@@ -304,8 +355,8 @@ public final class Flips
 	 * first while the coins last (and, for a trader taking only unnoted items, the inventory). With {@code evenHops}, no
 	 * item is sold on more worlds than the most profitable one, so the go ends when that's sold. Null if nothing's worth it.
 	 */
-	private static FlipRun sellRun(Shop shop, List<Sale> sales, ShopCatalog catalog, ShopPerks perks, long coins, double geHours,
-		Unlocks.Missing missing, int maxItems, boolean evenHops)
+	private static FlipRun sellRun(Shop shop, List<Sale> sales, ShopCatalog catalog, ShopPerks perks, Predicate<Shop> all,
+		SellRules held, long coins, double geHours, Unlocks.Missing missing, int maxItems, boolean evenHops)
 	{
 		// The GE has only so many offer slots, so it's the items making the most
 		sales.sort(Comparator.comparingLong(Flips::saleProfit).reversed().thenComparing(Sale::getName));
@@ -322,19 +373,19 @@ public final class Flips
 			}
 		}
 		chosen.sort(Comparator.comparingDouble(Flips::saleReturn).reversed().thenComparing(Sale::getName));
-		FlipRun run = sellRun(shop, chosen, catalog, perks, coins, geHours, missing, Integer.MAX_VALUE);
+		FlipRun run = sellRun(shop, chosen, catalog, perks, all, held, coins, geHours, missing, Integer.MAX_VALUE);
 		if (!evenHops || run == null)
 		{
 			return run;
 		}
 		// Flips are most profitable first
 		int mainWorlds = run.getFlips().get(0).getSellOffer().getWorlds();
-		return run.getWorlds() > mainWorlds ? sellRun(shop, chosen, catalog, perks, coins, geHours, missing, mainWorlds) : run;
+		return run.getWorlds() > mainWorlds ? sellRun(shop, chosen, catalog, perks, all, held, coins, geHours, missing, mainWorlds) : run;
 	}
 
 	/** {@code sales}, best first, sold on no more than {@code maxWorlds} worlds each. */
-	private static FlipRun sellRun(Shop shop, List<Sale> sales, ShopCatalog catalog, ShopPerks perks, long coins, double geHours,
-		Unlocks.Missing missing, int maxWorlds)
+	private static FlipRun sellRun(Shop shop, List<Sale> sales, ShopCatalog catalog, ShopPerks perks, Predicate<Shop> all,
+		SellRules held, long coins, double geHours, Unlocks.Missing missing, int maxWorlds)
 	{
 		boolean talk = shop.getTalk() != null;
 		long coinsLeft = coins;
@@ -351,7 +402,7 @@ public final class Flips
 			{
 				offer = offerAt(catalog, perks, sale, shop, (long) offer.getPerWorld() * maxWorlds);
 				limit = ShopFlip.Limit.EVEN_HOPS;
-				if (offer == null || offer.getQuantity() == 0)
+				if (offer == null || offer.getQuantity() == 0 || !bestShop(catalog, perks, all, held, sale, offer))
 				{
 					continue;
 				}
@@ -365,7 +416,7 @@ public final class Flips
 			{
 				limit = fit == slotsLeft ? ShopFlip.Limit.SPACE : ShopFlip.Limit.COINS;
 				offer = offerAt(catalog, perks, sale, shop, fit);
-				if (offer == null || offer.getQuantity() == 0)
+				if (offer == null || offer.getQuantity() == 0 || !bestShop(catalog, perks, all, held, sale, offer))
 				{
 					continue;
 				}

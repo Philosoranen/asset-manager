@@ -50,6 +50,7 @@ import com.assetmanager.ui.CofferSettings;
 import com.assetmanager.ui.PanelState;
 import com.assetmanager.ui.PriceTooltip;
 import com.assetmanager.ui.SuggestionOverlay;
+import com.assetmanager.value.GePrice;
 import com.assetmanager.value.ItemValuator;
 import com.assetmanager.value.ItemValues;
 import com.assetmanager.value.LivePrices;
@@ -1340,7 +1341,10 @@ public class AssetManagerPlugin extends Plugin
 		Map<Integer, Long> buy = new HashMap<>();
 		Map<Integer, Long> trades = new HashMap<>();
 		Map<Integer, Long> coffer = new HashMap<>();
+		Map<Integer, Long> geSell = new HashMap<>();
 		Map<Integer, LivePrices.Info> info = new HashMap<>();
+		GePrice heldPrice = config.gePrice();
+		int minShopGain = config.minShopGain();
 		for (int id : livePrices.items())
 		{
 			LivePrices.Info i = livePrices.info(id);
@@ -1352,6 +1356,12 @@ public class AssetManagerPlugin extends Plugin
 			buy.put(id, (long) cost);
 			trades.put(id, patience.tradesIn(livePrices.tradesPerHour(id)));
 			info.put(id, i);
+			// What the item would be worth on the GE once held, as spare items are valued
+			int sell = livePrices.sellPrice(id, heldPrice);
+			if (sell > 0)
+			{
+				geSell.put(id, ItemValues.afterTax(sell));
+			}
 			long guide = itemManager.getItemPriceWithSource(id, false);
 			if (ItemValues.cofferAccepts(id, guide))
 			{
@@ -1406,6 +1416,18 @@ public class AssetManagerPlugin extends Plugin
 			public long alch(int itemId)
 			{
 				return Math.max(0, info.get(itemId).getHighAlch() - natureRuneCost);
+			}
+
+			@Override
+			public long geSell(int itemId)
+			{
+				return geSell.getOrDefault(itemId, 0L);
+			}
+
+			@Override
+			public int minShopGain()
+			{
+				return minShopGain;
 			}
 
 			@Override

@@ -30,6 +30,8 @@ public class FlipsTest
 		final Map<Integer, Integer> value = new HashMap<>();
 		final Map<Integer, Long> coffer = new HashMap<>();
 		final Map<Integer, Long> alch = new HashMap<>();
+		final Map<Integer, Long> geSell = new HashMap<>();
+		int minShopGain = 1;
 		final Set<Integer> unalchable = new HashSet<>();
 		final Set<Integer> members = new HashSet<>();
 		double hours = 1;
@@ -92,6 +94,18 @@ public class FlipsTest
 		public long alch(int itemId)
 		{
 			return alch.getOrDefault(itemId, 0L);
+		}
+
+		@Override
+		public long geSell(int itemId)
+		{
+			return geSell.getOrDefault(itemId, 0L);
+		}
+
+		@Override
+		public int minShopGain()
+		{
+			return minShopGain;
 		}
 
 		@Override
@@ -299,15 +313,16 @@ public class FlipsTest
 		Shop stall = buyer("Silk Stall", 500, 0, "silk");
 		FakeMarket m = new FakeMarket().add(1, "silk", 11, 9_152, 18_000, 30);
 
-		// Each shop is a go of its own; the stall makes more in one, selling noted
+		// The stall would make more in one go, selling noted, but silk bought for it is better sold to the merchant
 		List<FlipRun> runs = Flips.rank(Flips.fromGe(m, Flip.Dest.SHOP, catalog(merchant, stall), Unlocks.EVERYTHING, ShopPerks.NONE,
 			10, Long.MAX_VALUE, 0, 8), 1, 10, FlipSort.PROFIT);
-		assertEquals(2, runs.size());
-		Flip f = first(runs);
-		assertEquals("Silk Stall", f.getShop().getName());
+		assertEquals(1, runs.size());
+		assertEquals("Silk merchant", runs.get(0).getShop().getName());
+
+		// Without the merchant, the stall takes it all, noted
+		Flip f = first(Flips.fromGe(m, Flip.Dest.SHOP, catalog(stall), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8));
 		assertEquals(9_152, f.getQuantity());
 		assertEquals(9_152L * 4, f.getProfit());
-		assertEquals("Silk merchant", runs.get(1).getShop().getName());
 
 		// With only the merchant, it's one inventory
 		f = first(Flips.fromGe(m, Flip.Dest.SHOP, catalog(merchant), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8));
@@ -468,7 +483,7 @@ public class FlipsTest
 		good.setGeneral(true);
 		Shop poor = buyer("Poor General Store", 550, 0, "other");
 		poor.setGeneral(true);
-		Shop stall = buyer("Stall", 500, 0, "b");
+		Shop stall = buyer("Stall", 700, 0, "b");
 		FakeMarket m = new FakeMarket().add(1, "a", 300, 100, 0, 1_000).add(2, "b", 100, 100, 0, 400);
 
 		List<FlipRun> runs = Flips.rank(Flips.fromGe(m, Flip.Dest.SHOP, catalog(good, poor, stall), Unlocks.EVERYTHING, ShopPerks.NONE,
@@ -627,6 +642,52 @@ public class FlipsTest
 	}
 
 	/** The first flip of the first go. */
+	@Test
+	public void shopSalesStopWhereAlchingOrTheGePaysMore()
+	{
+		// Each sale drops the price by 3%: 550, 520, 490, 460, 430... of 1,000
+		Shop store = buyer("Store", 550, 30, "ring");
+		FakeMarket m = new FakeMarket().add(1, "ring", 300, 100, 0, 1_000);
+		int plain = first(Flips.fromGe(m, Flip.Dest.SHOP, catalog(store), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8))
+			.getQuantity();
+
+		// Once bought, alching pays 450, so only the sales paying more than that are worth buying for
+		m.alch.put(1, 450L);
+		Flip alched = first(Flips.fromGe(m, Flip.Dest.SHOP, catalog(store), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8));
+		assertTrue(alched.getQuantity() < plain);
+		assertEquals(40, alched.getQuantity());
+
+		// Selling on the GE the same
+		m.alch.remove(1);
+		m.geSell.put(1, 450L);
+		assertEquals(40, first(Flips.fromGe(m, Flip.Dest.SHOP, catalog(store), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0,
+			8)).getQuantity());
+
+		// And by the player's minimum gain per item: only 550 and 520 beat 450 by 50
+		m.minShopGain = 50;
+		assertEquals(20, first(Flips.fromGe(m, Flip.Dest.SHOP, catalog(store), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0,
+			8)).getQuantity());
+
+		// Nothing beats a GE price over what the store first pays
+		m.geSell.put(1, 600L);
+		assertTrue(Flips.fromGe(m, Flip.Dest.SHOP, catalog(store), Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8).isEmpty());
+	}
+
+	@Test
+	public void itemsAreOnlySoldToTheShopPayingTheMostForThem()
+	{
+		// The general store would buy the ring too, but the jeweller pays more for it
+		Shop general = buyer("General Store", 550, 0, "other");
+		general.setGeneral(true);
+		Shop jeweller = buyer("Jeweller", 700, 0, "ring");
+		FakeMarket m = new FakeMarket().add(1, "ring", 300, 100, 0, 1_000);
+
+		List<FlipRun> runs = Flips.fromGe(m, Flip.Dest.SHOP, catalog(general, jeweller), Unlocks.EVERYTHING, ShopPerks.NONE, 10,
+			Long.MAX_VALUE, 0, 8);
+		assertEquals(1, runs.size());
+		assertEquals("Jeweller", runs.get(0).getShop().getName());
+	}
+
 	private static Flip first(List<FlipRun> runs)
 	{
 		return runs.get(0).getFlips().get(0);
