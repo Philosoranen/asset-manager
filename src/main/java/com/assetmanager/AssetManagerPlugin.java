@@ -58,6 +58,7 @@ import com.assetmanager.value.SaleAdvisor;
 import com.google.gson.Gson;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -137,6 +138,9 @@ import net.runelite.http.api.worlds.WorldResult;
 @PluginDependency(BankTagsPlugin.class)
 @PluginDescriptor(
 	name = "Asset Manager",
+	internalName = "asset-manager",
+	// Where the shop stock file was kept before; RuneLite moves it to the plugin's data directory
+	legacyDataDirectory = "asset-manager",
 	description = "Death's coffer coverage, death costs, and the best way to use your spare items: coffer, alching or shops",
 	tags = {"death", "coffer", "gravestone", "pvm", "money", "alch", "shop", "ironman", "bank"}
 )
@@ -346,6 +350,14 @@ public class AssetManagerPlugin extends Plugin
 		eventBus.register(priceTooltip);
 		shopFlipper.setShops(shopCatalog);
 		eventBus.register(shopFlipper);
+		try
+		{
+			shopStockTracker.setDirectory(getPluginDirectory());
+		}
+		catch (IOException e)
+		{
+			log.warn("No plugin data directory; shop stock won't be saved", e);
+		}
 		shopStockTracker.setOpenShop(shopFlipper::getOpenShop);
 		shopStockTracker.setOnChange(() -> dirty = true);
 		eventBus.register(shopStockTracker);

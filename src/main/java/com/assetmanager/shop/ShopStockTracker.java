@@ -4,13 +4,8 @@ import com.assetmanager.AssetManagerConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,10 +27,10 @@ import net.runelite.api.events.GameTick;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.util.Filepath;
 
 /**
  * Reads the stock of the open shop each tick and keeps {@link ShopStock} up to date, saved per RuneScape profile so
@@ -47,16 +42,17 @@ public class ShopStockTracker
 {
 	private static final String KEY = "shopStock";
 	private static final String KEY_CYCLES = "shopRestockCycles";
-	/** Asset Manager's folder in RuneLite's. */
-	private static final String DIR = "asset-manager";
 
 	private final Client client;
 	private final ItemManager itemManager;
 	private final ConfigManager configManager;
 	private final Gson gson;
 	private final ScheduledExecutorService executor;
+	/** The plugin's data directory, from RuneLite; null if it couldn't be had. */
+	@Setter
+	private Filepath directory;
 	/** The profile's save file; null until a profile is loaded. */
-	private File file;
+	private Filepath file;
 
 	@Setter
 	private Supplier<Shop> openShop = () -> null;
@@ -123,25 +119,28 @@ public class ShopStockTracker
 		unsaved = false;
 	}
 
-	/** The profile's file; null before a profile is known. */
-	private static File fileFor(String profileKey)
+	/** The profile's file in the plugin's directory; null before a profile is known or without a directory. */
+	private Filepath fileFor(String profileKey)
 	{
-		if (profileKey == null)
+		if (profileKey == null || directory == null)
 		{
 			return null;
 		}
-		return new File(new File(RuneLite.RUNELITE_DIR, DIR), "shop-stock-" + profileKey.replaceAll("[^A-Za-z0-9._-]", "_") + ".json");
+		return directory.joinSegment("shop-stock-" + profileKey.replaceAll("[^A-Za-z0-9._-]", "_") + ".json");
 	}
 
-	private Saved readFile(File f)
+	private Saved readFile(Filepath f)
 	{
-		if (!f.isFile())
+		try
 		{
-			return null;
-		}
-		try (Reader r = Files.newBufferedReader(f.toPath(), StandardCharsets.UTF_8))
-		{
-			return gson.fromJson(r, Saved.class);
+			if (!f.isFile())
+			{
+				return null;
+			}
+			try (Reader r = f.openBufferedReader())
+			{
+				return gson.fromJson(r, Saved.class);
+			}
 		}
 		catch (IOException | JsonParseException e)
 		{
@@ -199,17 +198,15 @@ public class ShopStockTracker
 		write(file, gson.toJson(s));
 	}
 
-	/** Writes off the client thread, through a temporary file so a crash mid-write can't leave half a file. */
-	private void write(File f, String json)
+	/** Writes off the client thread. */
+	private void write(Filepath f, String json)
 	{
 		executor.execute(() ->
 		{
 			try
 			{
-				Files.createDirectories(f.getParentFile().toPath());
-				Path tmp = f.toPath().resolveSibling(f.getName() + ".tmp");
-				Files.write(tmp, json.getBytes(StandardCharsets.UTF_8));
-				Files.move(tmp, f.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+				f.getParent().createDirectories();
+				f.write(json);
 			}
 			catch (IOException e)
 			{
