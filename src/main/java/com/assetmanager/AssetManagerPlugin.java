@@ -142,8 +142,8 @@ import net.runelite.http.api.worlds.WorldResult;
 	internalName = "asset-manager",
 	// Where the shop stock file was kept before; RuneLite moves it to the plugin's data directory
 	legacyDataDirectory = "asset-manager",
-	description = "Death's coffer coverage, death costs, and the best way to use your spare items: coffer, alching or shops",
-	tags = {"death", "coffer", "gravestone", "pvm", "money", "alch", "shop", "ironman", "bank"}
+	description = "Gets the most gp from your spare items: high alch, the GE or the best-paying shop, with how many to sell per world. Also finds shop-to-GE flips and keeps Death's coffer topped up.",
+	tags = {"money", "moneymaking", "profit", "sell", "liquidate", "alch", "alchemy", "shop", "ge", "grand exchange", "flip", "flipping", "merch", "bank", "keep", "ironman", "death", "coffer", "pvm"}
 )
 public class AssetManagerPlugin extends Plugin
 {
