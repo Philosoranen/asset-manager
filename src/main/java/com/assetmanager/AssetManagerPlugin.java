@@ -121,7 +121,6 @@ import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.WorldService;
 import net.runelite.client.game.chatbox.ChatboxPanelManager;
-import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -224,8 +223,6 @@ public class AssetManagerPlugin extends Plugin
 	private GeGuider geGuider;
 	@Inject
 	private GeGuideOverlay geGuideOverlay;
-	@Inject
-	private KeyManager keyManager;
 	@Inject
 	private WorldService worldService;
 	@Inject
@@ -369,7 +366,6 @@ public class AssetManagerPlugin extends Plugin
 		overlayManager.add(shopRatesOverlay);
 		geGuider.setOnChange(() -> dirty = true);
 		eventBus.register(geGuider);
-		keyManager.registerKeyListener(geGuider);
 		overlayManager.add(geGuideOverlay);
 		livePrices.setOnUpdate(() -> clientThread.invokeLater(() ->
 		{
@@ -409,7 +405,6 @@ public class AssetManagerPlugin extends Plugin
 		overlayManager.remove(shopRatesOverlay);
 		eventBus.unregister(geGuider);
 		clientThread.invoke(geGuider::shutDown);
-		keyManager.unregisterKeyListener(geGuider);
 		overlayManager.remove(geGuideOverlay);
 		geGuider.setOnChange(() -> {});
 		livePrices.stop();

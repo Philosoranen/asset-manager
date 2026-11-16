@@ -3,7 +3,6 @@ package com.assetmanager.flip;
 import com.assetmanager.AssetManagerConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,21 +32,20 @@ import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.config.Keybind;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.input.KeyListener;
 import net.runelite.client.util.QuantityFormatter;
 import net.runelite.client.util.Text;
 
 /**
  * Guides the player through buying a flip on the GE: keeps the chosen flip and how far its buying has got (see
  * {@link GeGuide}), shows its next item first in the GE's item search, and fills in an offer's price or quantity when
- * the player presses the fill key in the chatbox. One key press fills in one box; the player still confirms each offer.
+ * the player clicks the line it adds to the chatbox. One click fills in one box; the player still presses Enter and
+ * confirms each offer.
  */
 @Slf4j
 @Singleton
-public class GeGuider implements KeyListener
+public class GeGuider
 {
 	private static final String KEY_GUIDE = "geGuide";
 	/** GE_NEWOFFER_TYPE for a sell offer; a buy is 0. */
@@ -69,7 +67,7 @@ public class GeGuider implements KeyListener
 		SEARCH
 	}
 
-	/** What the fill key would do now: fill in {@code value} for a price or quantity, or find {@code item}. */
+	/** What can be filled in now: {@code value} for a price or quantity, or {@code item} to find in the search. */
 	@Value
 	public static class Fill
 	{
@@ -92,12 +90,6 @@ public class GeGuider implements KeyListener
 	@Setter
 	private Runnable onChange = () -> {};
 	private int loginTick = -1;
-	/** The fill key was pressed in the GE search: show the guide's item when the search runs. */
-	private volatile boolean searchRequested;
-	/** The fill key's typed character, which would otherwise land in the chatbox. */
-	private volatile boolean swallowTyped;
-	/** What the fill key would fill in, as of the last frame; key presses aren't on the client thread. */
-	private volatile Fill currentFill;
 	/** The chatbox line to click to fill in a price or quantity; null when not shown. */
 	private Widget fillLine;
 	/** The chatbox's last question, logged when it changes. */
@@ -131,8 +123,8 @@ public class GeGuider implements KeyListener
 		readSlots(g);
 		guide = g;
 		save();
-		chat("Asset Manager: buying " + describe(g) + ". Open the GE and follow the highlights; press "
-			+ keyName(config.geGuideKey()) + " in the item search, price or quantity box to fill it in.");
+		chat("Asset Manager: buying " + describe(g) + ". Open the GE and follow the highlights; in the price or quantity"
+			+ " box, click the blue line to fill it in.");
 		onChange.run();
 	}
 
@@ -218,7 +210,6 @@ public class GeGuider implements KeyListener
 	public void onClientTick(ClientTick tick)
 	{
 		Fill f = fill();
-		currentFill = f;
 		updateFillLine(f);
 		GeGuide g = guide;
 		GeGuide.Item next = g == null ? null : g.next();
@@ -305,8 +296,7 @@ public class GeGuider implements KeyListener
 			return;
 		}
 		String input = client.getVarcStrValue(VarClientID.MESLAYERINPUT);
-		boolean asked = searchRequested || input == null || input.isEmpty() || input.equals(keyText());
-		searchRequested = false;
+		boolean asked = input == null || input.isEmpty();
 		GeGuide.Item next = g.next();
 		if (!asked || next == null)
 		{
@@ -318,14 +308,7 @@ public class GeGuider implements KeyListener
 		client.setGeSearchResultIds(new short[]{(short) next.getItemId()});
 	}
 
-	/** The fill key as it's typed, when it's a plain character. */
-	private String keyText()
-	{
-		Keybind key = config.geGuideKey();
-		return key.getKeyCode() == KeyEvent.VK_BACK_SLASH && key.getModifiers() == 0 ? "\\" : null;
-	}
-
-	/** What the fill key would fill in now; null if nothing. */
+	/** What can be filled in now; null if nothing. */
 	public Fill fill()
 	{
 		GeGuide g = guide;
@@ -377,52 +360,6 @@ public class GeGuider implements KeyListener
 			return null;
 		}
 		return g.item(client.getVarpValue(VarPlayerID.TRADINGPOST_SEARCH));
-	}
-
-	@Override
-	public void keyTyped(KeyEvent e)
-	{
-		if (swallowTyped)
-		{
-			swallowTyped = false;
-			e.consume();
-			return;
-		}
-		// Some keyboards (the Steam Deck's on-screen one) send only the typed character, with no key code
-		Keybind key = config.geGuideKey();
-		if (key.getModifiers() == 0 && key.getKeyCode() != KeyEvent.VK_UNDEFINED
-			&& KeyEvent.getExtendedKeyCodeForChar(e.getKeyChar()) == key.getKeyCode() && onKey())
-		{
-			e.consume();
-		}
-	}
-
-	@Override
-	public void keyPressed(KeyEvent e)
-	{
-		if (config.geGuideKey().matches(e) && onKey())
-		{
-			e.consume();
-			swallowTyped = true;
-		}
-	}
-
-	/** The fill key was pressed; whether to keep it from the game. Not on the client thread, so it reads nothing there. */
-	private boolean onKey()
-	{
-		Fill f = currentFill;
-		if (guide == null || f == null)
-		{
-			return false;
-		}
-		if (f.getAsk() == Ask.SEARCH)
-		{
-			// The key is typed into the search like any other, which runs it; the guide's item is shown for it
-			searchRequested = true;
-			return false;
-		}
-		clientThread.invoke(this::applyFill);
-		return true;
 	}
 
 	/** Fills in the price or quantity box with the flip's. Client thread. */
@@ -488,12 +425,11 @@ public class GeGuider implements KeyListener
 		}
 	}
 
-	/** "Click here or press \ to enter 3,500". */
+	/** "Click here to enter 3,500". */
 	private String fillText(Fill f)
 	{
-		Keybind key = config.geGuideKey();
 		String amount = QuantityFormatter.formatNumber(f.getValue()) + (f.getAsk() == Ask.PRICE ? " gp" : "");
-		return "Click here" + (key == Keybind.NOT_SET ? "" : " or press " + keyName(key)) + " to enter " + amount;
+		return "Click here to enter " + amount;
 	}
 
 	private static boolean isChild(Widget parent, Widget child)
@@ -516,11 +452,6 @@ public class GeGuider implements KeyListener
 	public boolean isFillLineShown()
 	{
 		return fillLine != null;
-	}
-
-	@Override
-	public void keyReleased(KeyEvent e)
-	{
 	}
 
 	/** One item's progress, for the side panel. */
@@ -561,12 +492,6 @@ public class GeGuider implements KeyListener
 				i.getPrice()));
 		}
 		return new View(describe(g), cashOut(g), g.getShop(), items, g.isAllBought());
-	}
-
-	/** The key as the player would type it. */
-	public static String keyName(Keybind key)
-	{
-		return key.getKeyCode() == KeyEvent.VK_BACK_SLASH && key.getModifiers() == 0 ? "\\" : key.toString();
 	}
 
 	/** "3 items for Bob's Brilliant Axes", "50 x rune bar for the coffer". */

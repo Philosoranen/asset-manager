@@ -25,7 +25,6 @@ import com.assetmanager.value.Patience;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.KeyboardFocusManager;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -178,6 +177,8 @@ public class AssetManagerPanel extends PluginPanel
 	private JPanel target = content;
 	private PanelState lastState;
 	private CofferSettings settings = CofferSettings.DEFAULT;
+	/** The coffer setting box being typed in, between it gaining and losing focus; null if none. */
+	private JFormattedTextField typingIn;
 
 	public AssetManagerPanel(BiConsumer<String, Object> onSetting, Consumer<Destination> onShowInBank,
 		Consumer<Destination> onFind, Consumer<Shop> onFindShop, Patience patience, Consumer<Patience> onPatience,
@@ -325,11 +326,10 @@ public class AssetManagerPanel extends PluginPanel
 		}
 	}
 
-	/** Whether a coffer setting's number is being typed in. */
+	/** Whether a coffer setting's number is being typed in: its box has focus and is still on the panel. */
 	private boolean isTypingSetting()
 	{
-		Component focused = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-		return focused instanceof JFormattedTextField && SwingUtilities.isDescendingFrom(focused, content);
+		return typingIn != null && typingIn.isShowing();
 	}
 
 	@Override
@@ -496,8 +496,18 @@ public class AssetManagerPanel extends PluginPanel
 		field.addFocusListener(new FocusAdapter()
 		{
 			@Override
+			public void focusGained(FocusEvent e)
+			{
+				typingIn = field;
+			}
+
+			@Override
 			public void focusLost(FocusEvent e)
 			{
+				if (typingIn == field)
+				{
+					typingIn = null;
+				}
 				SwingUtilities.invokeLater(() ->
 				{
 					if (stale && isShowing())
@@ -783,7 +793,7 @@ public class AssetManagerPanel extends PluginPanel
 			if (ge)
 			{
 				JButton guide = smallButton("Buy on GE", "Guide this flip's buying: at the GE, what to click next is"
-					+ " highlighted, its item shows in the search, and a key fills in each offer's price and quantity");
+					+ " highlighted, its item shows in the search, and clicking a line fills in each offer's price and quantity");
 				guide.addActionListener(e -> onGuide.accept(run));
 				buttons.add(guide, BorderLayout.WEST);
 			}
@@ -824,8 +834,8 @@ public class AssetManagerPanel extends PluginPanel
 		}
 		row.add(Box.createVerticalStrut(3));
 		JLabel next = wrapped(guide.isAllBought() ? "All bought. " + guide.getCashOut()
-			: "Open the GE and follow the highlights. In the item search, price or quantity box, press the fill key"
-			+ " (\\ unless changed in the settings) to fill it in.", DETAIL_WIDTH, guide.isAllBought() ? GOOD : MUTED);
+			: "Open the GE and follow the highlights. The item shows when you search; in the price or quantity box,"
+			+ " click the blue line to fill it in.", DETAIL_WIDTH, guide.isAllBought() ? GOOD : MUTED);
 		next.setAlignmentX(Component.LEFT_ALIGNMENT);
 		row.add(next);
 		JButton stop = smallButton(guide.isAllBought() ? "Done" : "Stop", guide.isAllBought() ? "Finish with this flip"

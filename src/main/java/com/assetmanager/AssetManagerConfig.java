@@ -5,12 +5,10 @@ import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.value.GePrice;
 import com.assetmanager.value.Patience;
-import java.awt.event.KeyEvent;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-import net.runelite.client.config.Keybind;
 import net.runelite.client.config.Range;
 
 @ConfigGroup(AssetManagerConfig.GROUP)
@@ -516,26 +514,12 @@ public interface AssetManagerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "geGuideKey",
-		name = "GE guide fill key",
-		description = "While buying a flip with the side panel's Buy on GE button: press this in the GE's item search to"
-			+ " show the next item, or in an offer's price or quantity box to fill in the flip's. Then press Enter as usual."
-			+ " Clear it to only click.",
-		section = flipSection,
-		position = 5
-	)
-	default Keybind geGuideKey()
-	{
-		return new Keybind(KeyEvent.VK_BACK_SLASH, 0);
-	}
-
-	@ConfigItem(
 		keyName = "geGuideClick",
 		name = "GE guide click to fill",
 		description = "While buying a flip with the side panel's Buy on GE button: show a line in an offer's price or"
 			+ " quantity box to click to fill in the flip's",
 		section = flipSection,
-		position = 6
+		position = 5
 	)
 	default boolean geGuideClick()
 	{

@@ -6,7 +6,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Dimension;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.ArrayList;
@@ -27,19 +26,15 @@ import net.runelite.client.util.QuantityFormatter;
 import net.runelite.client.util.Text;
 
 /**
- * At the GE, while a flip is being bought (see {@link GeGuider}): what's left to buy, and an outline on what to click
- * next. An empty slot's Buy button, the price and quantity buttons until they match, then Confirm, and Collect when
- * an offer for the flip has finished.
+ * At the GE, while a flip is being bought (see {@link GeGuider}): an outline on what to click next. An empty slot's
+ * Buy button, the price and quantity buttons until they match, then Confirm, and Collect when an offer for the flip
+ * has finished. What's left to buy is on the side panel.
  */
 @Singleton
 public class GeGuideOverlay extends Overlay
 {
 	private static final Color NEXT = new Color(0x00E5FF);
 	private static final Color GOOD = new Color(0x4CAF50);
-	private static final Color TEXT = new Color(0xEEEEEE);
-	private static final Color MUTED = new Color(0x9E9E9E);
-	private static final Color BG = new Color(0, 0, 0, 200);
-	private static final int PAD = 5;
 
 	private final Client client;
 	private final GeGuider guider;
@@ -65,7 +60,6 @@ public class GeGuideOverlay extends Overlay
 			return null;
 		}
 		g.setFont(FontManager.getRunescapeSmallFont());
-		String key = keyName();
 
 		Widget setup = client.getWidget(InterfaceID.GeOffers.SETUP);
 		Widget index = client.getWidget(InterfaceID.GeOffers.INDEX);
@@ -77,25 +71,25 @@ public class GeGuideOverlay extends Overlay
 			if (chat != null && !chat.isHidden())
 			{
 				Rectangle b = chat.getBounds();
-				String what = fill.getAsk() == GeGuider.Ask.SEARCH ? "show " + fill.getItem().getName()
-					: "enter " + QuantityFormatter.formatNumber(fill.getValue());
-				label(g, "Press " + key + " to " + what, b.x + b.width / 2, b.y - 4, NEXT);
+				// Only shown without the line to click: say what to pick or type
+				String hint = fill.getAsk() == GeGuider.Ask.SEARCH ? "Pick " + fill.getItem().getName()
+					: "Enter " + QuantityFormatter.formatNumber(fill.getValue()) + (fill.getAsk() == GeGuider.Ask.PRICE ? " gp" : "");
+				label(g, hint, b.x + b.width / 2, b.y - 4, NEXT);
 			}
 		}
 		else if (setup != null && !setup.isHidden())
 		{
-			guideSetup(g, guide, setup, key);
+			guideSetup(g, guide, setup);
 		}
 		else if (index != null && !index.isHidden())
 		{
 			guideIndex(g, guide);
 		}
-		progress(g, guide, ge.getBounds());
 		return null;
 	}
 
 	/** The offer screen: the price and quantity until they're right, then Confirm. */
-	private void guideSetup(Graphics2D g, GeGuide guide, Widget setup, String key)
+	private void guideSetup(Graphics2D g, GeGuide guide, Widget setup)
 	{
 		if (client.getVarbitValue(VarbitID.GE_NEWOFFER_TYPE) == 1)
 		{
@@ -108,7 +102,7 @@ public class GeGuideOverlay extends Overlay
 		{
 			if (next != null)
 			{
-				label(g, "Search for " + next.getName() + " (press " + key + " in the search)", s.x + s.width / 2, s.y + 14, NEXT);
+				label(g, "Search for " + next.getName(), s.x + s.width / 2, s.y + 14, NEXT);
 			}
 			return;
 		}
@@ -131,12 +125,12 @@ public class GeGuideOverlay extends Overlay
 			priceButton = dots.get(1);
 		}
 		List<String> missed = new ArrayList<>();
-		String qtyText = "Enter " + QuantityFormatter.formatNumber(qty) + ", or press " + key;
+		String qtyText = "Enter " + QuantityFormatter.formatNumber(qty);
 		if (!qtyRight && !outline(g, qtyButton, qtyText, NEXT))
 		{
 			missed.add("Quantity: " + QuantityFormatter.formatNumber(qty));
 		}
-		String priceText = "Enter " + QuantityFormatter.formatNumber(item.getPrice()) + " gp, or press " + key;
+		String priceText = "Enter " + QuantityFormatter.formatNumber(item.getPrice()) + " gp";
 		if (!priceRight && !outline(g, priceButton, priceText, NEXT))
 		{
 			missed.add("Price: " + QuantityFormatter.formatNumber(item.getPrice()) + " gp");
@@ -144,7 +138,7 @@ public class GeGuideOverlay extends Overlay
 		if (!missed.isEmpty())
 		{
 			// The button wasn't found, so say what to enter instead
-			label(g, String.join(", ", missed) + " (press " + key + " in the box)", s.x + s.width / 2, s.y + s.height + 14, NEXT);
+			label(g, String.join(", ", missed), s.x + s.width / 2, s.y + s.height + 14, NEXT);
 		}
 		if (qtyRight && priceRight)
 		{
@@ -168,79 +162,6 @@ public class GeGuideOverlay extends Overlay
 		Widget box = client.getWidget(InterfaceID.GeOffers.INDEX_0 + slot);
 		Widget buy = find(box, a -> a.equalsIgnoreCase("Create Buy offer"));
 		outline(g, buy != null ? buy : box, "Buy " + next.getName(), NEXT);
-	}
-
-	/** What's left to buy, above the GE (or below it, if there's no room). */
-	private void progress(Graphics2D g, GeGuide guide, Rectangle ge)
-	{
-		List<String> lines = new ArrayList<>();
-		List<Color> colors = new ArrayList<>();
-		lines.add("Buying " + GeGuider.describe(guide));
-		colors.add(NEXT);
-		for (GeGuide.Item i : guide.getItems())
-		{
-			int bought = guide.bought(i.getItemId());
-			int ordered = guide.ordered(i.getItemId());
-			String counts = QuantityFormatter.formatNumber(bought) + "/" + QuantityFormatter.formatNumber(i.getQuantity());
-			if (bought >= i.getQuantity())
-			{
-				lines.add(i.getName() + ": " + counts + " bought");
-				colors.add(GOOD);
-			}
-			else if (ordered >= i.getQuantity())
-			{
-				lines.add(i.getName() + ": " + counts + ", rest ordered");
-				colors.add(TEXT);
-			}
-			else
-			{
-				lines.add(i.getName() + ": " + counts + ", buy " + QuantityFormatter.formatNumber(i.getQuantity() - ordered)
-					+ " at " + QuantityFormatter.formatNumber(i.getPrice()));
-				colors.add(TEXT);
-			}
-		}
-		if (guide.isAllBought())
-		{
-			lines.add("All bought. " + GeGuider.cashOut(guide));
-			colors.add(GOOD);
-		}
-		else if (guide.next() == null)
-		{
-			lines.add("All ordered: wait for the offers, then collect.");
-			colors.add(MUTED);
-		}
-		FontMetrics fm = g.getFontMetrics();
-		int width = 0;
-		for (String l : lines)
-		{
-			width = Math.max(width, fm.stringWidth(l));
-		}
-		int lineHeight = fm.getHeight();
-		int height = lines.size() * lineHeight + PAD * 2;
-		// Beside the GE, where it covers neither the GE nor the chatbox; above or below if there's no room
-		int boxWidth = width + PAD * 2;
-		int x = ge.x + ge.width + 4;
-		int y = ge.y;
-		if (x + boxWidth > client.getCanvasWidth())
-		{
-			x = ge.x - boxWidth - 4;
-		}
-		if (x < 0)
-		{
-			x = ge.x;
-			y = ge.y - height - 4 >= 0 ? ge.y - height - 4 : ge.y + ge.height + 4;
-		}
-		g.setColor(BG);
-		g.fillRect(x, y, width + PAD * 2, height);
-		for (int n = 0; n < lines.size(); n++)
-		{
-			shadowed(g, lines.get(n), x + PAD, y + PAD + fm.getAscent() + n * lineHeight, colors.get(n));
-		}
-	}
-
-	private String keyName()
-	{
-		return GeGuider.keyName(config.geGuideKey());
 	}
 
 	/** Outlines and labels a widget; false if it isn't showing. */
