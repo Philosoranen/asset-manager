@@ -1,6 +1,7 @@
 package com.assetmanager.value;
 
 import com.assetmanager.shop.SellRules;
+import com.assetmanager.shop.Shop;
 import com.assetmanager.shop.ShopCatalog;
 import com.assetmanager.shop.ShopOffer;
 import com.assetmanager.shop.ShopPerks;
@@ -107,9 +108,10 @@ public final class SaleAdvisor
 				{
 					// The stacks needing the most worlds are what make the hopping; without them the rest may be
 					// worth a shorter trip. A one-world trip that isn't worth it loses everything.
+					int most = mostWorlds(e.getValue());
 					for (SaleSuggestion x : e.getValue())
 					{
-						if (x.getShopOffer().getWorlds() >= trip.getWorlds())
+						if (x.getShopOffer().getWorlds() >= most)
 						{
 							skip.computeIfAbsent(x.getValues().getItemId(), k -> new HashSet<>()).add(e.getKey());
 						}
@@ -126,17 +128,38 @@ public final class SaleAdvisor
 		}
 	}
 
-	/** A trip selling every stack: as many worlds as the stack needing the most, gaining what they all gain together. */
+	/**
+	 * A trip selling every stack: as many worlds as the stack needing the most, or more when the shop hasn't the slots
+	 * for them all on each world; gaining what they all gain together.
+	 */
 	static ShopTrip plan(String shop, List<SaleSuggestion> stacks)
 	{
 		int worlds = 1;
+		long slotWorlds = 0;
 		long gain = 0;
+		Shop at = null;
 		for (SaleSuggestion x : stacks)
 		{
-			worlds = Math.max(worlds, x.getShopOffer().getWorlds());
+			ShopOffer offer = x.getShopOffer();
+			worlds = Math.max(worlds, offer.getWorlds());
+			if (offer.getShop().takesSlot(x.getValues().getName()))
+			{
+				slotWorlds += offer.getWorlds();
+			}
+			// Shops paying the same can stock different things: count the one with the fewest free slots
+			if (at == null || offer.getShop().freeSlots() < at.freeSlots())
+			{
+				at = offer.getShop();
+			}
 			gain += x.getGain();
 		}
-		return new ShopTrip(shop, worlds, gain);
+		return new ShopTrip(shop, at == null || at.getTalk() != null ? worlds : at.worldsFor(worlds, slotWorlds), gain);
+	}
+
+	/** The most worlds any one stack of a trip needs. */
+	private static int mostWorlds(List<SaleSuggestion> stacks)
+	{
+		return stacks.stream().mapToInt(x -> x.getShopOffer().getWorlds()).max().orElse(1);
 	}
 
 	/** Whether a trip gains at least the minimum for each world it visits. */

@@ -114,6 +114,35 @@ public class Shop
 
 	/** Underground areas are this far north of the surface above them. */
 	private static final int UNDERGROUND_OFFSET = 6400;
+	/** Different items a shop can hold at once, counting its own stock. */
+	public static final int SLOTS = 40;
+
+	/** Whether selling an item here takes a slot of its own: the shop doesn't stock it. */
+	public boolean takesSlot(String name)
+	{
+		Item item = items.get(name.toLowerCase());
+		return item == null || item.isNs();
+	}
+
+	/** Slots left for items the shop doesn't stock, on a world where nobody's sold it anything else. */
+	public int freeSlots()
+	{
+		long stocked = items.values().stream().filter(i -> !i.isNs()).count();
+		return (int) Math.max(1, SLOTS - stocked);
+	}
+
+	/**
+	 * Worlds to sell several items on: as many as the item needing the most, or more when the items the shop doesn't
+	 * stock can't all fit in its free slots on each world.
+	 *
+	 * @param mostWorlds the most worlds any one item needs
+	 * @param slotWorlds the worlds needed by the items taking a slot, added up
+	 */
+	public int worldsFor(int mostWorlds, long slotWorlds)
+	{
+		int free = freeSlots();
+		return (int) Math.max(mostWorlds, (slotWorlds + free - 1) / free);
+	}
 
 	/**
 	 * Roughly how far the nearest branch is from a point, in tiles, as the crow flies (so teleports aren't

@@ -380,7 +380,8 @@ public final class Flips
 		}
 		// Flips are most profitable first
 		int mainWorlds = run.getFlips().get(0).getSellOffer().getWorlds();
-		return run.getWorlds() > mainWorlds ? sellRun(shop, chosen, catalog, perks, all, held, coins, geHours, missing, mainWorlds) : run;
+		int mostWorlds = run.getFlips().stream().mapToInt(f -> f.getSellOffer().getWorlds()).max().orElse(1);
+		return mostWorlds > mainWorlds ?sellRun(shop, chosen, catalog, perks, all, held, coins, geHours, missing, mainWorlds) : run;
 	}
 
 	/** {@code sales}, best first, sold on no more than {@code maxWorlds} worlds each. */
@@ -392,6 +393,7 @@ public final class Flips
 		long slotsLeft = talk ? BestBuys.INVENTORY_SIZE : Long.MAX_VALUE;
 		List<Flip> flips = new ArrayList<>();
 		int worlds = 1;
+		long slotWorlds = 0;
 		long clicks = 0;
 		double wait = 0;
 		for (Sale sale : sales)
@@ -425,6 +427,10 @@ public final class Flips
 			coinsLeft -= sale.getCost() * qty;
 			slotsLeft -= qty;
 			worlds = Math.max(worlds, offer.getWorlds());
+			if (shop.takesSlot(sale.getName()))
+			{
+				slotWorlds += offer.getWorlds();
+			}
 			clicks += talk ? 1 : FlipTime.clicks(qty, offer.getWorlds());
 			wait = Math.max(wait, FlipTime.geWaitSeconds(geHours, sale.getGeLimit()));
 			// Going again means selling where the last go left the shop overstocked: no sooner than every world can take
@@ -444,6 +450,10 @@ public final class Flips
 			return null;
 		}
 		flips.sort(Comparator.comparingLong(Flip::getProfit).reversed().thenComparing(Flip::getItem));
+		if (!talk)
+		{
+			worlds = shop.worldsFor(worlds, slotWorlds);
+		}
 		double active = FlipTime.TRIP_SECONDS + (worlds - 1) * FlipTime.HOP_SECONDS
 			+ clicks * (talk ? FlipTime.TALK_SECONDS : FlipTime.CLICK_SECONDS);
 		return new FlipRun(Flip.Source.GE, Flip.Dest.SHOP, shop, flips, worlds, Math.max(active, wait), 0);
