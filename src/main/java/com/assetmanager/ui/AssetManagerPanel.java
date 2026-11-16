@@ -13,6 +13,7 @@ import com.assetmanager.flip.ShopRates;
 import com.assetmanager.flip.FlipTime;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.flip.Flips;
+import com.assetmanager.flip.GeGuider;
 import com.assetmanager.keep.Holdings;
 import com.assetmanager.keep.KeepRules;
 import com.assetmanager.shop.Shop;
@@ -99,6 +100,8 @@ public class AssetManagerPanel extends PluginPanel
 	private static final Color WARN = new Color(0xFF9800);
 	private static final Color BAD = new Color(0xF44336);
 	private static final Color MUTED = new Color(0x9E9E9E);
+	/** The flip being bought on the GE, as the in-game highlights. */
+	private static final Color GUIDE = new Color(0x00E5FF);
 	/** A section's card, darker than the panel so sections stand apart. */
 	private static final Color CARD = ColorScheme.DARKER_GRAY_COLOR;
 	/** A card's title bar. */
@@ -157,6 +160,9 @@ public class AssetManagerPanel extends PluginPanel
 	private final Consumer<Boolean> onEvenHops;
 	/** Opens Everything in the bank in keep mode, where clicking an item keeps it. */
 	private final Runnable onKeepMode;
+	/** Guide the player through buying a flip on the GE, and stop. */
+	private final Consumer<FlipRun> onGuide;
+	private final Runnable onStopGuide;
 	/** Puts an item's icon, with a stack size, on a label. */
 	private final ItemIcons itemIcons;
 	/** Find a shop: centre the map on it and point the hint arrow at it; again to stop. */
@@ -176,10 +182,12 @@ public class AssetManagerPanel extends PluginPanel
 	public AssetManagerPanel(BiConsumer<String, Object> onSetting, Consumer<Destination> onShowInBank,
 		Consumer<Destination> onFind, Consumer<Shop> onFindShop, Patience patience, Consumer<Patience> onPatience,
 		Consumer<Flip.Dest> onDest, FlipSort sort, Consumer<FlipSort> onSort, Consumer<GeOrder> onGeOrder,
-		Consumer<Boolean> onAvoidWilderness, Consumer<Boolean> onEvenHops, Runnable onKeepMode, ItemIcons itemIcons)
+		Consumer<Boolean> onAvoidWilderness, Consumer<Boolean> onEvenHops, Runnable onKeepMode, Consumer<FlipRun> onGuide, Runnable onStopGuide, ItemIcons itemIcons)
 	{
 		super(false);
 		this.onKeepMode = onKeepMode;
+		this.onGuide = onGuide;
+		this.onStopGuide = onStopGuide;
 		this.itemIcons = itemIcons;
 		this.onEvenHops = onEvenHops;
 		this.onGeOrder = onGeOrder;
@@ -675,21 +683,25 @@ public class AssetManagerPanel extends PluginPanel
 		{
 			addRow(evenHopsToggle(state.isEvenHops()));
 		}
+		if (state.getGuide() != null)
+		{
+			guideCard(state.getGuide());
+		}
 		List<FlipRun> flips = state.getFlips();
 		if (state.getFlipCoins() <= 0)
 		{
-			addRow(text("Carry some coins to see flips. They only spend the coins in your inventory, so take out as much as you"
-				+ " want to flip with.", Color.LIGHT_GRAY));
+			addRow(text("Carry some coins to see flips. They only spend the coins in your inventory and GE buy offers, so take"
+				+ " out as much as you want to flip with.", Color.LIGHT_GRAY));
 		}
 		else if (flips.isEmpty())
 		{
-			addRow(text("Nothing is worth flipping right now with the " + gp(state.getFlipCoins()) + " in your inventory.",
-				Color.LIGHT_GRAY));
+			addRow(text("Nothing is worth flipping right now with the " + gp(state.getFlipCoins())
+				+ " in your inventory and GE buy offers.", Color.LIGHT_GRAY));
 		}
 		else
 		{
-			JLabel intro = text("Spending up to the " + gp(state.getFlipCoins()) + " in your inventory, in shops you can use."
-				+ " Hover an item for its prices.", MUTED);
+			JLabel intro = text("Spending up to the " + gp(state.getFlipCoins()) + " in your inventory and GE buy offers, in"
+				+ " shops you can use. Hover an item for its prices.", MUTED);
 			intro.setToolTipText("<html>Each row is one go: a shop visit with everything worth it there, or one round of GE"
 				+ " offers.<br>Times are rough: hops, trips, conversations, alchs and the GE's wait.</html>");
 			addRow(intro);
@@ -699,14 +711,14 @@ public class AssetManagerPanel extends PluginPanel
 			addRow(text(note, MUTED));
 		}
 		addGap(4);
-		flips.forEach(f -> flipRow(f, state.getFlipSort()));
+		flips.forEach(f -> flipRow(f, state.getFlipSort(), state.getHeld()));
 	}
 
 	/**
 	 * One go: where, what it makes, its items as they'd sit in the inventory (hover one for its prices), a line of
 	 * the shop's rates and the go's time, and a button showing the shop on the map.
 	 */
-	private void flipRow(FlipRun run, FlipSort sort)
+	private void flipRow(FlipRun run, FlipSort sort, Map<Integer, Integer> held)
 	{
 		JPanel row = new JPanel();
 		row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
@@ -744,7 +756,7 @@ public class AssetManagerPanel extends PluginPanel
 		row.add(top);
 
 		row.add(Box.createVerticalStrut(4));
-		JPanel slots = itemSlots(run);
+		JPanel slots = itemSlots(run, held);
 		slots.setAlignmentX(Component.LEFT_ALIGNMENT);
 		row.add(slots);
 		row.add(Box.createVerticalStrut(4));
@@ -762,32 +774,88 @@ public class AssetManagerPanel extends PluginPanel
 		}
 
 		Shop shop = run.getShop();
-		if (shop != null)
+		boolean ge = run.getSource() == Flip.Source.GE;
+		if (shop != null || ge)
 		{
-			JButton map = mapButton(shop.getName().equals(findingShop), () -> onFindShop.accept(shop));
 			JPanel buttons = new JPanel(new BorderLayout());
 			buttons.setOpaque(false);
 			buttons.setBorder(new EmptyBorder(4, 0, 0, 0));
-			buttons.add(map, BorderLayout.EAST);
+			if (ge)
+			{
+				JButton guide = smallButton("Buy on GE", "Guide this flip's buying: at the GE, what to click next is"
+					+ " highlighted, its item shows in the search, and a key fills in each offer's price and quantity");
+				guide.addActionListener(e -> onGuide.accept(run));
+				buttons.add(guide, BorderLayout.WEST);
+			}
+			if (shop != null)
+			{
+				buttons.add(mapButton(shop.getName().equals(findingShop), () -> onFindShop.accept(shop)), BorderLayout.EAST);
+			}
 			buttons.setAlignmentX(Component.LEFT_ALIGNMENT);
 			row.add(buttons);
 		}
 		addRow(row);
 	}
 
+	/** The flip being bought on the GE: each item's progress, and what's next. */
+	private void guideCard(GeGuider.View guide)
+	{
+		JPanel row = new JPanel();
+		row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
+		row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		row.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 3, 0, 0, GUIDE),
+			new EmptyBorder(5, 6, 6, 6)));
+		JLabel title = wrapped("<b>Buying on the GE</b><br>" + capitalise(guide.getDescription()), DETAIL_WIDTH, Color.WHITE);
+		title.setAlignmentX(Component.LEFT_ALIGNMENT);
+		row.add(title);
+		row.add(Box.createVerticalStrut(3));
+		for (GeGuider.ItemView i : guide.getItems())
+		{
+			String line = capitalise(i.getName()) + ": " + QuantityFormatter.formatNumber(i.getBought()) + "/"
+				+ QuantityFormatter.formatNumber(i.getQuantity()) + " bought";
+			int toOrder = i.getQuantity() - i.getOrdered();
+			if (i.getBought() < i.getQuantity())
+			{
+				line += toOrder > 0 ? ", buy " + QuantityFormatter.formatNumber(toOrder) + " at " + gp(i.getPrice()) : ", rest ordered";
+			}
+			JLabel l = wrapped(line, DETAIL_WIDTH, i.getBought() >= i.getQuantity() ? GOOD : Color.LIGHT_GRAY);
+			l.setAlignmentX(Component.LEFT_ALIGNMENT);
+			row.add(l);
+		}
+		row.add(Box.createVerticalStrut(3));
+		JLabel next = wrapped(guide.isAllBought() ? "All bought. " + guide.getCashOut()
+			: "Open the GE and follow the highlights. In the item search, price or quantity box, press the fill key"
+			+ " (\\ unless changed in the settings) to fill it in.", DETAIL_WIDTH, guide.isAllBought() ? GOOD : MUTED);
+		next.setAlignmentX(Component.LEFT_ALIGNMENT);
+		row.add(next);
+		JButton stop = smallButton(guide.isAllBought() ? "Done" : "Stop", guide.isAllBought() ? "Finish with this flip"
+			: "Stop guiding this flip; offers already in stay as they are");
+		stop.addActionListener(e -> onStopGuide.run());
+		JPanel buttons = new JPanel(new BorderLayout());
+		buttons.setOpaque(false);
+		buttons.setBorder(new EmptyBorder(4, 0, 0, 0));
+		buttons.add(stop, BorderLayout.EAST);
+		buttons.setAlignmentX(Component.LEFT_ALIGNMENT);
+		row.add(buttons);
+		addRow(row);
+		addGap(6);
+	}
+
 	/** The go's items as inventory slots, with how many on each; hover one for what it costs and fetches. */
-	private JPanel itemSlots(FlipRun run)
+	private JPanel itemSlots(FlipRun run, Map<Integer, Integer> held)
 	{
 		JPanel grid = new JPanel(new GridLayout(0, SLOTS_ACROSS, 2, 2));
 		grid.setOpaque(false);
 		for (Flip f : run.getFlips())
 		{
-			JLabel slot = new StackLabel(f.getQuantity());
+			// Bought on the GE, what's already in the inventory and bank needn't be bought again
+			int have = f.getSource() == Flip.Source.GE ? Math.min(f.getQuantity(), held.getOrDefault(f.getItemId(), 0)) : 0;
+			JLabel slot = new StackLabel(f.getQuantity() - have);
 			slot.setHorizontalAlignment(JLabel.CENTER);
 			slot.setOpaque(true);
 			slot.setBackground(SLOT);
 			slot.setPreferredSize(new Dimension(SLOT_WIDTH, SLOT_HEIGHT));
-			slot.setToolTipText(itemTip(f));
+			slot.setToolTipText(itemTip(f, have));
 			// One icon per item, whatever the quantity, so the game isn't asked to draw a new one each time it changes
 			itemIcons.addTo(slot, f.getItemId());
 			grid.add(slot);
@@ -803,10 +871,16 @@ public class AssetManagerPanel extends PluginPanel
 		return wrap;
 	}
 
-	private static String itemTip(Flip f)
+	private static String itemTip(Flip f, int have)
 	{
 		StringBuilder t = new StringBuilder("<html><b>").append(QuantityFormatter.formatNumber(f.getQuantity())).append(" x ")
-			.append(f.getItem()).append("</b><br>Buy for ").append(gp(f.getFirstCost())).append(f.isPriceRises() ? ", rising" : "")
+			.append(f.getItem()).append("</b>");
+		if (have > 0)
+		{
+			t.append("<br>You have ").append(QuantityFormatter.formatNumber(have)).append(", so buy ")
+				.append(QuantityFormatter.formatNumber(f.getQuantity() - have));
+		}
+		t.append("<br>Buy for ").append(gp(f.getFirstCost())).append(f.isPriceRises() ? ", rising" : "")
 			.append("<br>").append(sellVerb(f.getDest())).append(' ').append(gp(f.getFirstValue()))
 			.append(f.getSellOffer() != null && f.getSellOffer().getWorlds() > 1 ? ", falling" : "")
 			.append("<br>Profit +").append(gp(f.getProfit()))

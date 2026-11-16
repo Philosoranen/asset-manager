@@ -4,6 +4,13 @@ import com.assetmanager.AssetManagerConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -24,6 +32,7 @@ import net.runelite.api.events.GameTick;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -38,11 +47,16 @@ public class ShopStockTracker
 {
 	private static final String KEY = "shopStock";
 	private static final String KEY_CYCLES = "shopRestockCycles";
+	/** Asset Manager's folder in RuneLite's. */
+	private static final String DIR = "asset-manager";
 
 	private final Client client;
 	private final ItemManager itemManager;
 	private final ConfigManager configManager;
 	private final Gson gson;
+	private final ScheduledExecutorService executor;
+	/** The profile's save file; null until a profile is loaded. */
+	private File file;
 
 	@Setter
 	private Supplier<Shop> openShop = () -> null;
@@ -63,8 +77,10 @@ public class ShopStockTracker
 	private Map<Integer, Integer> lastInventory = Collections.emptyMap();
 
 	@Inject
-	ShopStockTracker(Client client, ItemManager itemManager, ConfigManager configManager, Gson gson)
+	ShopStockTracker(Client client, ItemManager itemManager, ConfigManager configManager, Gson gson,
+		ScheduledExecutorService executor)
 	{
+		this.executor = executor;
 		this.client = client;
 		this.itemManager = itemManager;
 		this.configManager = configManager;
@@ -76,56 +92,130 @@ public class ShopStockTracker
 		return stock;
 	}
 
+	/** What's saved: the overstock seen, and the restock cycles learned. */
+	private static class Saved
+	{
+		List<ShopStock.Seen> seen;
+		Map<String, Long> cycles;
+	}
+
+	/**
+	 * Loads the profile's stock from its file. It used to be kept in the profile's settings, but with every world's
+	 * shops it grew too big for RuneLite to sync, and a restart brought back an old synced copy; that's moved over once.
+	 */
 	public void load()
 	{
-		String json = configManager.getRSProfileConfiguration(AssetManagerConfig.GROUP, KEY);
-		List<ShopStock.Seen> saved = Collections.emptyList();
-		if (json != null)
+		file = fileFor(configManager.getRSProfileKey());
+		Saved saved = file == null ? null : readFile(file);
+		if (saved == null)
 		{
-			try
+			saved = readSettings();
+			if (saved != null && file != null)
 			{
-				List<ShopStock.Seen> parsed = gson.fromJson(json, new TypeToken<List<ShopStock.Seen>>()
-				{
-				}.getType());
-				if (parsed != null)
-				{
-					saved = parsed;
-				}
-			}
-			catch (JsonParseException e)
-			{
-				log.debug("Ignoring unreadable shop stock", e);
+				write(file, gson.toJson(saved));
 			}
 		}
-		Map<String, Long> cycles = Collections.emptyMap();
-		String cyclesJson = configManager.getRSProfileConfiguration(AssetManagerConfig.GROUP, KEY_CYCLES);
-		if (cyclesJson != null)
-		{
-			try
-			{
-				Map<String, Long> parsed = gson.fromJson(cyclesJson, new TypeToken<Map<String, Long>>()
-				{
-				}.getType());
-				if (parsed != null)
-				{
-					cycles = parsed;
-				}
-			}
-			catch (JsonParseException e)
-			{
-				log.debug("Ignoring unreadable restock cycles", e);
-			}
-		}
-		stock = new ShopStock(saved, cycles, System.currentTimeMillis());
+		configManager.unsetRSProfileConfiguration(AssetManagerConfig.GROUP, KEY);
+		configManager.unsetRSProfileConfiguration(AssetManagerConfig.GROUP, KEY_CYCLES);
+		stock = new ShopStock(saved == null || saved.seen == null ? Collections.emptyList() : saved.seen,
+			saved == null || saved.cycles == null ? Collections.emptyMap() : saved.cycles, System.currentTimeMillis());
 		visit = null;
+		unsaved = false;
+	}
+
+	/** The profile's file; null before a profile is known. */
+	private static File fileFor(String profileKey)
+	{
+		if (profileKey == null)
+		{
+			return null;
+		}
+		return new File(new File(RuneLite.RUNELITE_DIR, DIR), "shop-stock-" + profileKey.replaceAll("[^A-Za-z0-9._-]", "_") + ".json");
+	}
+
+	private Saved readFile(File f)
+	{
+		if (!f.isFile())
+		{
+			return null;
+		}
+		try (Reader r = Files.newBufferedReader(f.toPath(), StandardCharsets.UTF_8))
+		{
+			return gson.fromJson(r, Saved.class);
+		}
+		catch (IOException | JsonParseException e)
+		{
+			log.debug("Ignoring unreadable shop stock file {}", f, e);
+			return null;
+		}
+	}
+
+	/** The stock as it used to be saved, in the profile's settings; null if there's none. */
+	private Saved readSettings()
+	{
+		String json = configManager.getRSProfileConfiguration(AssetManagerConfig.GROUP, KEY);
+		String cyclesJson = configManager.getRSProfileConfiguration(AssetManagerConfig.GROUP, KEY_CYCLES);
+		if (json == null && cyclesJson == null)
+		{
+			return null;
+		}
+		Saved s = new Saved();
+		try
+		{
+			s.seen = json == null ? null : gson.fromJson(json, new TypeToken<List<ShopStock.Seen>>()
+			{
+			}.getType());
+			s.cycles = cyclesJson == null ? null : gson.fromJson(cyclesJson, new TypeToken<Map<String, Long>>()
+			{
+			}.getType());
+		}
+		catch (JsonParseException e)
+		{
+			log.debug("Ignoring unreadable shop stock settings", e);
+		}
+		return s;
+	}
+
+	/** Saves now, if anything's changed: when the plugin stops. Client thread. */
+	public void flush()
+	{
+		if (unsaved)
+		{
+			save();
+		}
 	}
 
 	private void save()
 	{
 		unsaved = false;
 		ticksSinceSave = 0;
-		configManager.setRSProfileConfiguration(AssetManagerConfig.GROUP, KEY, gson.toJson(new ArrayList<>(stock.all())));
-		configManager.setRSProfileConfiguration(AssetManagerConfig.GROUP, KEY_CYCLES, gson.toJson(new HashMap<>(stock.cycles())));
+		if (file == null)
+		{
+			return;
+		}
+		Saved s = new Saved();
+		s.seen = new ArrayList<>(stock.all());
+		s.cycles = new HashMap<>(stock.cycles());
+		write(file, gson.toJson(s));
+	}
+
+	/** Writes off the client thread, through a temporary file so a crash mid-write can't leave half a file. */
+	private void write(File f, String json)
+	{
+		executor.execute(() ->
+		{
+			try
+			{
+				Files.createDirectories(f.getParentFile().toPath());
+				Path tmp = f.toPath().resolveSibling(f.getName() + ".tmp");
+				Files.write(tmp, json.getBytes(StandardCharsets.UTF_8));
+				Files.move(tmp, f.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			}
+			catch (IOException e)
+			{
+				log.warn("Couldn't save shop stock to {}", f, e);
+			}
+		});
 	}
 
 	private Map<Integer, Integer> inventory()

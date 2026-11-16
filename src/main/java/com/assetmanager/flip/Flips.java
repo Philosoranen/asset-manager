@@ -101,6 +101,15 @@ public final class Flips
 		{
 			return 1;
 		}
+
+		/**
+		 * Worlds the player can sell on: members worlds for members shops and items, otherwise free worlds (and members
+		 * worlds too, for a member). 0 if unknown, which leaves out what the worlds limit.
+		 */
+		default int worlds(boolean members)
+		{
+			return 0;
+		}
 	}
 
 	/**
@@ -191,11 +200,11 @@ public final class Flips
 				{
 					continue;
 				}
-				Sale sale = new Sale(id, name, value, cost, why, trades, null, why);
-				addSales(sales, catalog, perks, noted, sale, cap, why, maxWorlds);
+				Sale sale = new Sale(id, name, value, cost, why, trades, m.members(id), null, why, 0);
+				addSales(m, sales, catalog, perks, noted, sale, cap, why, maxWorlds);
 				// Traders bought from by talking only take unnoted items, so it's an inventory a trip
 				long trip = Math.min(cap, BestBuys.INVENTORY_SIZE);
-				addSales(sales, catalog, perks, unnoted, sale, trip, trip < cap ? ShopFlip.Limit.SPACE : why, maxWorlds);
+				addSales(m, sales, catalog, perks, unnoted, sale, trip, trip < cap ? ShopFlip.Limit.SPACE : why, maxWorlds);
 			}
 		}
 		// In the catalog's order, so the result is the same every time
@@ -232,20 +241,25 @@ public final class Flips
 		/** What stopped the GE buying going higher. */
 		ShopFlip.Limit geLimit;
 		long trades;
+		/** A members item, which can only be sold on members worlds. */
+		boolean members;
 		/** What the shop pays for the stack; set per shop. */
 		@With
 		ShopOffer offer;
 		/** What stopped the quantity going higher; set per shop. */
 		@With
 		ShopFlip.Limit limit;
+		/** Worlds the player can sell it to the shop on; 0 if unknown. Set per shop. */
+		@With
+		int worlds;
 	}
 
 	/**
 	 * Adds a sale of up to {@code qty} to each of the {@code usable} shops paying more than the GE charges, hopping no
 	 * more than {@code maxWorlds}.
 	 */
-	private static void addSales(Map<Shop, List<Sale>> sales, ShopCatalog catalog, ShopPerks perks, Predicate<Shop> usable,
-		Sale sale, long qty, ShopFlip.Limit why, int maxWorlds)
+	private static void addSales(GeMarket m, Map<Shop, List<Sale>> sales, ShopCatalog catalog, ShopPerks perks,
+		Predicate<Shop> usable, Sale sale, long qty, ShopFlip.Limit why, int maxWorlds)
 	{
 		int n = (int) Math.min(qty, Integer.MAX_VALUE);
 		for (ShopOffer offer : catalog.offers(sale.getName(), sale.getValue(), n, true, perks, sale.getCost(), UNLIMITED, usable))
@@ -255,14 +269,24 @@ public final class Flips
 				continue;
 			}
 			ShopFlip.Limit limit = why;
-			if (maxWorlds != ShopCatalog.NO_WORLD_LIMIT && offer.getWorlds() > maxWorlds)
+			// No more worlds than there are to sell on, nor than the player will hop
+			int worlds = m.worlds(sale.isMembers() || offer.getShop().isMembers());
+			int most = maxWorlds;
+			ShopFlip.Limit mostLimit = ShopFlip.Limit.WORLDS;
+			if (worlds > 0 && (most == ShopCatalog.NO_WORLD_LIMIT || worlds < most))
 			{
-				offer = offerAt(catalog, perks, sale, offer.getShop(), offer.getPerWorld() * maxWorlds);
-				limit = ShopFlip.Limit.WORLDS;
+				most = worlds;
+				mostLimit = ShopFlip.Limit.ALL_WORLDS;
+			}
+			if (most != ShopCatalog.NO_WORLD_LIMIT && offer.getWorlds() > most)
+			{
+				offer = offerAt(catalog, perks, sale, offer.getShop(), (long) offer.getPerWorld() * most);
+				limit = mostLimit;
 			}
 			if (offer != null && offer.getQuantity() > 0)
 			{
-				sales.computeIfAbsent(offer.getShop(), s -> new ArrayList<>()).add(sale.withOffer(offer).withLimit(limit));
+				sales.computeIfAbsent(offer.getShop(), s -> new ArrayList<>()).add(sale.withOffer(offer).withLimit(limit)
+					.withWorlds(worlds));
 			}
 		}
 	}
@@ -352,6 +376,13 @@ public final class Flips
 			worlds = Math.max(worlds, offer.getWorlds());
 			clicks += talk ? 1 : FlipTime.clicks(qty, offer.getWorlds());
 			wait = Math.max(wait, FlipTime.geWaitSeconds(geHours, sale.getGeLimit()));
+			// Going again means selling where the last go left the shop overstocked: no sooner than every world can take
+			// as many again
+			Shop.Item stocked = shop.getItems().get(sale.getName());
+			if (stocked != null && stocked.getR() != null)
+			{
+				wait = Math.max(wait, FlipTime.restockSeconds(qty, stocked.getR(), sale.getWorlds()));
+			}
 			List<String> unchecked = missing.getUnchecked();
 			flips.add(new Flip(Flip.Source.GE, Flip.Dest.SHOP, sale.getName(), sale.getItemId(), null, offer, qty, sale.getCost() * qty,
 				offer.getTotal(), sale.getCost(), offer.getFirstUnit(), limit,

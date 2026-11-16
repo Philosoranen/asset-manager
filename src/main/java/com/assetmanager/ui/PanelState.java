@@ -8,6 +8,7 @@ import com.assetmanager.dest.GeOrder;
 import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipRun;
 import com.assetmanager.flip.FlipSort;
+import com.assetmanager.flip.GeGuider;
 import com.assetmanager.shop.ShopPerks;
 import com.assetmanager.shop.ShopStock;
 import java.time.Instant;
@@ -57,7 +58,7 @@ public class PanelState
 	Flip.Dest flipDest;
 	/** How the flips are ordered. */
 	FlipSort flipSort;
-	/** Coins in the inventory, which is what the flips spend. */
+	/** Coins in the inventory and GE buy offers, which is what the flips spend. */
 	long flipCoins;
 	/** How the Grand Exchange bank view is ordered. */
 	GeOrder geOrder;
@@ -65,6 +66,10 @@ public class PanelState
 	boolean geVolumes;
 	/** Whether selling to a shop hops no more worlds than the go's most profitable item takes. */
 	boolean evenHops;
+	/** The flip being bought on the GE, with how far it's got; null if none. */
+	GeGuider.View guide;
+	/** How many of each GE-bought flip item are already spare in the inventory and bank, by item. */
+	Map<Integer, Integer> held;
 
 	/** Deaths the coffer covers at the selected scenario; -1 if unknown, Long.MAX_VALUE if free. */
 	public long getDeathsCovered()

@@ -72,7 +72,13 @@ public class ShopStock
 		/** When the stock is back to normal. */
 		public long getNormalAt()
 		{
-			return overstock == 0 ? at : firstDropAfter(at) + (overstock - 1) * interval();
+			return reachesAt(0);
+		}
+
+		/** When the overstock is down to {@code target}. */
+		public long reachesAt(int target)
+		{
+			return overstock <= target ? at : firstDropAfter(at) + (overstock - target - 1) * interval();
 		}
 
 		/** When the stock left by others has gone. */
@@ -82,7 +88,7 @@ public class ShopStock
 		}
 
 		/** How far over normal the stock is by {@code now}. */
-		int overstockAt(long now)
+		public int overstockAt(long now)
 		{
 			long first = firstDropAfter(at);
 			return now < first ? overstock : (int) Math.max(0, overstock - ((now - first) / interval() + 1));

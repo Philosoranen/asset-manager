@@ -3,6 +3,9 @@ package com.assetmanager.flip;
 import com.assetmanager.AssetManagerConfig;
 import com.assetmanager.shop.Shop;
 import com.assetmanager.shop.ShopCatalog;
+import com.assetmanager.shop.ShopStock;
+import com.assetmanager.shop.ShopStockTracker;
+import com.assetmanager.shop.ShopTimes;
 import com.assetmanager.ui.PriceTooltip;
 import com.assetmanager.ui.SolidTooltip;
 import com.assetmanager.value.ItemValuator;
@@ -10,7 +13,9 @@ import com.assetmanager.value.ItemValues;
 import com.assetmanager.value.LivePrices;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -31,6 +36,7 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
@@ -49,6 +55,7 @@ public class ShopFlipper
 	private static final Color GOOD = new Color(0x4CAF50);
 	private static final Color NORMAL = new Color(0xEEEEEE);
 	private static final Color MUTED = new Color(0x9E9E9E);
+	private static final Color WARN = new Color(0xFF9800);
 	private static final int INVENTORY_SIZE = 28;
 
 	private final Client client;
@@ -57,6 +64,7 @@ public class ShopFlipper
 	private final LivePrices livePrices;
 	private final TooltipManager tooltipManager;
 	private final AssetManagerConfig config;
+	private final ShopStockTracker stockTracker;
 
 	@Setter
 	private ShopCatalog shops;
@@ -106,8 +114,9 @@ public class ShopFlipper
 
 	@Inject
 	ShopFlipper(Client client, ItemManager itemManager, ItemValuator itemValuator, LivePrices livePrices,
-		TooltipManager tooltipManager, AssetManagerConfig config)
+		TooltipManager tooltipManager, AssetManagerConfig config, ShopStockTracker stockTracker)
 	{
+		this.stockTracker = stockTracker;
 		this.client = client;
 		this.itemManager = itemManager;
 		this.itemValuator = itemValuator;
@@ -225,7 +234,8 @@ public class ShopFlipper
 	public void onBeforeRender(BeforeRender event)
 	{
 		Map<Integer, Buy> current = flips;
-		if (current.isEmpty() || !config.tooltipPlaces().isBankAndShops() || client.isMenuOpen())
+		Shop shop = openShop;
+		if (shop == null && current.isEmpty() || !config.tooltipPlaces().isBankAndShops() || client.isMenuOpen())
 		{
 			return;
 		}
@@ -241,17 +251,65 @@ public class ShopFlipper
 			return;
 		}
 		Buy buy = current.get(w.getItemId());
-		if (buy != null)
+		List<LayoutableRenderableEntity> stock = shop == null ? Collections.emptyList() : stockLines(shop, w.getItemId());
+		if (buy == null && stock.isEmpty())
 		{
-			tooltipManager.add(SolidTooltip.of(tooltip(w.getItemId(), buy)));
+			return;
 		}
-	}
-
-	private PanelComponent tooltip(int itemId, Buy buy)
-	{
 		PanelComponent p = new PanelComponent();
 		p.setBackgroundColor(PriceTooltip.SOLID_BACKGROUND);
 		p.setPreferredSize(new Dimension(180, 0));
+		if (buy != null)
+		{
+			tooltip(p, w.getItemId(), buy);
+		}
+		if (!stock.isEmpty())
+		{
+			if (!p.getChildren().isEmpty())
+			{
+				p.getChildren().add(LineComponent.builder().left(" ").build());
+			}
+			p.getChildren().addAll(stock);
+		}
+		tooltipManager.add(SolidTooltip.of(p));
+	}
+
+	/**
+	 * How overstocked the item is: on this world and when it's back to normal, and whether others have been
+	 * overstocking it on the worlds the player checked. Empty if it's at its normal stock.
+	 */
+	private List<LayoutableRenderableEntity> stockLines(Shop shop, int itemId)
+	{
+		String name = itemManager.getItemComposition(itemId).getName().toLowerCase();
+		long now = System.currentTimeMillis();
+		ShopStock stock = stockTracker.get();
+		List<LayoutableRenderableEntity> out = new ArrayList<>();
+		for (ShopStock.Seen s : stock.overstocked(shop.getName(), now))
+		{
+			if (s.getWorld() == client.getWorld() && s.getItem().equals(name))
+			{
+				out.add(TitleComponent.builder().text("Overstocked on this world").color(WARN).build());
+				out.add(line("Over normal stock", "+" + QuantityFormatter.formatNumber(s.getOverstock()), NORMAL));
+				out.add(line("Back to normal in", (s.isExact() ? "" : "up to ") + ShopTimes.duration(s.getNormalAt() - now), NORMAL));
+				if (!s.isExact())
+				{
+					out.add(LineComponent.builder().left("Exact once you've seen it restock here").leftColor(MUTED).build());
+				}
+			}
+		}
+		for (ShopStock.Busy busy : stock.busy(now))
+		{
+			if (busy.getShop().equals(shop.getName()) && busy.getItem().equals(name))
+			{
+				out.add(LineComponent.builder().left("Others have overstocked it on " + busy.getWorlds() + " worlds you checked")
+					.leftColor(WARN).build());
+			}
+		}
+		return out;
+	}
+
+	private void tooltip(PanelComponent p, int itemId, Buy buy)
+	{
 		// The better one first
 		ShopFlip first = buy.best();
 		for (ShopFlip f : new ShopFlip[]{first, first == buy.getGe() ? buy.getCoffer() : buy.getGe()})
@@ -291,7 +349,6 @@ public class ShopFlipper
 					.build());
 			}
 		}
-		return p;
 	}
 
 	private static LineComponent line(String left, String right, Color rightColor)

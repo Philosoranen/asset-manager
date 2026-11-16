@@ -32,6 +32,22 @@ public class ShopStockTest
 	}
 
 	@Test
+	public void timesWhenTheOverstockIsDownToATarget()
+	{
+		ShopStock stock = new ShopStock();
+		// 3 over at 2 hours each: down to 2 after one cycle, to 1 after two, back to normal after three
+		stock.observe(SEDDU, SKIRT, 420, 4, 1, RESTOCK, true, false, 0);
+		ShopStock.Seen s = stock.overstocked(SEDDU, 0).get(0);
+		assertEquals(2 * HOUR, s.reachesAt(2));
+		assertEquals(4 * HOUR, s.reachesAt(1));
+		assertEquals(s.getNormalAt(), s.reachesAt(0));
+		// Already there
+		assertEquals(0, s.reachesAt(3));
+		assertEquals(3, s.overstockAt(HOUR));
+		assertEquals(2, s.overstockAt(2 * HOUR + 1));
+	}
+
+	@Test
 	public void thePlayersOwnSalesArentOthers()
 	{
 		ShopStock stock = new ShopStock();

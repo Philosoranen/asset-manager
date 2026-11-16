@@ -18,6 +18,9 @@ import com.assetmanager.flip.BestBuys;
 import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipRun;
 import com.assetmanager.flip.FlipSort;
+import com.assetmanager.flip.GeGuide;
+import com.assetmanager.flip.GeGuideOverlay;
+import com.assetmanager.flip.GeGuider;
 import com.assetmanager.flip.Flips;
 import com.assetmanager.flip.ShopFlipOverlay;
 import com.assetmanager.flip.ShopFlipper;
@@ -34,10 +37,12 @@ import com.assetmanager.shop.ShopCatalog;
 import com.assetmanager.shop.ShopFinder;
 import com.assetmanager.shop.ShopMapMarkers;
 import com.assetmanager.shop.ShopPerks;
+import com.assetmanager.shop.ShopSellGuideOverlay;
 import com.assetmanager.shop.ShopSellOverlay;
 import com.assetmanager.shop.ShopStock;
 import com.assetmanager.shop.ShopStockTracker;
 import com.assetmanager.shop.UnlockReader;
+import com.assetmanager.shop.WorldShopOverlay;
 import com.assetmanager.shop.Unlocks;
 import com.assetmanager.ui.AssetManagerPanel;
 import com.assetmanager.ui.CofferInfoBox;
@@ -57,6 +62,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -68,6 +74,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
@@ -78,6 +86,8 @@ import net.runelite.api.Client;
 import net.runelite.api.EnumComposition;
 import net.runelite.api.EnumID;
 import net.runelite.api.GameState;
+import net.runelite.api.GrandExchangeOffer;
+import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
@@ -109,7 +119,9 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.WorldService;
 import net.runelite.client.game.chatbox.ChatboxPanelManager;
+import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -120,6 +132,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
+import net.runelite.http.api.worlds.WorldResult;
 
 @Slf4j
 @PluginDependency(BankTagsPlugin.class)
@@ -142,6 +155,10 @@ public class AssetManagerPlugin extends Plugin
 	private static final int PRICE_REFRESH_TICKS = 3000;
 	/** Flips listed on the panel's Flipping tab. */
 	private static final int FLIPS_SHOWN = 10;
+	/** World types a normal account can shop on; any other type leaves a world out. */
+	private static final Set<net.runelite.http.api.worlds.WorldType> PLAIN_WORLDS = EnumSet.of(
+		net.runelite.http.api.worlds.WorldType.MEMBERS, net.runelite.http.api.worlds.WorldType.SKILL_TOTAL);
+	private static final Pattern SKILL_TOTAL = Pattern.compile("(\\d{3,4}) skill total");
 	/** Tiles moved before shop distances are worked out again. */
 	private static final int RECALC_DISTANCE = 64;
 
@@ -186,6 +203,10 @@ public class AssetManagerPlugin extends Plugin
 	@Inject
 	private ShopSellOverlay shopSellOverlay;
 	@Inject
+	private WorldShopOverlay worldShopOverlay;
+	@Inject
+	private ShopSellGuideOverlay shopSellGuideOverlay;
+	@Inject
 	private ShopFinder shopFinder;
 	@Inject
 	private UnlockReader unlockReader;
@@ -199,6 +220,14 @@ public class AssetManagerPlugin extends Plugin
 	private ShopFlipOverlay shopFlipOverlay;
 	@Inject
 	private ShopRatesOverlay shopRatesOverlay;
+	@Inject
+	private GeGuider geGuider;
+	@Inject
+	private GeGuideOverlay geGuideOverlay;
+	@Inject
+	private KeyManager keyManager;
+	@Inject
+	private WorldService worldService;
 	@Inject
 	private LivePrices livePrices;
 	@Inject
@@ -289,6 +318,9 @@ public class AssetManagerPlugin extends Plugin
 			avoid -> configManager.setConfiguration(AssetManagerConfig.GROUP, "avoidWilderness", avoid),
 			even -> configManager.setConfiguration(AssetManagerConfig.GROUP, "shopEvenHops", even),
 			() -> clientThread.invokeLater(this::startKeepMode),
+			run -> clientThread.invokeLater(() -> geGuider.start(run, spareHeld(run.getFlips().stream().map(Flip::getItemId)
+				.collect(Collectors.toSet())))),
+			() -> clientThread.invokeLater(geGuider::stop),
 			(label, id) -> itemManager.getImage(id).addTo(label));
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
 		navButton = NavigationButton.builder()
@@ -322,6 +354,11 @@ public class AssetManagerPlugin extends Plugin
 		eventBus.register(shopStockTracker);
 		shopSellOverlay.setOpenShop(shopFlipper::getOpenShop);
 		overlayManager.add(shopSellOverlay);
+		worldShopOverlay.setOpenShop(shopFlipper::getOpenShop);
+		shopSellGuideOverlay.setOpenShop(shopFlipper::getOpenShop);
+		overlayManager.add(shopSellGuideOverlay);
+		overlayManager.add(worldShopOverlay);
+		eventBus.register(shopSellOverlay);
 		shopFinder.setOnArrived(shop ->
 		{
 			chat("Asset Manager: you're at " + shop + ".");
@@ -330,6 +367,10 @@ public class AssetManagerPlugin extends Plugin
 		eventBus.register(shopFinder);
 		overlayManager.add(shopFlipOverlay);
 		overlayManager.add(shopRatesOverlay);
+		geGuider.setOnChange(() -> dirty = true);
+		eventBus.register(geGuider);
+		keyManager.registerKeyListener(geGuider);
+		overlayManager.add(geGuideOverlay);
 		livePrices.setOnUpdate(() -> clientThread.invokeLater(() ->
 		{
 			itemValuator.clearCache();
@@ -357,11 +398,20 @@ public class AssetManagerPlugin extends Plugin
 		eventBus.unregister(priceTooltip);
 		eventBus.unregister(shopFlipper);
 		eventBus.unregister(shopStockTracker);
+		clientThread.invoke(shopStockTracker::flush);
 		overlayManager.remove(shopSellOverlay);
+		overlayManager.remove(worldShopOverlay);
+		overlayManager.remove(shopSellGuideOverlay);
+		eventBus.unregister(shopSellOverlay);
 		eventBus.unregister(shopFinder);
 		clientThread.invoke(shopFinder::clear);
 		overlayManager.remove(shopFlipOverlay);
 		overlayManager.remove(shopRatesOverlay);
+		eventBus.unregister(geGuider);
+		clientThread.invoke(geGuider::shutDown);
+		keyManager.unregisterKeyListener(geGuider);
+		overlayManager.remove(geGuideOverlay);
+		geGuider.setOnChange(() -> {});
 		livePrices.stop();
 		priceTooltip.setContext(null);
 		cofferTracker.setOnChange(() -> {});
@@ -853,6 +903,7 @@ public class AssetManagerPlugin extends Plugin
 		suggestionOverlay.setKeepRules(keepRules);
 		cofferTracker.load();
 		shopStockTracker.load();
+		geGuider.load();
 		loadBank();
 		itemValuator.clearCache();
 		dirty = true;
@@ -897,7 +948,7 @@ public class AssetManagerPlugin extends Plugin
 		boolean freeWorld = !client.getWorldType().contains(WorldType.MEMBERS);
 		ShopPerks perks = new ShopPerks(glovesTier, charos, config.avoidWilderness(), location, preferred, freeWorld);
 		// Flips spend only the coins carried, so the player controls how much is considered by how much they take out
-		long budget = inventoryCoins();
+		long budget = flipCoins();
 		if (bestBuysStale || budget != bestBuysBudget)
 		{
 			bestBuysStale = false;
@@ -1062,14 +1113,70 @@ public class AssetManagerPlugin extends Plugin
 		publish(new PanelState(mode, in.balance, cofferTracker.isKnown(), cofferTracker.getSource(), cofferTracker.getUpdatedAt(),
 			in.skulled, in.protectItem, in.estimate, plan, in.target, in.peakFee, config.minCofferTarget(), keepRules.asMap().size(), perks,
 			bankCoins, config.targetDeaths(), bankItems == null ? null : destinations, restockedBy(shopStock, destinations, now),
-			shopStock.busy(now), flips, config.bestBuys(), geFlips, Flips.destination(mode, config.flipDest()), config.flipSort(), inventoryCoins(),
-			config.geOrder(), livePrices.hasVolumes(), config.shopEvenHops()));
+			shopStock.busy(now), flips, config.bestBuys(), geFlips, Flips.destination(mode, config.flipDest()), config.flipSort(), flipCoins(),
+			config.geOrder(), livePrices.hasVolumes(), config.shopEvenHops(), GeGuider.view(geGuider.getGuide()), heldForFlips()));
+	}
+
+	/** How many of each item bought on the GE for a listed flip are already spare in the inventory and bank. */
+	private Map<Integer, Integer> heldForFlips()
+	{
+		Set<Integer> ids = new HashSet<>();
+		for (FlipRun run : flips)
+		{
+			if (run.getSource() == Flip.Source.GE)
+			{
+				run.getFlips().forEach(f -> ids.add(f.getItemId()));
+			}
+		}
+		return spareHeld(ids);
+	}
+
+	/**
+	 * How many of each item are spare (not kept) in the inventory and bank, noted or not; the bank only once it's been
+	 * seen. Items with none are left out.
+	 */
+	private Map<Integer, Integer> spareHeld(Collection<Integer> ids)
+	{
+		Holdings h = holdings();
+		Map<Integer, Integer> out = new HashMap<>();
+		for (int id : ids)
+		{
+			int n = h.spare(Holdings.Place.INVENTORY, id, keepRules) + (bankItems == null ? 0 : h.spare(Holdings.Place.BANK, id, keepRules));
+			if (n > 0)
+			{
+				out.put(id, n);
+			}
+		}
+		return out;
 	}
 
 	private long inventoryCoins()
 	{
 		ItemContainer inv = client.getItemContainer(InventoryID.INV);
 		return inv == null ? 0 : inv.count(ItemID.COINS);
+	}
+
+	/**
+	 * Coins to flip with: those carried, those put into GE buy offers (bought with or not), and what the items already
+	 * collected for the flip being bought cost. So the flips don't shrink as their offers go in and fill.
+	 */
+	private long flipCoins()
+	{
+		long coins = inventoryCoins();
+		GrandExchangeOffer[] offers = client.getGrandExchangeOffers();
+		if (offers != null)
+		{
+			for (GrandExchangeOffer o : offers)
+			{
+				GrandExchangeOfferState s = o == null ? null : o.getState();
+				if (s == GrandExchangeOfferState.BUYING || s == GrandExchangeOfferState.BOUGHT || s == GrandExchangeOfferState.CANCELLED_BUY)
+				{
+					coins += o.getPrice() * o.getTotalQuantity();
+				}
+			}
+		}
+		GeGuide guide = geGuider.getGuide();
+		return guide == null ? coins : coins + guide.spentOnCollected();
 	}
 
 	/**
@@ -1182,7 +1289,8 @@ public class AssetManagerPlugin extends Plugin
 		Flip.Dest dest = Flips.destination(mode, config.flipDest());
 		boolean ge = mode.canUseGrandExchange();
 		// Selling on the GE is only flipped from shops; the rest can be bought on the GE too
-		Flips.GeMarket market = ge && dest != Flip.Dest.GE && livePrices.isAvailable() ? geMarket(patience, natureRuneCost) : null;
+		Flips.GeMarket market = ge && dest != Flip.Dest.GE && livePrices.isAvailable()
+			? geMarket(patience, natureRuneCost, usableWorlds(true), usableWorlds(false), unlocks.isMembers()) : null;
 		geFlips = ge && livePrices.isAvailable();
 		Unlocks have = unlocks;
 		List<Shop> shops = shopCatalog.getShops();
@@ -1220,7 +1328,7 @@ public class AssetManagerPlugin extends Plugin
 	 * GE prices and what items are worth elsewhere, for every item with a live price, copied so the flips can be worked
 	 * out off the client thread. Names, values and buy limits come from the wiki too, so no item definitions are loaded.
 	 */
-	private Flips.GeMarket geMarket(Patience patience, int natureRuneCost)
+	private Flips.GeMarket geMarket(Patience patience, int natureRuneCost, int membersWorlds, int freeWorlds, boolean member)
 	{
 		Map<Integer, Long> buy = new HashMap<>();
 		Map<Integer, Long> trades = new HashMap<>();
@@ -1310,7 +1418,47 @@ public class AssetManagerPlugin extends Plugin
 			{
 				return patience.getHours();
 			}
+
+			@Override
+			public int worlds(boolean members)
+			{
+				// Free shops and items can be sold on members worlds too, by a member
+				return members ? membersWorlds : freeWorlds + (member ? membersWorlds : 0);
+			}
 		};
+	}
+
+	/**
+	 * Worlds the player can shop on, members or free: none with special rules (PvP, Deadman, seasonal...), and only
+	 * skill total worlds they meet the total for. 0 if the world list hasn't loaded.
+	 */
+	private int usableWorlds(boolean members)
+	{
+		WorldResult result = worldService.getWorlds();
+		if (result == null || result.getWorlds() == null)
+		{
+			return 0;
+		}
+		int total = client.getTotalLevel();
+		int n = 0;
+		for (net.runelite.http.api.worlds.World w : result.getWorlds())
+		{
+			EnumSet<net.runelite.http.api.worlds.WorldType> types = w.getTypes();
+			if (types.contains(net.runelite.http.api.worlds.WorldType.MEMBERS) != members || !PLAIN_WORLDS.containsAll(types))
+			{
+				continue;
+			}
+			if (types.contains(net.runelite.http.api.worlds.WorldType.SKILL_TOTAL) && w.getActivity() != null)
+			{
+				Matcher m = SKILL_TOTAL.matcher(w.getActivity());
+				if (m.find() && total < Integer.parseInt(m.group(1)))
+				{
+					continue;
+				}
+			}
+			n++;
+		}
+		return n;
 	}
 
 	/** What a recalculation worked out on the client thread, for applying its results. */

@@ -5,10 +5,12 @@ import com.assetmanager.flip.Flip;
 import com.assetmanager.flip.FlipSort;
 import com.assetmanager.value.GePrice;
 import com.assetmanager.value.Patience;
+import java.awt.event.KeyEvent;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Keybind;
 import net.runelite.client.config.Range;
 
 @ConfigGroup(AssetManagerConfig.GROUP)
@@ -269,7 +271,7 @@ public interface AssetManagerConfig extends Config
 	@ConfigItem(
 		keyName = "shopRates",
 		name = "Show shop rates",
-		description = "Under an open shop's window, show what it sells and buys for and its change per item, as a % of item value",
+		description = "In an open shop's title bar, show what it sells and buys for and its change per item, as a % of item value; hover them for more",
 		section = shopSection,
 		position = 4
 	)
@@ -282,7 +284,7 @@ public interface AssetManagerConfig extends Config
 		keyName = "shopSellCounts",
 		name = "How many to sell",
 		description = "In a shop, label each item in your inventory with how many to sell on this world before each"
-			+ " sale stops beating the GE or alching, counting what the shop already holds. \"hop\" means a fresh world"
+			+ " sale stops beating the GE or alching, counting what the shop already holds. \"Hop\" means a fresh world"
 			+ " would buy some.",
 		section = shopSection,
 		position = 5
@@ -293,13 +295,53 @@ public interface AssetManagerConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "capShopSales",
+		name = "Sell no more than suggested",
+		description = "In a shop, stop a Sell click that would sell more of an item than its \"Sell\" tag says, or any"
+			+ " sale of an item tagged \"Hop\". Sell 1 always works while there's some to sell. Needs How many to sell on.",
+		section = shopSection,
+		position = 6
+	)
+	default boolean capShopSales()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "shopSellGuide",
+		name = "Guide selling clicks",
+		description = "In a shop, outline the quantity button to select and the items to click at it to sell what's"
+			+ " suggested in the fewest clicks: 50s first, then 10s, 5s and 1s. Needs How many to sell on.",
+		section = shopSection,
+		position = 7
+	)
+	default boolean shopSellGuide()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "shopMapMarkers",
 		name = "Shops on world map",
 		description = "Mark the shops Asset Manager suggests on the world map. Hover one for what to sell there.",
 		section = shopSection,
-		position = 6
+		position = 8
 	)
 	default boolean shopMapMarkers()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "worldShopMarks",
+		name = "Full shops in world switcher",
+		description = "In the world switcher, outline each world's flag for the shop you have open (or last opened), from"
+			+ " red just after you sold there through orange and yellow to green once what you're carrying is due back to"
+			+ " normal stock (from what you last saw there, assuming nobody else sold to it since). Hover a flag for details.",
+		section = shopSection,
+		position = 9
+	)
+	default boolean worldShopMarks()
 	{
 		return true;
 	}
@@ -471,6 +513,33 @@ public interface AssetManagerConfig extends Config
 	default int geFlipItems()
 	{
 		return 8;
+	}
+
+	@ConfigItem(
+		keyName = "geGuideKey",
+		name = "GE guide fill key",
+		description = "While buying a flip with the side panel's Buy on GE button: press this in the GE's item search to"
+			+ " show the next item, or in an offer's price or quantity box to fill in the flip's. Then press Enter as usual."
+			+ " Clear it to only click.",
+		section = flipSection,
+		position = 5
+	)
+	default Keybind geGuideKey()
+	{
+		return new Keybind(KeyEvent.VK_BACK_SLASH, 0);
+	}
+
+	@ConfigItem(
+		keyName = "geGuideClick",
+		name = "GE guide click to fill",
+		description = "While buying a flip with the side panel's Buy on GE button: show a line in an offer's price or"
+			+ " quantity box to click to fill in the flip's",
+		section = flipSection,
+		position = 6
+	)
+	default boolean geGuideClick()
+	{
+		return true;
 	}
 
 	@ConfigSection(

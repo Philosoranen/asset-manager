@@ -24,6 +24,8 @@ public class ShopFlip
 		BUY_LIMIT("GE buy limit"),
 		/** More would take hopping more worlds than the player's limit. */
 		WORLDS("worlds you'd hop"),
+		/** More would take more worlds than there are to sell on. */
+		ALL_WORLDS("every world you can use"),
 		/** Hopping more worlds would make more, but less an hour. */
 		QUICKER("hopping more makes less an hour"),
 		/** Enough to fill Death's coffer to the target. */

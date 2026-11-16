@@ -1,5 +1,6 @@
 package com.assetmanager.flip;
 
+import com.assetmanager.shop.ShopSellOverlay;
 import com.assetmanager.ui.SuggestionOverlay;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -14,7 +15,6 @@ import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.SpriteID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.game.SpriteManager;
-import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -84,13 +84,8 @@ public class ShopFlipOverlay extends Overlay
 				// Below the shop's stock count, like the icons on items elsewhere
 				g.drawImage(img, b.x + b.width - ICON_SIZE, b.y + SuggestionOverlay.ICON_TOP, null);
 			}
-			String count = "buy " + QuantityFormatter.quantityToStackSize(buy.best().getQuantity());
-			g.setFont(FontManager.getRunescapeSmallFont());
-			int y = b.y + b.height;
-			g.setColor(Color.BLACK);
-			g.drawString(count, b.x + 1, y + 1);
-			g.setColor(COUNT);
-			g.drawString(count, b.x, y);
+			// The same solid tag as the counts to sell
+			ShopSellOverlay.tag(g, b, "Buy " + QuantityFormatter.quantityToStackSize(buy.best().getQuantity()), COUNT);
 		}
 		return null;
 	}

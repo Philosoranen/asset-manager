@@ -41,6 +41,15 @@ public final class FlipTime
 		return (limit == ShopFlip.Limit.BUY_LIMIT ? Math.max(geHours, BUY_LIMIT_HOURS) : geHours) * 3600;
 	}
 
+	/**
+	 * Seconds before selling {@code quantity} of an item to a shop can be done again: each world takes one back each
+	 * restock, so all {@code worlds} together take {@code worlds} each restock. 0 if the worlds aren't known.
+	 */
+	static double restockSeconds(long quantity, int restockTicks, int worlds)
+	{
+		return worlds <= 0 || restockTicks <= 0 ? 0 : quantity * restockTicks * 0.6 / worlds;
+	}
+
 	/** "1h 5m", "12m", "45s". */
 	public static String describe(double seconds)
 	{

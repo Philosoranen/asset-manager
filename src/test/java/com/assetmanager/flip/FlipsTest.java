@@ -33,6 +33,8 @@ public class FlipsTest
 		final Set<Integer> unalchable = new HashSet<>();
 		final Set<Integer> members = new HashSet<>();
 		double hours = 1;
+		int membersWorlds;
+		int freeWorlds;
 
 		FakeMarket add(int id, String n, long cost, long traded, int buyLimit, int storeValue)
 		{
@@ -109,6 +111,12 @@ public class FlipsTest
 		{
 			return hours;
 		}
+
+		@Override
+		public int worlds(boolean members)
+		{
+			return members ? membersWorlds : freeWorlds;
+		}
 	}
 
 	/** A shop buying at {@code buyRate}, its price dropping by delta per item sold. */
@@ -147,6 +155,42 @@ public class FlipsTest
 		assertEquals(ShopFlip.Limit.BUY_LIMIT, f.getLimit());
 		assertEquals(11_000L * 50, f.getProfit());
 		assertEquals("Cannonball Stall", f.getShop().getName());
+	}
+
+	@Test
+	public void geToShopSellsOnNoMoreWorldsThanThereAre()
+	{
+		// 9 sell per world; with 3 free worlds to sell on, 27 in a go, however many worlds the player would hop
+		ShopCatalog shops = catalog(buyer("Dropper", 500, 10, "widget"));
+		FakeMarket m = new FakeMarket().add(1, "widget", 410, 1_000, 0, 1_000);
+		m.freeWorlds = 3;
+
+		Flip f = first(Flips.fromGe(m, Flip.Dest.SHOP, shops, Unlocks.EVERYTHING, ShopPerks.NONE, 10, Long.MAX_VALUE, 0, 8));
+
+		assertEquals(ShopFlip.Limit.ALL_WORLDS, f.getLimit());
+		assertEquals(27, f.getQuantity());
+		assertEquals(3, f.getSellOffer().getWorlds());
+	}
+
+	@Test
+	public void geToShopGoesAgainOnlyAsFastAsTheWorldsRestock()
+	{
+		// The cannonball stall again, restocking one every 100 ticks (a minute) on each of 10 worlds: 11,000 take 1,100
+		// minutes to sell again, which is the go's time, not the GE's hour
+		Shop stall = buyer("Cannonball Stall", 500, 0, "rune cannonball");
+		stall.getItems().get("rune cannonball").setR(100);
+		FakeMarket m = new FakeMarket().add(1, "rune cannonball", 350, 50_000, 11_000, 800);
+		m.freeWorlds = 10;
+
+		FlipRun run = Flips.fromGe(m, Flip.Dest.SHOP, catalog(stall), Unlocks.EVERYTHING, ShopPerks.NONE, ShopCatalog.NO_WORLD_LIMIT,
+			Long.MAX_VALUE, 0, 8).get(0);
+
+		assertEquals(1_100 * 60.0, run.getSeconds(), 1);
+		// Members only, there are no members worlds known: nothing limits it
+		m.members.add(1);
+		run = Flips.fromGe(m, Flip.Dest.SHOP, catalog(stall), Unlocks.EVERYTHING, ShopPerks.NONE, ShopCatalog.NO_WORLD_LIMIT,
+			Long.MAX_VALUE, 0, 8).get(0);
+		assertEquals(4 * 3600.0, run.getSeconds(), 1);
 	}
 
 	@Test
