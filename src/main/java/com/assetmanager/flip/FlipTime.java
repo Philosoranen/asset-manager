@@ -13,8 +13,11 @@ public final class FlipTime
 	static final double TALK_SECONDS = 3.6;
 	/** Getting to a shop or Death's coffer and back to a bank, once a go. */
 	static final double TRIP_SECONDS = 60;
-	/** One Buy or Sell click in a shop's window. */
-	static final double CLICK_SECONDS = 1.2;
+	/**
+	 * One Buy or Sell in a shop's window, finding the item and picking the amount: selling 8 items took about 20s on a
+	 * world.
+	 */
+	static final double CLICK_SECONDS = 2.5;
 	/** Most a shop's window buys or sells in one click (Buy 50). */
 	static final int PER_CLICK = 50;
 	/** One high alch: 5 ticks, 1,200 an hour. */
